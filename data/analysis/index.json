@@ -1,6 +1,11 @@
 {
     "tickers": [
         {
+            "symbol": "AEHR",
+            "name": "Aehr Test Systems",
+            "path": "../data/analysis/AEHR.json"
+        },
+        {
             "symbol": "ANET",
             "name": "Arista Networks",
             "path": "../data/analysis/ANET.json"

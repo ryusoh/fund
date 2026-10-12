@@ -1,0 +1,213 @@
+{
+    "symbol": "AEHR",
+    "name": "Aehr Test Systems",
+    "meta": {
+        "schemaVersion": "1.1.0",
+        "asOf": "2026-10-12T15:01:16.208026+00:00",
+        "timezone": "UTC",
+        "source": "analysis-sync"
+    },
+    "model": {
+        "version": "1.0.0",
+        "engine": {
+            "type": "fermat-pascal-kelly",
+            "useMonteCarlo": false,
+            "paths": 10000,
+            "useBayesianUpdate": false
+        },
+        "preferences": {
+            "horizon": 5,
+            "benchmark": {
+                "type": "annualReturn",
+                "value": 0.065,
+                "name": "SP500"
+            },
+            "kellyScale": 0.5,
+            "targetCagr": 0.12,
+            "overrides": {}
+        }
+    },
+    "market": {
+        "price": 79.25,
+        "eps": -0.23,
+        "forwardEps": 1.3833,
+        "pe": null,
+        "forwardPe": 57.2893,
+        "beta": 3.484,
+        "marketCap": 2588269056.0,
+        "currency": "USD",
+        "marketDataUpdatedAt": "2026-10-12T15:01:15.611913+00:00",
+        "pegRatio": 0.84,
+        "enterpriseValue": 2738353408.0,
+        "ebitda": -11344000.0,
+        "dividendYield": 0.0,
+        "fiftyDayAverage": 98.0194,
+        "twoHundredDayAverage": 71.3637,
+        "averageVolume": 2885559.0,
+        "averageDailyVolume10Day": 2466650.0,
+        "fiftyTwoWeekHigh": 147.4,
+        "fiftyTwoWeekLow": 18.7,
+        "evToEbitda": -241.3922
+    },
+    "risk": {
+        "volatility": 1.2474,
+        "estimateSource": "historical",
+        "correlations": null
+    },
+    "position": {
+        "shares": 0,
+        "currentWeight": 0.0,
+        "targetWeight": 0.0,
+        "maxKellyWeight": 0.0,
+        "portfolioId": null,
+        "constraints": {
+            "minWeight": 0.0,
+            "maxWeight": 0.05
+        }
+    },
+    "scenarios": [
+        {
+            "id": "bull",
+            "name": "Bull – AI Burn-In Standard + SiC Recovery",
+            "prob": 0.25,
+            "growth": {
+                "epsCagr": 0.35,
+                "epsCagrSigma": null
+            },
+            "valuation": {
+                "exitPe": 45.0,
+                "exitPeSigma": null
+            },
+            "notes": "Wafer-level burn-in becomes standard for AI accelerator reliability screening (lead hyperscaler ramps, second AI supplier converts); SiC recovers on 200mm transition and 800V datacenter power; HBM/memory WLBI lands. Revenue ~$500M by FY2031."
+        },
+        {
+            "id": "base",
+            "name": "Base – Guide Met, Then Deceleration",
+            "prob": 0.45,
+            "growth": {
+                "epsCagr": 0.2,
+                "epsCagrSigma": null
+            },
+            "valuation": {
+                "exitPe": 30.0,
+                "exitPeSigma": null
+            },
+            "notes": "FY2027 guide ($130-150M) met on $100M effective backlog; AI burn-in niche grows but stays concentrated in 1-2 hyperscale customers; SiC slow recovery through the 2027-28 overcapacity correction; growth decelerates to mid-teens after FY2027."
+        },
+        {
+            "id": "bear",
+            "name": "Bear – Backlog Evaporates / Burn-In Intensity Falls",
+            "prob": 0.3,
+            "growth": {
+                "epsCagr": 0.05,
+                "epsCagrSigma": null
+            },
+            "valuation": {
+                "exitPe": 20.0,
+                "exitPeSigma": null
+            },
+            "notes": "Cancellable backlog slips (10-K warns POs are cancellable with limited penalties); lead AI customer insources or qualifies a competitor; device yield improvements cut burn-in intensity; SiC glut persists past 2028. Re-rating to cyclical multiple."
+        }
+    ],
+    "derived": {
+        "expectedCagr": -0.005,
+        "expectedMultiple": 0.97,
+        "fairValueRange": [
+            40.0,
+            55.0
+        ],
+        "kelly": {
+            "fullKelly": 0.0,
+            "scaledKelly": 0.0
+        }
+    },
+    "industry_thesis": null,
+    "belief_state": {
+        "probability": 0.45,
+        "confidence": 0.55,
+        "evidence_for": [
+            "Backlog $80.6M at FYE2026 vs $15.2M prior year (5.3x), effective backlog $100.6M incl. post-quarter bookings [10-K FY2026; Q4 release 2026-07-14].",
+            "FY2027 guidance $130-150M revenue (~2.6-3x) with 18-22% non-GAAP net margin [Q4 FY2026 release].",
+            "Customer diversification is real: top customer 67.3% (FY2024) to 26.3% (FY2026); three customers >10% [10-K FY2026 Item 1].",
+            "AI order momentum: $41M Sonoma (Apr 2026), $22M AI WLBI (Aug 2026), ~$6M follow-on for a second AI processor (Oct 2026); two silicon photonics customers ramping.",
+            "Cash $116.4M, no debt [10-K FY2026 Item 8]."
+        ],
+        "evidence_against": [
+            "Valuation ~90x guided forward non-GAAP earnings and ~55x trailing sales at $80.10; +245% over 52 weeks; 16% short interest [stockanalysis.com 2026-10-12].",
+            "GAAP-loss-making in FY2025-FY2026 (diluted EPS -$0.13, -$0.23); gross margin fell 49.1% to 35.3% over two years [10-K FY2026].",
+            "Backlog is cancellable/reschedulable with limited penalties per 10-K risk factors; the FY2027 guide rests on it.",
+            "Cash position is dilution-funded: +$97.2M FY2026 financing from ATM sales; new S-3 shelf filed Aug 2026 (terms unverified).",
+            "Structural category risk: customer yield improvements or sampling (vs 100% burn-in) reduce demand [10-K Item 1A].",
+            "SiC overcapacity expected to persist until 2027-2028 (Yole via PCIM 2026-07-29)."
+        ],
+        "open_questions": [
+            "Does Q1 FY2027 (prints 2026-11-02) show revenue run-rate consistent with the $130-150M guide?",
+            "Identity and ownership of the lead hyperscale AI customer relationships; durability past the second processor generation.",
+            "Aug 2026 S-3 shelf size/terms and dilution intent.",
+            "Named wafer-level burn-in competitors and whether the 'only vendor offering both' claim holds.",
+            "Deceased officer identity and key-person exposure (Sep 2026 proxy)."
+        ],
+        "as_of": "2026-10-12T00:00:00Z"
+    },
+    "predictions": [
+        {
+            "id": "aehr-q1fy27-revenue",
+            "claim": "Q1 FY2027 revenue (reported 2026-11-02) is >= $25M",
+            "target_date": "2026-11-03",
+            "probability": 0.55,
+            "resolved": false,
+            "outcome": null,
+            "resolved_date": null,
+            "notes": "First checkpoint against the FY2027 guide; $130M low end implies ~$32.5M quarterly average with ramp, so Q1 below $25M would signal slippage."
+        },
+        {
+            "id": "aehr-fy27-revenue-guide",
+            "claim": "FY2027 revenue (year ending 2027-06-25) lands >= $130M, the guidance low end",
+            "target_date": "2027-07-31",
+            "probability": 0.65,
+            "resolved": false,
+            "outcome": null,
+            "resolved_date": null,
+            "notes": "Backed by $100.6M effective backlog; main risk is backlog cancellation/rescheduling disclosed in the 10-K."
+        },
+        {
+            "id": "aehr-fy27-concentration",
+            "claim": "No single customer exceeds 30% of revenue in the FY2027 10-K",
+            "target_date": "2027-08-31",
+            "probability": 0.6,
+            "resolved": false,
+            "outcome": null,
+            "resolved_date": null,
+            "notes": "Top customer was 26.3% in FY2026 with three customers >10%; AI ramp could re-concentrate revenue into the lead hyperscale account."
+        },
+        {
+            "id": "aehr-second-ai-supplier",
+            "claim": "The benchmarked 'major supplier of AI accelerators, CPUs, and network processors' places a production (pilot or volume) order by mid-2027",
+            "target_date": "2027-06-30",
+            "probability": 0.4,
+            "resolved": false,
+            "outcome": null,
+            "resolved_date": null,
+            "notes": "Benchmark 'exceeded expectations' per Q4 FY2026 release; conversion would de-risk single-thread AI exposure."
+        }
+    ],
+    "decision_journal": [
+        {
+            "date": "2026-10-12",
+            "action": "WATCH",
+            "shares_changed": 0,
+            "situation": "AEHR at $80.10 (~$2.61B cap) trades at ~90x guided FY2027 non-GAAP EPS (~$0.85 midpoint) after +245% in 52 weeks. Scenario-weighted 5-year expected CAGR is ~-0.5% from this entry; the market has pre-paid the bull case. Business momentum (backlog 5.3x, AI order cadence, diversification 67%->26% top customer) is genuinely strong.",
+            "alternatives_rejected": [
+                "Initiate a starter position at $80 (rejected: negative scenario-weighted expected return at this entry; Kelly sizing is zero).",
+                "Wait for a post-earnings dip mechanically (rejected: no dip may come if Q1 confirms; the entry rule is price-based, not event-timing-based).",
+                "Drop coverage as too expensive (rejected: story quality and engine value of a tracked belief state justify watchlist tracking with dated predictions)."
+            ],
+            "expected_outcomes": {
+                "FY2027 guide met, stock consolidates or dips to the $40-55 entry zone within 12-18 months": 0.45,
+                "AI burn-in accelerates past guide and the stock re-rates higher without offering entry": 0.25,
+                "Backlog slippage or concentration break triggers a sharp de-rating": 0.3
+            },
+            "review_date": "2026-11-03"
+        }
+    ]
+}
