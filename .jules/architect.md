@@ -139,7 +139,7 @@ origin/main HEAD) && git commit`) and force-push — the branch must always
   preserved, test expectations unchanged"; pasted **`make precommit-fix`** output
   plus the empty `git status --porcelain` after it — never `make verify` output
   (verify runs no fixer, so a bot that gates on it ships prettier-unclean code:
-  fund#697 went red on "committed files were not gate-clean" hours after the
+  fund#697 and fund#728 went red on "committed files were not gate-clean" hours after the
   #688 lesson landed). Do not put raw subshell commands like `$(make verify...)`
   in commit text.
 
