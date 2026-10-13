@@ -149,7 +149,7 @@ enforces:
   `老化测试（burn-in）`. Never let a card's central concept
   (老化测试, 晶圆级方案) go without any English original or acronym — the
   deck's graph links and English-source cross-reference depend on it.
-- **The density metric** (`tools/research/anki_density.py`) is
+- **The density metric** (`~/dev/networking/tools/research/anki_density.py`) is
   `0.4·compression + 0.2·MTLD + 0.2·concept + 0.2·domain`. Practical levers
   when a card is flagged `enrich`:
     - Adding prose can LOWER the score — MTLD (lexical diversity) is usually
