@@ -146,4 +146,18 @@ describe('analysis lab pane controller', () => {
         expect(lab.getAnalysisSymbols()).toEqual(['TEST']);
         expect(lab.getActiveAnalysisConfig().symbol).toBe('TEST');
     });
+
+    it('re-renders the active section when currencyChangedGlobal fires', async () => {
+        lab.setActiveAnalysisSymbol('TEST');
+        const summary = document.getElementById('summaryStats');
+        expect(summary.textContent).toContain('$100.00');
+
+        state.configs[0].metrics.price = 200;
+        document.dispatchEvent(
+            new CustomEvent('currencyChangedGlobal', { detail: { currency: 'EUR' } })
+        );
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        expect(summary.textContent).toContain('$200.00');
+    });
 });

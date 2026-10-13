@@ -3,6 +3,9 @@
 // The lab module is lazy-loaded on first use (chart-renderer precedent,
 // js/transactions/chart.js:39-48).
 
+import { convertValueToCurrency, formatCurrency as formatInSelectedCurrency } from '../../utils.js';
+import { getSelectedCurrency } from '../../state.js';
+
 let labModulePromise = null;
 let paneInitialized = false;
 
@@ -28,14 +31,19 @@ const SECTION_BY_SUBCOMMAND = {
 const USAGE_LINE =
     'Usage: analysis [scenarios|value|kelly|belief|evidence|predictions|journal|mc [paths]|bull|bear|reset|close] or analysis <TICKER>';
 
+// Analysis prices are current USD snapshots, not dated series — convert with
+// the latest FX rate, never a historical one (WO14 guardrail,
+// docs/terminal-analysis-merge.md). A far-future date resolves to the newest
+// available rate in findFxRate's closest-date search.
+const LATEST_FX_DATE = '9999-12-31';
+
 function formatUsd(value) {
     if (!Number.isFinite(value)) {
         return 'n/a';
     }
-    if (Math.abs(value) >= 1000) {
-        return '$' + value.toLocaleString('en-US', { maximumFractionDigits: 0 });
-    }
-    return '$' + value.toFixed(2);
+    return formatInSelectedCurrency(
+        convertValueToCurrency(value, LATEST_FX_DATE, getSelectedCurrency())
+    );
 }
 
 function buildSnapshotLine(lab, func) {

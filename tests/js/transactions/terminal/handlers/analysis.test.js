@@ -94,7 +94,7 @@ describe('handleAnalysisCommand', () => {
             metrics: { price: 12345.6, eps: 6.2, volatility: 0.28, horizon: 5 },
         });
         await handleAnalysisCommand(['kelly'], { appendMessage });
-        expect(appendMessage).toHaveBeenCalledWith(expect.stringContaining('price $12,346'));
+        expect(appendMessage).toHaveBeenCalledWith(expect.stringContaining('price $12,345.60'));
     });
 
     it('runs Monte Carlo with the default path count', async () => {

@@ -1,7 +1,12 @@
 /* global Worker */
-import { compactNumber } from '../../utils/formatting.js';
 import { BayesianEngine } from './bayes.js';
 import { logger } from '../../utils/logger.js';
+import {
+    convertValueToCurrency,
+    formatCurrency as formatInSelectedCurrency,
+    formatCurrencyCompact as formatCompactInSelectedCurrency,
+} from '../../transactions/utils.js';
+import { getSelectedCurrency, whenTransactionDataReady } from '../../transactions/state.js';
 
 // Element references are resolved by initAnalysisPane() — importing this
 // module must be side-effect free so the terminal can lazy-load it.
@@ -134,18 +139,28 @@ function formatPercent(value) {
     return `${sign}${pct.toFixed(2)}%`;
 }
 
+// Analysis prices are current USD snapshots, not dated series — convert with
+// the latest FX rate, never a historical one (WO14 guardrail,
+// docs/terminal-analysis-merge.md). A far-future date resolves to the newest
+// available rate in findFxRate's closest-date search.
+const LATEST_FX_DATE = '9999-12-31';
+
 function formatCurrency(value) {
     if (!Number.isFinite(value)) {
         return 'n/a';
     }
-    return `$${value.toFixed(2)}`;
+    return formatInSelectedCurrency(
+        convertValueToCurrency(value, LATEST_FX_DATE, getSelectedCurrency())
+    );
 }
 
 function formatCompactCurrency(value) {
     if (!Number.isFinite(value)) {
         return 'n/a';
     }
-    return `$${compactNumber(value)}`;
+    return formatCompactInSelectedCurrency(
+        convertValueToCurrency(value, LATEST_FX_DATE, getSelectedCurrency())
+    );
 }
 
 function resolveNumeric(manualValue, marketValue, fallback = 0, treatZeroAsMissing = false) {
@@ -2122,6 +2137,24 @@ export async function initAnalysisPane(rootEl, { autoLoad = true } = {}) {
             summaryStatsEl.replaceChildren(errDiv);
         }
     }
+}
+
+// Re-render the pane in the newly selected currency (listener precedent:
+// js/pages/terminal/index.js). FX rates arrive with the transaction data, so
+// wait for readiness before converting — the terminal's own listener runs
+// first (it registers at page load, this module lazy-loads later) and updates
+// selectedCurrency before this one fires.
+if (typeof document !== 'undefined') {
+    document.addEventListener('currencyChangedGlobal', async (event) => {
+        if (!paneRoot || !event?.detail?.currency) {
+            return;
+        }
+        await whenTransactionDataReady();
+        const config = state.configs.find((cfg) => cfg.symbol === state.activeSymbol);
+        if (config) {
+            renderActiveTicker();
+        }
+    });
 }
 
 export const __analysisLabTesting = {
