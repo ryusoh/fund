@@ -1,5 +1,6 @@
 import { handleHelpCommand } from './handlers/help.js';
 import { handleStatsCommand } from './handlers/stats.js';
+import { handleAnalysisCommand } from './handlers/analysis.js';
 import { handlePlotCommand } from './handlers/plot.js';
 import { handleTransactionCommand, handleDefaultCommand } from './handlers/transaction.js';
 import {
@@ -54,6 +55,8 @@ const commandMap = {
     geography: handleGeographyCommand,
     marketcap: handleMarketcapCommand,
     summary: handleSummaryCommand,
+    analysis: handleAnalysisCommand,
+    an: handleAnalysisCommand,
 };
 
 export async function executeCommand(command, context) {
