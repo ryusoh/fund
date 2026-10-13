@@ -3,7 +3,7 @@
     "name": "Aehr Test Systems",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-10-13T05:39:58.064769+00:00",
+        "asOf": "2026-10-13T15:18:09.914060+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -28,15 +28,15 @@
         }
     },
     "market": {
-        "price": 78.18,
+        "price": 75.3,
         "eps": -0.23,
         "forwardEps": 1.3833,
         "pe": null,
-        "forwardPe": 56.5158,
+        "forwardPe": 54.4339,
         "beta": 3.484,
-        "marketCap": 2553323264.0,
+        "marketCap": 2459264000.0,
         "currency": "USD",
-        "marketDataUpdatedAt": "2026-10-13T05:39:57.424429+00:00",
+        "marketDataUpdatedAt": "2026-10-13T15:18:09.759428+00:00",
         "pegRatio": 0.8,
         "enterpriseValue": 2443790848.0,
         "ebitda": -11344000.0,
@@ -50,7 +50,7 @@
         "evToEbitda": -215.4259
     },
     "risk": {
-        "volatility": 1.2482,
+        "volatility": 1.2465,
         "estimateSource": "historical",
         "correlations": null
     },
