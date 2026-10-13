@@ -1,0 +1,500 @@
+/* Analysis lab pane, scoped for embedding in the terminal page.
+   Transformed from css/analysis-proto.css: palette vars moved from :root onto
+   the pane root; page chrome (body, #holo-bg, fixed .top-nav, global button
+   and scrollbar rules) removed; .output-grid flattened to a single column. */
+
+.analysis-pane {
+    /* Matrix Palette */
+    --bg-deep: #000;
+    --bg-panel: #050a05;
+    --bg-card: #0a140a;
+
+    --accent-primary: #00ff41;
+    /* Matrix Green */
+    --accent-secondary: #008f11;
+    /* Darker Green */
+    --accent-dim: #003b00;
+    --accent-glow: rgba(0, 255, 65, 0.3);
+
+    --text-main: #00ff41;
+    --text-muted: #008f11;
+    --text-dim: #003b00;
+
+    --border-color: #003b00;
+    --border-glow: rgba(0, 255, 65, 0.2);
+
+    --font-display: 'JetBrains Mono', monospace;
+    --font-mono: 'JetBrains Mono', monospace;
+
+    --accent: var(--accent-primary);
+    --border-thin: 1px solid var(--border-color);
+    --ink: var(--text-main);
+
+    color: var(--text-main);
+    font-family: var(--font-mono);
+    line-height: 1.4;
+    text-shadow: 0 0 5px var(--accent-glow);
+}
+
+/* Layout */
+.analysis-pane .lab-container {
+    display: block;
+    overflow: hidden;
+}
+
+.analysis-pane .nav-divider {
+    width: 1px;
+    height: 30px;
+    background: var(--border-color);
+    flex-shrink: 0;
+}
+
+.analysis-pane .ticker-list {
+    display: flex;
+    flex-direction: row;
+    gap: 5px;
+    overflow-x: auto;
+    align-items: center;
+    scrollbar-width: none;
+    flex-shrink: 0;
+    max-width: 40%;
+}
+
+.analysis-pane .ticker-list:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.5);
+    outline-offset: -2px;
+    border-radius: 4px;
+}
+
+.analysis-pane .ticker-list::-webkit-scrollbar {
+    display: none;
+}
+
+.analysis-pane .ticker-btn {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+    padding: 6px 16px;
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.analysis-pane .ticker-btn:hover:not(:disabled) {
+    background: var(--accent-dim);
+    color: var(--text-main);
+    border-color: var(--text-main);
+    box-shadow: 0 0 10px var(--accent-glow);
+}
+
+.analysis-pane .ticker-btn.active {
+    background: var(--text-main);
+    color: black;
+    border-color: var(--text-main);
+    box-shadow: 0 0 15px var(--accent-glow);
+    font-weight: 700;
+}
+
+.analysis-pane .ticker-btn:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.5);
+    outline-offset: -2px;
+    border-radius: 4px;
+}
+
+.analysis-pane .ticker-divider {
+    display: none;
+    /* Hide dividers in horizontal mode */
+}
+
+/* Main Content */
+.analysis-pane .analysis-stage {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    background: transparent;
+    max-width: 100%;
+    margin: 0 auto;
+    overflow: hidden;
+}
+
+/* Summary Stats (Top Bar Version) */
+.analysis-pane .summary-stats {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+    align-items: center;
+    overflow-x: auto;
+    scrollbar-width: none;
+    flex: 1;
+}
+
+.analysis-pane .summary-stats:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.5);
+    outline-offset: -2px;
+    border-radius: 4px;
+}
+
+.analysis-pane .stat-card {
+    background: transparent;
+    border: none;
+    padding: 0;
+    min-width: auto;
+    display: flex;
+    flex-direction: row;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.analysis-pane .stat-card:hover {
+    border-color: transparent;
+    box-shadow: none;
+}
+
+.analysis-pane .stat-card h3 {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin: 0;
+    white-space: nowrap;
+}
+
+.analysis-pane .stat-card p {
+    font-size: 0.9rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--text-main);
+    white-space: nowrap;
+}
+
+/* Output Grid — flattened from two columns to a single-column stack */
+.analysis-pane .output-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    flex: 1;
+    min-height: 0;
+}
+
+.analysis-pane .left-col {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+.analysis-pane .left-col:focus-visible,
+.analysis-pane .right-col:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.5);
+    outline-offset: -2px;
+    border-radius: 4px;
+}
+
+.analysis-pane .right-col {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+.analysis-pane .scenario-block,
+.analysis-pane .value-card,
+.analysis-pane .bayes-lab,
+.analysis-pane .risk-sim {
+    background: rgba(0, 10, 0, 0.9);
+    border: 1px solid var(--border-color);
+    padding: 20px;
+    position: relative;
+}
+
+.analysis-pane .bayes-lab {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.analysis-pane .risk-sim {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.analysis-pane .block-header h3,
+.analysis-pane .value-card h3 {
+    margin: 0 0 15px 0;
+    font-size: 1rem;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 5px;
+    color: var(--text-main);
+}
+
+/* Scenario Cards */
+.analysis-pane .card-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.analysis-pane .result-card {
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--border-color);
+    padding: 12px;
+}
+
+.analysis-pane .result-card:hover {
+    background: var(--accent-dim);
+    border-color: var(--text-main);
+}
+
+.analysis-pane .result-card h4 {
+    margin: 0 0 10px 0;
+    font-size: 0.9rem;
+    color: var(--text-main);
+    text-transform: uppercase;
+}
+
+.analysis-pane .result-card p {
+    margin: 4px 0;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    display: flex;
+    justify-content: space-between;
+}
+
+/* Value Bands */
+.analysis-pane dl {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px 20px;
+    margin: 0;
+    font-size: 0.85rem;
+}
+
+.analysis-pane dt {
+    color: var(--text-muted);
+}
+
+.analysis-pane dd {
+    color: var(--text-main);
+    text-align: right;
+}
+
+/* Scrollbar */
+.analysis-pane ::-webkit-scrollbar {
+    width: 8px;
+}
+
+.analysis-pane ::-webkit-scrollbar-track {
+    background: black;
+}
+
+.analysis-pane ::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border: 1px solid black;
+}
+
+.analysis-pane ::-webkit-scrollbar-thumb:hover {
+    background: var(--text-main);
+}
+
+/* Kelly Curve & Concentration Card */
+.analysis-pane .kelly-card {
+    background: rgba(0, 10, 0, 0.9);
+    border: 1px solid var(--border-color);
+    padding: 20px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.analysis-pane .concentration-badge {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    background: rgba(0, 59, 0, 0.4);
+    border: 1px solid var(--border-color);
+    padding: 3px 8px;
+    border-radius: 2px;
+}
+
+/* Belief State Card */
+.analysis-pane .belief-card {
+    background: rgba(0, 15, 0, 0.85);
+    border: 1px solid var(--border-color);
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.analysis-pane .belief-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px dashed var(--border-color);
+    padding-bottom: 6px;
+    font-size: 0.85rem;
+}
+
+.analysis-pane .belief-list {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 0.8rem;
+    line-height: 1.5;
+}
+
+.analysis-pane .evidence-against-item {
+    color: #fa0;
+}
+
+.analysis-pane .evidence-for-item {
+    color: var(--text-main);
+}
+
+.analysis-pane .open-question-item {
+    color: #8cf;
+}
+
+/* Evidence Timeline */
+.analysis-pane .timeline-container {
+    max-height: 220px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-right: 5px;
+}
+
+.analysis-pane .timeline-entry {
+    background: rgba(0, 20, 0, 0.6);
+    border-left: 3px solid var(--border-color);
+    padding: 8px 10px;
+    font-size: 0.8rem;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.analysis-pane .timeline-entry.bullish {
+    border-left-color: var(--text-main);
+}
+
+.analysis-pane .timeline-entry.bearish {
+    border-left-color: #f30;
+}
+
+.analysis-pane .timeline-entry.neutral {
+    border-left-color: #fc0;
+}
+
+.analysis-pane .timeline-entry.superseded {
+    opacity: 0.55;
+    border-left-style: dashed;
+}
+
+.analysis-pane .timeline-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
+.analysis-pane .timeline-claim {
+    color: var(--ink);
+    line-height: 1.3;
+}
+
+.analysis-pane .timeline-source {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-decoration: underline;
+}
+
+/* Falsifiable Predictions */
+.analysis-pane .prediction-box {
+    background: rgba(0, 15, 0, 0.7);
+    border: 1px solid var(--border-color);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.analysis-pane .prediction-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 0.8rem;
+    border-bottom: 1px dotted var(--border-color);
+    padding-bottom: 6px;
+}
+
+.analysis-pane .prediction-status {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 2px;
+    text-transform: uppercase;
+}
+
+.analysis-pane .status-pending {
+    background: rgba(0, 100, 200, 0.2);
+    border: 1px solid #4af;
+    color: #8cf;
+}
+
+.analysis-pane .status-resolved {
+    background: rgba(0, 255, 65, 0.2);
+    border: 1px solid var(--text-main);
+    color: var(--text-main);
+}
+
+.analysis-pane .prediction-stale-badge {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 2px;
+    background: rgba(255, 80, 80, 0.2);
+    border: 1px solid #f66;
+    color: #f88;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+/* Decision Journal */
+.analysis-pane .decision-box {
+    background: rgba(0, 15, 0, 0.7);
+    border: 1px solid var(--border-color);
+    padding: 12px;
+    font-size: 0.8rem;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.analysis-pane .decision-action {
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+/* What-If Sandbox Container */
+.analysis-pane .sandbox-card {
+    background: rgba(15, 20, 0, 0.7);
+    border: 1px dashed #fa0;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.analysis-pane .sandbox-tag {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: #fa0;
+    letter-spacing: 1px;
+}
