@@ -1,0 +1,125 @@
+# Cerebras Systems ($CBRS) — deep-research findings
+
+**Date:** 2026-10-13 · **Method:** `/deep-research` multi-agent fan-out (SEC filings, internal state, primary web) + deterministic confirm pass.
+
+## Executive summary
+
+Cerebras is the wafer-scale AI-inference company that IPO'd on Nasdaq **May 14–15, 2026** at **$185/share** (34.5M shares, ~$6.4B gross / ~$6.2B net — the largest semiconductor IPO to date). The equity story has since inverted: the stock closed **$146.62 on 2026-10-12, ~21% below the IPO price**, after four post-earnings/news selloffs, with a **lockup expiry on ~171M shares landing ~Nov 9, 2026** (earlier of two days after Q3 earnings or 180 days post-prospectus).
+
+The fundamentals are genuinely dual-sided:
+
+- **Bull core:** $25.4B remaining performance obligations (vs ~$0.9B FY2026 revenue guidance) dominated by the **OpenAI MRA (>$20B, 750 MW committed, option to 2.0 GW)**, plus a June 2026 **AWS commercial agreement** (first hyperscaler deployment; Trainium-3 prefill + Cerebras decode). Revenue growing 74–94% YoY; FY2026 core revenue guided $880–890M with CFO claiming a plan to "more than triple revenue in 2027." $7.4B cash + $1.2B securities + undrawn $850M revolver.
+- **Bear core:** customer concentration is still extreme (Q2 2026: Customer A = 34%, B = 32%, C = 10%; A = MBZUAI and likely B = OpenAI by magnitude; two customers = 76% of receivables). The OpenAI relationship is double-edged — OpenAI is simultaneously the anchor customer, a **$918M lender**, and a **warrant holder** (up to 33.4M shares at $0.00001, 10M already exercised July 2026), with termination rights if delivery/SLA tranches are missed. An early-October SemiAnalysis report (SECONDARY) that OpenAI's future "Ultrafast" mode would run on Nvidia GPUs — not Cerebras — triggered a ~20% drawdown, only partly reversed by a Sam Altman X post. Warrant amortization suppresses GAAP revenue/margin through **October 2031**; disclosure controls were "not effective" at June 30, 2026 (material weaknesses in ICFR); zero insider open-market buys vs ~1.3M shares sold in the first four months.
+
+**Portfolio relevance:** no prior repo state on Cerebras. The research touches the ANET thesis (wafer-scale is the literal counter-architecture to "scale-out Ethernet = the backplane"), the GOOG thesis (Cerebras contests TPU inference-cost leadership for external workloads; and the AWS partnership puts Cerebras *inside* a hyperscaler), and AEHR's AI-accelerator burn-in optionality (Cerebras uses **no HBM, no CoWoS, no 3nm** — its supply chain is deliberately orthogonal to the bottlenecked stack AEHR's customers test).
+
+## Baseline vs new evidence
+
+**Baseline (internal state): zero.** No mention of Cerebras/CBRS/wafer-scale/WSE/CS-3 anywhere in `docs/` or `data/` (grep-verified). `data/analysis/watchlist.json` holds AEHR only. The closest existing hooks:
+
+- **ANET:** `docs/thesis/ANET.md:526` — open question "Whether Ethernet fully dominates AI fabrics or alternative architectures gain share"; `docs/thesis/industry/ai-networking.md:18` — the 32K→1M-node scaling premise that wafer-scale directly counters; `ANET.md:60` — "non-NVDA accelerator ecosystems… where Arista can be default fabric" (Cerebras is a live test case; note its CS-3 clusters *do* network — the question is fabric choice, which this research did not resolve).
+- **GOOG:** `data/analysis/GOOG.json:127` — "Custom TPU v5p/v6 Trillium… cost leadership vs merchant GPU clouds"; `GOOG.evidence.jsonl:3` — "85% inference cost reduction via TPU v6" — the claim Cerebras's inference wedge contests.
+- **AEHR:** `data/analysis/AEHR.json:184-191` — prediction `aehr-second-ai-supplier` (benchmarked "major supplier of AI accelerators" orders by mid-2027, P=0.4). Cerebras-class parts are extreme burn-in-intensity candidates, but its HBM-free/CoWoS-free design may reduce exposure to exactly the test-intensive advanced-packaging chain.
+
+**New evidence** (all claims below): Cerebras is real revenue ($510M FY2025, +76%), real backlog ($25.4B RPO), real anchor contracts (OpenAI, AWS, AMD), and real fragility (concentration, OpenAI entanglement, control weaknesses, lockup overhang).
+
+## Claim-by-claim breakdown
+
+### 1. IPO & capital structure
+
+| Claim | Status | Source anchor |
+| --- | --- | --- |
+| IPO completed May 15, 2026: 34.5M Class A shares @ $185.00 (greenshoe fully exercised), net proceeds ~$6.2B | **CONFIRMED (adapter, 80%)** | 10-Q `fil_0001628280-26-056357`, `s_0001_c02` |
+| Listed May 14, 2026; opened $350, closed $311.07 (+68%) | SECONDARY | CNBC 2026-05-14 |
+| ~237.6M shares total (Class A 103.2M / Class B 121.3M @ 20 votes / Class N 3.7M); Class B ≈ 95% of votes | Primary (10-Q cover + charter 8-K) | acc. `0001628280-26-035605` |
+| Lockup: ends earlier of 2 trading days post-Q3-earnings and 180 days post-prospectus (~Nov 9, 2026); up to ~171.1M shares releasable | Primary (424B4 via sec-api transcription) | 424B4 acc. `0001628280-26-035214` |
+| Benchmark & Foundation Capital are Section 16 10% owners; Eclipse distributed down to ~0.3% by June 2026 | Primary | Forms 3 (2026-05-13); 13D/A (2026-06-26) |
+| Pre-IPO 2026: Series H $1.0B @ $89.0156 (Feb 2026, ~$23B post, Tiger-led); Series G $1.1B @ $36.2324 | Primary | 10-Q; cerebras.ai Series H PR |
+
+### 2. Financials
+
+| Claim | Status | Source anchor |
+| --- | --- | --- |
+| Revenue: $24.6M (2022) → $78.7M (2023) → $290.3M (2024) → **$510.0M (2025, +76%)** | **CONFIRMED (direct S-1 text)** | S-1 `fil_0001628280-26-025762` (verbatim: "Our revenue increased to $510.0 million in 2025, representing year-over-year growth of 76%") |
+| Q2 2026 revenue **$180.1M** (+74% YoY); H1 2026 $373.5M (+84%) | **CONFIRMED (adapter, 80%)** | 10-Q income statement |
+| Q1 2026 revenue $193.4M (+94%); Q2 cloud/inference $126.0M vs hardware $54.1M | Primary | 8-K acc. `0001628280-26-044941`; 10-Q |
+| FY2025 GAAP net income +$237.8M is a mirage — includes one-time **+$363.3M** forward-contract-liability extinguishment gain; non-GAAP net loss $(75.7)M | Primary | S-1 MD&A |
+| Q2 2026 GAAP net loss $(450.5)M dominated by $377.0M SBC (of which $273.6M IPO-triggered RSU vesting); **core (non-GAAP) net loss only $(6.9)M Q2 / $(9.4)M H1** | Primary | 10-Q `s_0001_c02`, `s_0002_c17/19` |
+| Core gross margin: Q1 47% → Q2 41%; GAAP GM Q2 14.2% (warrant amortization + SBC) | Primary | Q2'26 release; 10-Q |
+| FY2026 guidance (raised Aug 12): core revenue **$880–890M**, core GM 41–43%; Q3 core revenue $214–216M; CFO: plan to "more than triple revenue in 2027" | Primary | Q2'26 earnings release |
+| Cash+restricted **$7.4B** + securities **$1.2B** at June 30, 2026; $850M revolver undrawn | **CONFIRMED (adapter, 80%)** | 10-Q MD&A `s_0002_c20` |
+| H1 2026 operating cash flow $(47.5)M; capex $548.9M; ~$2.25B additional data-center leases signed Q2+Q3 2026 not yet commenced | Primary | 10-Q `s_0001_c19/20` |
+| **RPO $25.4B at June 30, 2026** ($24.6B at Dec 31, 2025); ~22% recognizable in 24 months, 43% in months 25–48 | **CONFIRMED (adapter, 80%)** | 10-Q `s_0001_c08`; S-1 |
+| Disclosure controls "not effective" (material weaknesses in ICFR) at June 30, 2026; $531.2M unrecognized comp on CEO/CTO performance shares | Primary | 10-Q `s_0006_c03`; 424B4 |
+
+### 3. Customer concentration & the OpenAI entanglement
+
+| Claim | Status | Source anchor |
+| --- | --- | --- |
+| FY2024: G42 **85%** of revenue; FY2025: **MBZUAI 62% / G42 24%** | **CONFIRMED (direct S-1 text, verbatim)** | S-1 |
+| Q2 2026: Customer A **34%**, B **32%**, C 10%; H1: A 49%. A and D are ASC 850 related parties; AR: B = 57% at June 30, 2026 | **CONFIRMED (adapter, 80%)** | 10-Q `s_0001_c06` |
+| Inference: A = MBZUAI (AR 77.9% at Dec-25 matches S-1's MBZUAI figure), D = G42; B is consistent in magnitude with OpenAI MRA revenue ($56.8M Q2 ≈ 31.5%) but the filing does not equate them | Analytical inference — flagged as such | 10-Q `s_0001_c07` cross-ref |
+| OpenAI MRA (signed Dec 2025, announced Jan 14, 2026): **750 MW committed 2026–2028, option to 2.0 GW by 2030; "valued at more than $20 billion"** | **CONFIRMED (direct S-1 text, verbatim)** | S-1; openai.com/index/cerebras-partnership/ |
+| OpenAI Working Capital Loan: $1,004.6M funded Jan 2026, 6%, **$918.2M outstanding**, repayable in cash or service credits; accelerates if MRA terminated other than for OpenAI breach | **CONFIRMED (adapter, 80%)** | 10-Q `s_0001_c10` |
+| OpenAI warrant: up to 33,445,026 Class N shares @ $0.00001; tranches vest on loan funding / $40B market cap / delivery; **10,033,508 exercised July 2026**; warrant amortization contra-revenue through **Oct 2031** | Primary | 10-Q `s_0001_c07/20` |
+| AWS Commercial Agreement (June 2026): first hyperscaler deployment, multi-year lease, pricing/exclusivity/capacity guarantees, AWS-warrant up to 2,696,678 Class N @ $100; "may represent a material percentage of revenue"; disaggregated inference = Trainium-3 prefill + Cerebras decode; Bedrock integration targeted Q1 2027 | Primary | 10-Q `s_0006_c05`; Q1'26/Q2'26 releases |
+| AMD partnership: disaggregated inference, up to 5x throughput, production Q4 2026 | Primary | Q2'26 release |
+| Other named cloud customers: Cognition, Lovable, Block, Figma, AlphaSense, GSK, CrowdStrike; EU capacity end-2026 → 200 MW by end-2027 | Primary (releases); EU expansion SECONDARY summary | Q2'26 release |
+| CFIUS: G42 equity purchase terminated (agreement in principle Q1 2025; CFIUS withdrawal granted **Mar 27, 2025**); G42 option & May 2024 pricing/volume agreement terminated in entirety; G42 stake restructured non-voting | Primary (S-1/10-Q); non-voting mapping UNVERIFIED | S-1 preferred-stock note |
+| Export controls: BIS rules cover UAE (D:1/D:4); CS-2/3/4 export licenses for G42/MBZUAI obtained but revocable, with "rigorous security and compliance obligations" | Primary | S-1 risk factors |
+| Material weakness in ICFR; litigation: copyright class action (N.D. Cal., Oct 2025) | Primary | 10-Q `s_0001_c19`, `s_0006_c03` |
+
+### 4. Product & competitive position
+
+| Claim | Status | Source anchor |
+| --- | --- | --- |
+| WSE-3: 4T transistors, ~900K cores, 44 GB on-chip SRAM, 21 PB/s bandwidth, TSMC 5nm; CS-3 appliance | Primary | cerebras.ai/product-chip; S-1 |
+| **Supply-chain wedge: "We do not use HBM memory, CoWoS packaging or 3nm fabrication technology, all of which are currently supply limited"** | Primary (verbatim) | Q2'26 release |
+| CS-4 announced Aug 18, 2026: 3× WSE-3 Turbo wafers, Nexus rack platform, claims "up to 30× faster than GPU-based solutions"; CS-5/CS-6 roadmap, goal to double token speed YoY | Primary (claims are company-published) | investors.cerebras.ai CS-4 PR; Hot Chips blog |
+| Speed claims: GPT-5.6 Sol 750 tok/s, Codex-Spark >1,000 tok/s — company-published; Kimi K2.6 ~1,000 tok/s "independently measured by Artificial Analysis" | Primary (flagged as issuer claims / one independent benchmark) | Q1'26 release |
+| No MLPerf submissions found | UNVERIFIED (absence claim) | — |
+| SemiAnalysis (early Oct 2026): OpenAI's future "GPT-6.1 Sol Ultrafast" to run on Nvidia GPUs, not Cerebras | **SECONDARY** — the single most thesis-relevant unverified claim | via MoveSurge/Invezz |
+
+### 5. Stock state & overhang
+
+| Claim | Status | Source anchor |
+| --- | --- | --- |
+| Closed **$146.62 on Oct 12, 2026** (−10.7% that day); 52-wk range $145.75–$385.00; market cap ~$35B | SECONDARY (quote vendors) | Google Finance / Morningstar |
+| Post-IPO selloffs: −18% post-Q1 (margin guidance); −12–14% post-Q2 (despite raise); ~−20% wk of Sep 28 (SemiAnalysis/Nvidia); +8–9% Oct 5 (Altman "close partner" X post) | SECONDARY | mlq.ai, ET, Yahoo, StocksDownUnder |
+| Insiders: 46 Forms 4 in first 4 months, **zero open-market buys**, ~1.29M shares sold ($161–$250); CEO Feldman 237,559 sh Aug 21 (10b5-1) | Primary (EDGAR Forms 4/144 tally via sec-api) | EDGAR CIK 0002021728 |
+| S&P DJI Fast Track IPO entry effective May 25, 2026 (one outlet claims S&P 500 specifically — treat index identity as SECONDARY) | SECONDARY quoting S&P DJI notice | TipRanks/Barchart |
+| Law-firm investigation announced July 21, 2026 | SECONDARY (firm PR) | Kaplan Fox via Barchart |
+
+## Open questions / unverified claims
+
+1. **Does CS-3/CS-4 clustering use Ethernet at scale, and whose fabric?** (ANET-critical; unresolved by this research — needs Arista/Cerebras disclosures or SemiAnalysis-type teardown.)
+2. **SemiAnalysis Nvidia-for-Ultrafast report** — is OpenAI actually shifting future decode off Cerebras, or is this a prefill/decode split nuance? The $25.4B RPO is the bull anchor; this report attacks exactly that. Read the original SemiAnalysis piece directly.
+3. **Customer B identity** — strongly implied OpenAI by magnitude/timing but not named in the 10-Q; if B ≠ OpenAI, concentration math changes.
+4. **G42's post-IPO equity %** and the G42↔Class N mapping — UNVERIFIED.
+5. **Lockup mechanics**: exact releasable-share count (~171.1M) and timing vs the Q3 earnings date — the single largest near-term supply event (within ~4 weeks of today).
+6. **RPO quality**: 43% lands in months 25–48 and the schedule excludes pass-through power costs beyond the initial 250 MW; how much of the $25.4B survives if OpenAI exercises termination rights on a missed tranche?
+7. **MLPerf absence** — confirm Cerebras has never submitted; relevant to the "independently measured" claim inventory (currently only Artificial Analysis).
+8. **Index inclusion identity** (S&P 500 vs another S&P DJI index) — SECONDARY only.
+
+## Confirm-pass record
+
+- `filings_adapter verify` against the Q2 10-Q (`--doc fil_0001628280-26-056357`): 6/6 key quantitative claims **PASS @ 80%** (number-anchored) — IPO terms, RPO $25.4B, Q2 revenue $180.1M, OpenAI loan $918.2M, Customer A 34%, cash $7.4B.
+- `verify` without `--doc` defaults to the most recent filing (the 8-K) and produced misleading PASSes on boilerplate spans / FAILs on 10-Q claims. **Operational rule: always pass `--doc`.**
+- S-1 claims (3/3) confirmed by direct verbatim text extraction from the cached S-1 file after reproducing the processor failure (below).
+- Critical web claims re-verified by direct inspection where primary (SEC EDGAR 424B4/10-Q accessions, OpenAI announcement, Q1/Q2 earnings releases). Stock-price and SemiAnalysis items remain SECONDARY-tagged.
+
+### Tool defects reproduced this run (for `docs/filings-adapter.md`)
+
+1. **S-1 processing fails outright**: `sections` and `verify` on `fil_0001628280-26-025762` raise `ValueError: no usable processor found` — the 8.5 MB HTML prospectus matches no processor. Reproduced by orchestrator on 2026-10-13 (3/3 attempts). Workaround: direct text extraction of the cached `.htm`.
+2. `sections` CLI prints only 25 of N sections (hard-coded `sections[:25]`, `scripts/analysis/filings_adapter.py:648`).
+3. `verify` silently defaults to the newest filing when `--doc` is omitted — claims sourced from older filings FAIL at 0%, and PASSes can anchor on non-number-bearing boilerplate spans (check that matched spans actually contain the claim's numbers).
+
+## Action items
+
+- **Decision framing for a CBRS position:** this is a concentration-vs-backlog bet. Entry-relevant facts: ~21% below IPO price, lockup ~Nov 9, 2026, Q3 earnings (expected ~mid-Nov) as the next hard catalyst, SemiAnalysis report unresolved. Any sizing decision should answer open questions 1, 2, and 6 first.
+- **If pursued:** follow the AEHR onboarding pattern — `docs/thesis/CBRS.md` + `docs/thesis/CBRS/CBRS-{base,bear,bull}-evidence.md`, `data/analysis/CBRS.json` via the analysis tooling (never hand-edit `data/`), add to `watchlist.json`/`index.json` through the pipeline path.
+- **Cross-thesis updates (only after these findings are committed):**
+    - ANET: log a bear/watch evidence entry — wafer-scale decode disaggregation (Trainium-3 prefill + Cerebras decode at AWS) is an existence proof of non-GPU-cluster inference architectures; test against the Ethernet-share signpost in `docs/thesis/industry/ai-networking.md:123-126`.
+    - GOOG: note Cerebras-in-AWS as a counterpoint to TPU external-monetization optionality (`docs/thesis/GOOG.md:160`).
+    - AEHR: note that the fastest-growing merchant accelerator deliberately avoids HBM/CoWoS — mildly negative read-through for advanced-packaging burn-in intensity as a demand driver; positive only if Cerebras-class wafer-scale parts themselves require WLBI (unresolved).
+- **Adapter fixes worth a lane PR:** `--doc` default behavior on `verify` (fail loudly or search all docs); the 25-section print cap; the S-1 processor gap.
