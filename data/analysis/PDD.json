@@ -3,7 +3,7 @@
     "name": "Pinduoduo",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-10-13T15:18:10.950486+00:00",
+        "asOf": "2026-10-13T23:39:14.445121+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -29,19 +29,19 @@
     },
     "market": {
         "forwardEps": 12.3391,
-        "pe": 9.4139,
-        "forwardPe": 6.7825,
+        "pe": 9.2193,
+        "forwardPe": 6.6423,
         "beta": -0.053,
-        "marketCap": 119124058112.0,
-        "enterpriseValue": 51531853144.93,
+        "marketCap": 116661575680.0,
+        "enterpriseValue": 49069370712.93,
         "ebitda": 14833698824.09,
         "currency": "USD",
         "fiftyTwoWeekHigh": 139.41,
         "fiftyTwoWeekLow": 71.94,
-        "marketDataUpdatedAt": "2026-10-13T15:18:10.831052+00:00",
-        "evToEbitda": 3.474,
+        "marketDataUpdatedAt": "2026-10-13T23:39:13.886799+00:00",
+        "evToEbitda": 3.308,
         "eps": 8.89,
-        "price": 83.69,
+        "price": 81.96,
         "fiftyDayAverage": 82.9272,
         "twoHundredDayAverage": 93.6143,
         "averageVolume": 6330942.0,
@@ -50,7 +50,7 @@
         "dividendYield": 0.0
     },
     "risk": {
-        "volatility": 0.3344,
+        "volatility": 0.3335,
         "estimateSource": "historical",
         "correlations": null
     },

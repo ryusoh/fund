@@ -11,6 +11,11 @@
             "path": "../data/analysis/ANET.json"
         },
         {
+            "symbol": "CBRS",
+            "name": "Cerebras Systems",
+            "path": "../data/analysis/CBRS.json"
+        },
+        {
             "symbol": "GOOG",
             "name": "Alphabet",
             "path": "../data/analysis/GOOG.json"

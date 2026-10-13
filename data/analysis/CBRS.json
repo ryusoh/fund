@@ -1,0 +1,219 @@
+{
+    "symbol": "CBRS",
+    "name": "Cerebras Systems",
+    "meta": {
+        "schemaVersion": "1.1.0",
+        "asOf": "2026-10-13T23:39:11.563586+00:00",
+        "timezone": "UTC",
+        "source": "analysis-sync"
+    },
+    "model": {
+        "version": "1.0.0",
+        "engine": {
+            "type": "fermat-pascal-kelly",
+            "useMonteCarlo": false,
+            "paths": 10000,
+            "useBayesianUpdate": false
+        },
+        "preferences": {
+            "horizon": 5,
+            "benchmark": {
+                "type": "annualReturn",
+                "value": 0.065,
+                "name": "SP500"
+            },
+            "kellyScale": 0.5,
+            "targetCagr": 0.12,
+            "overrides": {}
+        }
+    },
+    "market": {
+        "price": 149.085,
+        "eps": -5.14,
+        "forwardEps": 1.2737,
+        "pe": null,
+        "forwardPe": 117.0506,
+        "beta": null,
+        "marketCap": 35417239552.0,
+        "currency": "USD",
+        "marketDataUpdatedAt": "2026-10-13T23:39:11.014655+00:00",
+        "pegRatio": null,
+        "enterpriseValue": 28982759424.0,
+        "ebitda": -484790016.0,
+        "dividendYield": 0.0,
+        "fiftyDayAverage": 198.2702,
+        "twoHundredDayAverage": 209.1138,
+        "averageVolume": 7285384.0,
+        "averageDailyVolume10Day": 11367270.0,
+        "fiftyTwoWeekHigh": 386.34,
+        "fiftyTwoWeekLow": 142.07,
+        "evToEbitda": -59.7842
+    },
+    "risk": {
+        "volatility": 1.1526,
+        "estimateSource": "historical",
+        "correlations": null
+    },
+    "position": {
+        "shares": 0,
+        "currentWeight": 0.0,
+        "targetWeight": 0.0,
+        "maxKellyWeight": 0.0,
+        "portfolioId": null,
+        "constraints": {
+            "minWeight": 0.0,
+            "maxWeight": 0.05
+        }
+    },
+    "scenarios": [
+        {
+            "id": "bull",
+            "name": "Bull – OpenAI MRA Delivers, Wafer-Scale Decode Wins",
+            "prob": 0.25,
+            "growth": {
+                "epsCagr": 0.52,
+                "epsCagrSigma": null
+            },
+            "valuation": {
+                "exitPe": 40.0,
+                "exitPeSigma": null
+            },
+            "notes": "OpenAI 750MW deploys on schedule and the 1.25GW option is exercised; AWS Bedrock ramp + AMD disaggregation make Cerebras the default fast-decode layer; RPO ($25.4B) converts on schedule. Revenue ~$9B by 2031 at ~25% core net margin -> EPS ~$8; 40x exit for the category-defining inference franchise."
+        },
+        {
+            "id": "base",
+            "name": "Base – Committed Capacity Delivers, Optionality Lapses",
+            "prob": 0.4,
+            "growth": {
+                "epsCagr": 0.27,
+                "epsCagrSigma": null
+            },
+            "valuation": {
+                "exitPe": 30.0,
+                "exitPeSigma": null
+            },
+            "notes": "The committed 750MW OpenAI tranches and initial AWS lease deliver; the 2GW option lapses; inference pricing erodes as GPU decode improves. Revenue ~$4.5B by 2031 at ~18% core net margin -> EPS ~$3.3; 30x exit as growth normalizes post-2028."
+        },
+        {
+            "id": "bear",
+            "name": "Bear – OpenAI Entanglement Breaks / Decode Reverts to GPU",
+            "prob": 0.35,
+            "growth": {
+                "epsCagr": -0.1,
+                "epsCagrSigma": null
+            },
+            "valuation": {
+                "exitPe": 18.0,
+                "exitPeSigma": null
+            },
+            "notes": "SemiAnalysis thesis confirmed: OpenAI shifts future decode to Nvidia GPUs; an MRA tranche miss triggers termination rights and WC-loan acceleration; RPO impairs. Fixed-cost data-center leases (~$2.25B signed, not commenced) bite; revenue stalls near $1.5B; re-rating to a sub-scale hardware multiple. EPS ~$0.6 by 2031."
+        }
+    ],
+    "derived": {
+        "expectedCagr": -0.034,
+        "expectedMultiple": 0.84,
+        "fairValueRange": [
+            50.0,
+            70.0
+        ],
+        "kelly": {
+            "fullKelly": 0.0,
+            "scaledKelly": 0.0
+        }
+    },
+    "industry_thesis": null,
+    "belief_state": {
+        "probability": 0.4,
+        "confidence": 0.5,
+        "evidence_for": [
+            "RPO $25.4B at 2026-06-30 (vs $24.6B at 2025-12-31), majority attributable to the OpenAI MRA; ~22% recognizable within 24 months [10-Q 2026-08-12; confirm pass 80%].",
+            "OpenAI MRA (signed Dec 2025): 750MW committed 2026-2028, option to 2.0GW by 2030; 'valued at more than $20 billion' [S-1 2026-04-17, verbatim-confirmed].",
+            "AWS Commercial Agreement June 2026: first hyperscaler deployment, multi-year lease, exclusivity and capacity guarantees; Trainium-3 prefill + Cerebras decode; Bedrock integration targeted Q1 2027 [10-Q s_0006_c05; Q1/Q2 2026 releases].",
+            "Revenue $510.0M FY2025 (+76%); Q2 2026 $180.1M (+74% YoY); FY2026 core revenue guide raised to $880-890M; CFO plans to 'more than triple revenue in 2027' [S-1; 10-Q; Q2'26 release].",
+            "Core (non-GAAP) net loss only $(6.9)M in Q2 2026 / $(9.4)M H1 — near breakeven ex-IPO SBC and warrant amortization [10-Q s_0002_c17/19].",
+            "Liquidity: $7.4B cash+restricted + $1.2B securities + undrawn $850M revolver at 2026-06-30 [10-Q; confirm pass 80%].",
+            "Supply-chain wedge: 'We do not use HBM memory, CoWoS packaging or 3nm fabrication technology, all of which are currently supply limited' [Q2'26 release, verbatim]."
+        ],
+        "evidence_against": [
+            "Concentration: Q2 2026 Customer A 34% / B 32% / C 10% (A = MBZUAI by AR cross-reference; B matches OpenAI MRA revenue magnitude); two customers = 76% of receivables [10-Q s_0001_c06/07].",
+            "OpenAI entanglement: OpenAI is anchor customer + $918.2M lender (6% WC loan, accelerates if MRA terminated other than for OpenAI breach) + warrant holder (up to 33.4M Class N shares @ $0.00001; 10.0M exercised Jul 2026) [10-Q s_0001_c07/10/20; confirm pass 80%].",
+            "SemiAnalysis report (early Oct 2026): OpenAI's future 'Ultrafast' mode to run on Nvidia GPUs, not Cerebras — attacks the RPO anchor; ~20% drawdown wk of 2026-09-28 [SECONDARY, unverified at source].",
+            "Warrant amortization is contra-revenue through October 2031 ($44.3M in Q2 2026); GAAP margins optically suppressed for years [10-Q].",
+            "Material weaknesses in ICFR; disclosure controls 'not effective' at 2026-06-30 [10-Q s_0006_c03].",
+            "Stock $146.62 (2026-10-12) is 21% below the $185 IPO price; 52wk range $145.75-385.00; lockup on ~171M shares expires ~2026-11-09 [quote vendors, SECONDARY; 424B4].",
+            "Insider selling: 46 Forms 4 in first 4 months post-IPO, zero open-market buys, ~1.29M shares sold $161-250 [EDGAR Forms 4/144].",
+            "~$2.25B of data-center leases signed Q2+Q3 2026 not yet commenced — fixed-cost model mismatch vs consumption-priced inference [10-Q s_0001_c19/20]."
+        ],
+        "open_questions": [
+            "Does the SemiAnalysis Nvidia-for-Ultrafast claim survive reading the original report? Is it a prefill/decode nuance or a real OpenAI decode shift?",
+            "Is Customer B (32% of Q2 2026 revenue) OpenAI? Filing does not equate them.",
+            "Does CS-3/CS-4 clustering use Ethernet at scale, and whose fabric? (ANET cross-thesis hook.)",
+            "Lockup mechanics: exact releasable share count (~171.1M) and timing vs the Q3 2026 earnings date.",
+            "RPO survivability: how much of the $25.4B is exposed to OpenAI tranche-termination rights?",
+            "G42 post-IPO equity stake and the G42-to-Class-N non-voting mapping (UNVERIFIED).",
+            "Q3 2026 print (~mid-Nov): core revenue vs the $214-216M guide, first print into lockup expiry."
+        ],
+        "as_of": "2026-10-14T00:00:00Z"
+    },
+    "predictions": [
+        {
+            "id": "cbrs-q3-2026-core-revenue",
+            "claim": "Q3 2026 core (non-GAAP) revenue lands at or above the $214M guidance low end (reported ~mid-Nov 2026)",
+            "target_date": "2026-11-30",
+            "probability": 0.55,
+            "resolved": false,
+            "outcome": null,
+            "resolved_date": null,
+            "notes": "Guide was raised in Aug; a miss into the ~Nov 9 lockup expiry compounds the supply overhang with a credibility break."
+        },
+        {
+            "id": "cbrs-openai-mra-intact-fy26",
+            "claim": "No disclosure of OpenAI MRA termination, delivery-tranche miss, or material renegotiation in any SEC filing through the FY2026 10-K",
+            "target_date": "2027-03-31",
+            "probability": 0.6,
+            "resolved": false,
+            "outcome": null,
+            "resolved_date": null,
+            "notes": "The SemiAnalysis Nvidia-for-Ultrafast report (Oct 2026) is the live threat; the MRA grants OpenAI termination rights on missed capacity tranches/SLAs and accelerates the $918M WC loan."
+        },
+        {
+            "id": "cbrs-fy2027-revenue-triple",
+            "claim": "FY2027 core revenue is >= $2.6B (>= ~3x the $885M FY2026 guide midpoint), per CFO Komin's stated plan to 'more than triple revenue in 2027'",
+            "target_date": "2028-02-29",
+            "probability": 0.5,
+            "resolved": false,
+            "outcome": null,
+            "resolved_date": null,
+            "notes": "Requires the OpenAI 750MW ramp plus AWS contribution to land on schedule; RPO schedule has only ~22% recognizable in the first 24 months."
+        },
+        {
+            "id": "cbrs-aws-10pct-customer",
+            "claim": "AWS reaches >= 10% of revenue (a lettered customer) in a 10-Q or 10-K by FY2027 reporting",
+            "target_date": "2028-03-31",
+            "probability": 0.45,
+            "resolved": false,
+            "outcome": null,
+            "resolved_date": null,
+            "notes": "June 2026 AWS Commercial Agreement has minimum capacity guarantees and 'material percentage of revenue' language, but Bedrock integration is only targeted for Q1 2027."
+        }
+    ],
+    "decision_journal": [
+        {
+            "date": "2026-10-14",
+            "action": "WATCH",
+            "shares_changed": 0,
+            "situation": "CBRS at $146.62 (~$35B cap) trades 21% below its May 2026 IPO price ($185) after four selloffs (post-Q1 margins, post-Q2, SemiAnalysis Nvidia-for-Ultrafast report, lockup approach). Fundamentals are dual-sided: $25.4B RPO anchored by the >$20B OpenAI MRA plus AWS/AMD partnerships vs extreme concentration (Q2 top customers 34%/32%/10%), OpenAI as customer+lender+warrant-holder, ICFR material weaknesses, and ~171M shares unlocking ~2026-11-09. Scenario-weighted 5-year expected CAGR is ~-3.4% from this entry on a $1.00 FY2027 core-EPS base.",
+            "alternatives_rejected": [
+                "Initiate a starter position at ~$147 (rejected: negative scenario-weighted expected return; the two biggest unknowns — SemiAnalysis claim and lockup supply — resolve within weeks at no cost to waiting).",
+                "Buy before the Q3 print to front-run a lockup-absorption rally (rejected: event-timing bet, not a price/probability edge; a guide miss into lockup expiry is the worst path).",
+                "Drop coverage as uninvestable concentration (rejected: backlog quality and inference-architecture evidence are worth a tracked belief state with dated predictions; the OpenAI MRA alone is a market-structure signal for the ANET/GOOG theses)."
+            ],
+            "expected_outcomes": {
+                "MRA delivers on schedule, lockup absorbed, stock re-rates without offering entry": 0.25,
+                "Committed capacity delivers but optionality lapses; stock ranges, entry zone $50-70 appears within 12-18 months": 0.4,
+                "SemiAnalysis thesis confirmed or tranche miss; RPO impairment and sharp de-rating": 0.35
+            },
+            "review_date": "2026-11-15"
+        }
+    ]
+}
