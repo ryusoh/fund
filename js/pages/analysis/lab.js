@@ -40,6 +40,19 @@ const thesisTitleCache = new Map();
 
 const WORKER_URL = '../js/pages/analysis/monte_carlo.worker.js';
 
+// Canvas palette mirrors the terminal design tokens (css/terminal/base.css)
+// so the pane stays coherent with the rest of the terminal page.
+const PANE_CHART_COLORS = {
+    grid: 'rgba(109, 121, 155, 0.35)',
+    line: '#c9d1d9',
+    muted: '#8b949e',
+    gold: '#f0b90b',
+    green: '#34a853',
+    greenFill: 'rgba(52, 168, 83, 0.15)',
+    red: '#ea4335',
+    blue: '#64b5f6',
+};
+
 const ANALYSIS_SECTIONS = [
     'overview',
     'kelly',
@@ -781,7 +794,7 @@ function drawKellyMarker(
 }
 
 function drawKellyCurvePath(ctx, toX, toY, g, maxF, pointsCount, padLeft, plotW, baselineY) {
-    ctx.strokeStyle = '#003b00';
+    ctx.strokeStyle = PANE_CHART_COLORS.grid;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(padLeft, baselineY);
@@ -789,7 +802,7 @@ function drawKellyCurvePath(ctx, toX, toY, g, maxF, pointsCount, padLeft, plotW,
     ctx.stroke();
 
     ctx.beginPath();
-    ctx.strokeStyle = '#00ff41';
+    ctx.strokeStyle = PANE_CHART_COLORS.line;
     ctx.lineWidth = 2;
     for (let i = 0; i <= pointsCount; i++) {
         const f = (i / pointsCount) * maxF;
@@ -863,7 +876,7 @@ function drawAllKellyMarkers(
             padTop,
             plotH,
             width,
-            '#8cf',
+            PANE_CHART_COLORS.blue,
             '¼K',
             true
         );
@@ -877,7 +890,7 @@ function drawAllKellyMarkers(
             padTop,
             plotH,
             width,
-            '#00ff41',
+            PANE_CHART_COLORS.green,
             '½K (Rec)',
             true
         );
@@ -891,7 +904,7 @@ function drawAllKellyMarkers(
             padTop,
             plotH,
             width,
-            '#fc0',
+            PANE_CHART_COLORS.gold,
             'Full K',
             true
         );
@@ -905,7 +918,7 @@ function drawAllKellyMarkers(
             padTop,
             plotH,
             width,
-            '#f30',
+            PANE_CHART_COLORS.red,
             '2x K (0 Growth)',
             true
         );
@@ -921,7 +934,7 @@ function drawAllKellyMarkers(
             padTop,
             plotH,
             width,
-            '#4af',
+            PANE_CHART_COLORS.line,
             `Curr: ${(currentWeight * 100).toFixed(1)}%`
         );
     }
@@ -1085,7 +1098,7 @@ function renderBeliefState(config) {
     if (belief.evidence_against && belief.evidence_against.length > 0) {
         const againstTitle = document.createElement('div');
         againstTitle.style.fontSize = '0.75rem';
-        againstTitle.style.color = '#fa0';
+        againstTitle.style.color = PANE_CHART_COLORS.gold;
         againstTitle.textContent = 'Evidence Against & Falsification Risks:';
         const ul = document.createElement('ul');
         ul.className = 'belief-list';
@@ -1612,7 +1625,7 @@ function _renderMonteCarloHistogram(result, ctx, width, height) {
         }
         const barWidth = width / counts.length;
 
-        ctx.fillStyle = '#ff3300'; // Safety Orange
+        ctx.fillStyle = PANE_CHART_COLORS.red;
         counts.forEach((count, i) => {
             const barHeight = (count / maxCount) * (height - 20);
             ctx.fillRect(i * barWidth, height - barHeight, barWidth - 1, barHeight);
@@ -1647,7 +1660,7 @@ function _renderMonteCarloFanChart(result, ctx, width, height) {
         const getX = (i) => padL + (i / (fan.length - 1)) * plotW;
         const getY = (val) => padT + (1 - (val - minVal) / range) * plotH;
 
-        ctx.fillStyle = 'rgba(0, 255, 65, 0.15)';
+        ctx.fillStyle = PANE_CHART_COLORS.greenFill;
         ctx.beginPath();
         ctx.moveTo(getX(0), getY(fan[0].p5));
         for (let i = 1; i < fan.length; i++) {
@@ -1659,7 +1672,7 @@ function _renderMonteCarloFanChart(result, ctx, width, height) {
         ctx.closePath();
         ctx.fill();
 
-        ctx.strokeStyle = '#00ff41';
+        ctx.strokeStyle = PANE_CHART_COLORS.green;
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.moveTo(getX(0), getY(fan[0].median));
@@ -1669,7 +1682,7 @@ function _renderMonteCarloFanChart(result, ctx, width, height) {
         ctx.stroke();
 
         if (typeof ctx.fillText === 'function') {
-            ctx.fillStyle = '#008f11';
+            ctx.fillStyle = PANE_CHART_COLORS.muted;
             ctx.font = '10px "JetBrains Mono", monospace';
             ctx.fillText(
                 `Fan Envelope (P5–P95) · ${result.runCount || 10000} paths`,

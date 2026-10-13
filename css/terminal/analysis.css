@@ -1,39 +1,33 @@
 /* Analysis lab pane, scoped for embedding in the terminal page.
-   Transformed from css/analysis-proto.css: palette vars moved from :root onto
-   the pane root; page chrome (body, #holo-bg, fixed .top-nav, global button
-   and scrollbar rules) removed; .output-grid flattened to a single column. */
+   Coherent with the terminal design language (css/terminal/base.css tokens):
+   light-gray text on dark glass, gold primary accent, semantic green/red/blue,
+   no matrix glow. The pane root is a .chart-card, so inner cards stay
+   translucent to let the liquid-glass backdrop read through. */
 
 .analysis-pane {
-    /* Matrix Palette */
-    --bg-deep: #000;
-    --bg-panel: #050a05;
-    --bg-card: #0a140a;
-
-    --accent-primary: #00ff41;
-    /* Matrix Green */
-    --accent-secondary: #008f11;
-    /* Darker Green */
-    --accent-dim: #003b00;
-    --accent-glow: rgba(0, 255, 65, 0.3);
-
-    --text-main: #00ff41;
-    --text-muted: #008f11;
-    --text-dim: #003b00;
-
-    --border-color: #003b00;
-    --border-glow: rgba(0, 255, 65, 0.2);
-
-    --font-display: 'JetBrains Mono', monospace;
-    --font-mono: 'JetBrains Mono', monospace;
-
-    --accent: var(--accent-primary);
+    /* Aliases the lab markup references inline (var(--accent), var(--ink),
+       var(--border-thin), var(--text-muted)) resolve from this root. */
+    --accent: var(--primary-color);
+    --ink: var(--text-color);
     --border-thin: 1px solid var(--border-color);
-    --ink: var(--text-main);
 
-    color: var(--text-main);
-    font-family: var(--font-mono);
-    line-height: 1.4;
-    text-shadow: 0 0 5px var(--accent-glow);
+    /* Legacy matrix-named palette vars, re-pointed at terminal tokens. */
+    --text-main: var(--text-color);
+    --text-muted: var(--muted-text);
+    --text-dim: rgba(139, 148, 158, 0.6);
+    --accent-primary: var(--primary-color);
+    --accent-secondary: var(--green-color);
+    --accent-dim: var(--hover-bg);
+    --accent-glow: rgba(240, 185, 11, 0.25);
+    --border-color: rgba(109, 121, 155, 0.35);
+    --border-glow: rgba(255, 255, 255, 0.1);
+
+    --font-display: var(--font-family-mono);
+    --font-mono: var(--font-family-mono);
+
+    color: var(--text-color);
+    font-family: var(--font-family-mono);
+    line-height: 1.5;
 }
 
 /* Layout */
@@ -73,10 +67,11 @@
 .analysis-pane .ticker-btn {
     background: transparent;
     border: 1px solid var(--border-color);
-    color: var(--text-muted);
+    border-radius: 8px;
+    color: var(--muted-text);
     padding: 6px 16px;
     text-align: center;
-    font-family: var(--font-mono);
+    font-family: var(--font-family-mono);
     font-size: 0.9rem;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -85,24 +80,22 @@
 }
 
 .analysis-pane .ticker-btn:hover:not(:disabled) {
-    background: var(--accent-dim);
-    color: var(--text-main);
-    border-color: var(--text-main);
-    box-shadow: 0 0 10px var(--accent-glow);
+    background: var(--hover-bg);
+    color: var(--text-color);
+    border-color: var(--primary-color);
 }
 
 .analysis-pane .ticker-btn.active {
-    background: var(--text-main);
-    color: black;
-    border-color: var(--text-main);
-    box-shadow: 0 0 15px var(--accent-glow);
+    background: var(--primary-color);
+    color: #05070d;
+    border-color: var(--primary-color);
     font-weight: 700;
 }
 
 .analysis-pane .ticker-btn:focus-visible {
     outline: 2px solid rgba(255, 255, 255, 0.5);
     outline-offset: -2px;
-    border-radius: 4px;
+    border-radius: 8px;
 }
 
 .analysis-pane .ticker-divider {
@@ -157,7 +150,7 @@
 
 .analysis-pane .stat-card h3 {
     font-size: 0.75rem;
-    color: var(--text-muted);
+    color: var(--muted-text);
     margin: 0;
     white-space: nowrap;
 }
@@ -166,7 +159,7 @@
     font-size: 0.9rem;
     font-weight: 700;
     margin: 0;
-    color: var(--text-main);
+    color: var(--text-color);
     white-space: nowrap;
 }
 
@@ -206,8 +199,9 @@
 .analysis-pane .value-card,
 .analysis-pane .bayes-lab,
 .analysis-pane .risk-sim {
-    background: rgba(0, 10, 0, 0.9);
-    border: 1px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
     padding: 20px;
     position: relative;
 }
@@ -228,10 +222,12 @@
 .analysis-pane .value-card h3 {
     margin: 0 0 15px 0;
     font-size: 1rem;
+    font-weight: 700;
     text-transform: uppercase;
+    letter-spacing: 1px;
     border-bottom: 1px solid var(--border-color);
     padding-bottom: 5px;
-    color: var(--text-main);
+    color: var(--primary-color);
 }
 
 /* Scenario Cards */
@@ -242,27 +238,28 @@
 }
 
 .analysis-pane .result-card {
-    background: rgba(0, 0, 0, 0.5);
-    border: 1px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
     padding: 12px;
 }
 
 .analysis-pane .result-card:hover {
-    background: var(--accent-dim);
-    border-color: var(--text-main);
+    background: var(--hover-bg);
+    border-color: var(--primary-color);
 }
 
 .analysis-pane .result-card h4 {
     margin: 0 0 10px 0;
     font-size: 0.9rem;
-    color: var(--text-main);
+    color: var(--text-color);
     text-transform: uppercase;
 }
 
 .analysis-pane .result-card p {
     margin: 4px 0;
     font-size: 0.8rem;
-    color: var(--text-muted);
+    color: var(--muted-text);
     display: flex;
     justify-content: space-between;
 }
@@ -277,36 +274,45 @@
 }
 
 .analysis-pane dt {
-    color: var(--text-muted);
+    color: var(--muted-text);
 }
 
 .analysis-pane dd {
-    color: var(--text-main);
+    color: var(--text-color);
     text-align: right;
 }
 
-/* Scrollbar */
+/* Scrollbar — matches the glassy terminal scrollbars (css/terminal/base.css) */
 .analysis-pane ::-webkit-scrollbar {
-    width: 8px;
+    width: 10px;
+    height: 10px;
 }
 
 .analysis-pane ::-webkit-scrollbar-track {
-    background: black;
+    background: rgba(30, 30, 35, 0.35);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .analysis-pane ::-webkit-scrollbar-thumb {
-    background: var(--border-color);
-    border: 1px solid black;
+    background: linear-gradient(180deg, rgba(140, 140, 148, 0.55) 0%, rgba(92, 92, 98, 0.55) 100%);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .analysis-pane ::-webkit-scrollbar-thumb:hover {
-    background: var(--text-main);
+    background: linear-gradient(
+        180deg,
+        rgba(170, 170, 178, 0.65) 0%,
+        rgba(120, 120, 128, 0.65) 100%
+    );
 }
 
 /* Kelly Curve & Concentration Card */
 .analysis-pane .kelly-card {
-    background: rgba(0, 10, 0, 0.9);
-    border: 1px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
     padding: 20px;
     position: relative;
     display: flex;
@@ -316,17 +322,18 @@
 
 .analysis-pane .concentration-badge {
     font-size: 0.75rem;
-    color: var(--text-muted);
-    background: rgba(0, 59, 0, 0.4);
+    color: var(--muted-text);
+    background: rgba(255, 255, 255, 0.04);
     border: 1px solid var(--border-color);
-    padding: 3px 8px;
     border-radius: 2px;
+    padding: 3px 8px;
 }
 
 /* Belief State Card */
 .analysis-pane .belief-card {
-    background: rgba(0, 15, 0, 0.85);
-    border: 1px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
     padding: 15px;
     display: flex;
     flex-direction: column;
@@ -350,15 +357,15 @@
 }
 
 .analysis-pane .evidence-against-item {
-    color: #fa0;
+    color: var(--primary-color);
 }
 
 .analysis-pane .evidence-for-item {
-    color: var(--text-main);
+    color: var(--text-color);
 }
 
 .analysis-pane .open-question-item {
-    color: #8cf;
+    color: var(--blue-color);
 }
 
 /* Evidence Timeline */
@@ -372,8 +379,9 @@
 }
 
 .analysis-pane .timeline-entry {
-    background: rgba(0, 20, 0, 0.6);
+    background: rgba(255, 255, 255, 0.02);
     border-left: 3px solid var(--border-color);
+    border-radius: 0 8px 8px 0;
     padding: 8px 10px;
     font-size: 0.8rem;
     display: flex;
@@ -382,15 +390,15 @@
 }
 
 .analysis-pane .timeline-entry.bullish {
-    border-left-color: var(--text-main);
+    border-left-color: var(--green-color);
 }
 
 .analysis-pane .timeline-entry.bearish {
-    border-left-color: #f30;
+    border-left-color: var(--red-color);
 }
 
 .analysis-pane .timeline-entry.neutral {
-    border-left-color: #fc0;
+    border-left-color: var(--primary-color);
 }
 
 .analysis-pane .timeline-entry.superseded {
@@ -402,24 +410,25 @@
     display: flex;
     justify-content: space-between;
     font-size: 0.7rem;
-    color: var(--text-muted);
+    color: var(--muted-text);
 }
 
 .analysis-pane .timeline-claim {
-    color: var(--ink);
+    color: var(--text-color);
     line-height: 1.3;
 }
 
 .analysis-pane .timeline-source {
     font-size: 0.7rem;
-    color: var(--text-muted);
+    color: var(--muted-text);
     text-decoration: underline;
 }
 
 /* Falsifiable Predictions */
 .analysis-pane .prediction-box {
-    background: rgba(0, 15, 0, 0.7);
-    border: 1px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
     padding: 12px;
     display: flex;
     flex-direction: column;
@@ -444,32 +453,33 @@
 }
 
 .analysis-pane .status-pending {
-    background: rgba(0, 100, 200, 0.2);
-    border: 1px solid #4af;
-    color: #8cf;
+    background: rgba(100, 181, 246, 0.12);
+    border: 1px solid var(--blue-color);
+    color: var(--blue-color);
 }
 
 .analysis-pane .status-resolved {
-    background: rgba(0, 255, 65, 0.2);
-    border: 1px solid var(--text-main);
-    color: var(--text-main);
+    background: rgba(52, 168, 83, 0.12);
+    border: 1px solid var(--green-color);
+    color: var(--green-color);
 }
 
 .analysis-pane .prediction-stale-badge {
     font-size: 0.7rem;
     padding: 2px 6px;
     border-radius: 2px;
-    background: rgba(255, 80, 80, 0.2);
-    border: 1px solid #f66;
-    color: #f88;
+    background: rgba(234, 67, 53, 0.12);
+    border: 1px solid var(--red-color);
+    color: var(--red-color);
     text-transform: uppercase;
     font-weight: 600;
 }
 
 /* Decision Journal */
 .analysis-pane .decision-box {
-    background: rgba(0, 15, 0, 0.7);
-    border: 1px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
     padding: 12px;
     font-size: 0.8rem;
     display: flex;
@@ -479,13 +489,14 @@
 
 .analysis-pane .decision-action {
     font-weight: 700;
-    color: var(--text-main);
+    color: var(--primary-color);
 }
 
 /* What-If Sandbox Container */
 .analysis-pane .sandbox-card {
-    background: rgba(15, 20, 0, 0.7);
-    border: 1px dashed #fa0;
+    background: rgba(240, 185, 11, 0.06);
+    border: 1px dashed var(--primary-color);
+    border-radius: 12px;
     padding: 14px;
     display: flex;
     flex-direction: column;
@@ -495,6 +506,6 @@
 .analysis-pane .sandbox-tag {
     font-size: 0.7rem;
     text-transform: uppercase;
-    color: #fa0;
+    color: var(--primary-color);
     letter-spacing: 1px;
 }
