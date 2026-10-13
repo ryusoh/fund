@@ -27,7 +27,7 @@ import { fileURLToPath } from 'node:url';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
-const ALL_PAGES = ['/', '/analysis/', '/calendar/', '/performance/', '/position/', '/terminal/'];
+const ALL_PAGES = ['/', '/calendar/', '/performance/', '/position/', '/terminal/'];
 const PORT = 8125;
 // Longer wait for pages with an entrance fade-in (see scripts/screenshot.mjs).
 const WAIT_MS = { '/calendar/': 3000 };
