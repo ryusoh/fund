@@ -187,6 +187,10 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
         if (tableContainer) {
             tableContainer.classList.add('is-hidden');
         }
+        const analysisSection = document.getElementById('analysisSection');
+        if (analysisSection) {
+            analysisSection.classList.add('is-hidden');
+        }
     };
 
     const buildCompositionResultMsg = (baseChartKey, useAbsolute, dateRange, typeName) => {
@@ -346,6 +350,10 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
             }
             if (tableContainer) {
                 tableContainer.classList.add('is-hidden');
+            }
+            const analysisSection = document.getElementById('analysisSection');
+            if (analysisSection) {
+                analysisSection.classList.add('is-hidden');
             }
 
             let result = handler.getBaseMsg(dateRange);
