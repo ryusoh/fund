@@ -217,6 +217,20 @@ Rejected alternatives:
 - Inline HTML in `#terminalOutput` — breaks the `<pre>`-only model and the fade
   logic in `js/transactions/fade.js`.
 - Split pane — `zoom.js` and the mobile layout assume a two-pane column.
+- **Reusing the chart pane** (`#runningAmountSection`) as a generic display
+  surface holding both the canvas and analysis DOM. Rejected because: (1) the
+  pane has an owner — `chartManager.update()` redraws it on zoom, currency,
+  resize, and every `plot` command, so foreign DOM inside it is either
+  clobbered or forces `chartManager` to know about alien content; (2) the
+  bookkeeping cost is identical to a third pane (reset/clear must still hide
+  analysis content, `zoom.js` must still measure variable-height analysis DOM)
+  but takes an invasive shape — an `activeChart` vs `activeAnalysisView` mode
+  axis threaded through existing chart logic — instead of the additive
+  `.is-hidden` pattern; (3) `transactionState.activeChart` is the single
+  source of truth for pane contents (`isActiveChartVisible()`, mobile
+  controls, zoom all read it) — reuse means overloading it with
+  pseudo-chart-keys or adding a parallel state field every consumer must
+  check in combination.
 
 ### Lazy-loading strategy
 
