@@ -310,3 +310,502 @@ controls the vars.
    of the `../docs/thesis/<SYM>.md` markdown fetch (`lab.js:155-172`) into
    `data/analysis/<SYM>.json` at generation time, so the frontend consumes a
    data contract instead of parsing markdown.
+
+## Action items
+
+### Preamble — rules for the implementer
+
+- One work order per change, executed in order. **Commit after each item,
+  never push.**
+- `Find` strings are exact unique anchors verified against current file
+  contents. If a `Find` string does not match exactly, **STOP and report** —
+  do not improvise. Line numbers are dated and may drift; trust the anchor
+  text, not the number.
+- Run the **Verify** command(s) after each item before moving on.
+- Never edit anything under `data/`. Never run repo-wide formatters
+  (`npm run format`); format only files you touched
+  (`npx prettier --write <file>`).
+- Items tagged `[skip]` need design judgment and/or new tests — route them to
+  a stronger model rather than flailing.
+- Before opening a PR: `make precommit-fix` must be green, and new executable
+  lines need ≥90% diff coverage.
+
+### Work orders
+
+**1. `[skip]` Refactor `js/pages/analysis/lab.js` to an explicit init API**
+
+- **File:** `js/pages/analysis/lab.js`
+- **Find:** the module-eval side-effect block:
+
+    ```js
+    if (typeof window !== 'undefined' && !window.__SKIP_ANALYSIS_AUTO_INIT__) {
+        init();
+    }
+    ```
+
+- **Change:** Export `initAnalysisPane(rootEl)`. Move all module-level DOM
+  lookups (lines 6–24) and the `new Worker(...)` construction (line 34) inside
+  it; scope element lookups to `rootEl` (no global `getElementById`); build
+  each lab card as a block carrying `data-analysis-section="overview"`,
+  `"kelly"`, `"mc"`, `"belief"`, `"evidence"`, `"predictions"`, `"journal"`
+  (overview = summary stats + scenario cards + value bands). Delete the
+  auto-init block and the `alert()` call in `init()` (line 2008) — render
+  errors as pane-local text instead. Keep the `__analysisLabTesting` export
+  surface intact. Update `tests/js/pages/analysis/lab*.test.js` to the new
+  init API (they currently rely on `__SKIP_ANALYSIS_AUTO_INIT__`).
+- **Verify:** `npx jest tests/js/pages/analysis`
+- **Guardrail:** construct the Worker lazily on first Monte Carlo run — a
+  Worker spawned at import time on the terminal page runs even when the
+  analysis pane is never opened.
+
+**2. `[trivial]` Add the analysis pane shell to the terminal page**
+
+- **File:** `terminal/index.html`
+- **Find:**
+
+    ```html
+    <link rel="stylesheet" href="../css/terminal/responsive.css" />
+    ```
+
+- **Change:** insert immediately after it:
+
+    ```html
+    <link rel="stylesheet" href="../css/terminal/analysis.css" />
+    ```
+
+- **Find:**
+
+    ```html
+                    <div class="chart-legend"></div>
+                </section>
+    ```
+
+- **Change:** append immediately after:
+
+    ```html
+    <section
+        id="analysisSection"
+        class="chart-card analysis-pane is-hidden"
+        aria-labelledby="analysisTitle"
+    >
+        <h2 id="analysisTitle" class="sr-only">Analysis Lab</h2>
+    </section>
+    ```
+
+- **Verify:** `node scripts/page_smoke.mjs /terminal/` (needs
+  `make ensure-playwright` once)
+- **Guardrail:** do NOT copy card markup from `analysis/index.html` — the pane
+  blocks are built by `initAnalysisPane` (item 1). Keep `is-hidden`.
+
+**3. `[visual]` Create the scoped stylesheet `css/terminal/analysis.css`**
+
+- **File:** `css/terminal/analysis.css` (new)
+- **Change:** transform `css/analysis-proto.css`: prefix every selector with
+  `.analysis-pane`; move the `:root` palette vars (analysis-proto.css:1–27)
+  onto `.analysis-pane`; DELETE the `* { box-sizing }` (line 29), `body`
+  (line 33), `button` variants (333–375), fixed `#holo-bg` (44) and fixed
+  `.top-nav` rules. Flatten the two-column `.output-grid` to a single-column
+  stack. The inline `var(--border-thin)` / `var(--text-muted)` /
+  `var(--accent)` / `var(--ink)` references in lab.js markup then resolve from
+  the pane root.
+- **Verify:** `npx stylelint css/terminal/analysis.css`
+- **Guardrail:** visual — a human must review the rendered pane afterwards
+  (`make serve`, `/terminal/`, run `analysis`). Do not claim it looks right.
+
+**4. `[skip]` New handler `js/transactions/terminal/handlers/analysis.js`**
+
+- **File:** `js/transactions/terminal/handlers/analysis.js` (new) + new test
+  file `tests/js/transactions/terminal/handlers/analysis.test.js`
+- **Change:** implement the command grammar in Section D above:
+  `ANALYSIS_DISPATCH` subcommand map; lazy cached
+  `await import('@pages/analysis/lab.js')` (chart-renderer precedent,
+  `js/transactions/chart.js:39-48`); `showSection(func)` toggling
+  `data-analysis-section` blocks inside `#analysisSection`; ticker context
+  (`analysis <TICKER>`, default `PORT`); one-line snapshot to scrollback per
+  function via `appendMessage` (`plot` precedent,
+  `handlers/plot.js:230-236`); `analysis mc [paths]` posts to the lazy Worker
+  (default 10000 paths); `bull|bear|reset` call `BayesianEngine.update` /
+  `reset` on the active config; `close` hides the pane. Opening the pane must
+  hide `.table-responsive-container` and `#runningAmountSection` (the
+  `.is-hidden` exclusion pattern, viewUtils.js:19-28).
+- **Verify:** `npx jest tests/js/transactions/terminal/handlers/analysis.test.js`
+- **Guardrail:** new executable lines need ≥90% diff coverage — the test file
+  is part of this item, not optional. Do not confuse with
+  `js/transactions/terminal/stats/analysis.js` (existing concentration stats).
+
+**5. `[low]` Register the command in the dispatch map**
+
+- **File:** `js/transactions/terminal/commands.js`
+- **Find:** `import { handleStatsCommand } from './handlers/stats.js';`
+- **Change:** insert after it:
+  `import { handleAnalysisCommand } from './handlers/analysis.js';`
+- **Find:**
+
+    ```js
+        summary: handleSummaryCommand,
+    };
+    ```
+
+- **Change:**
+
+    ```js
+        summary: handleSummaryCommand,
+        analysis: handleAnalysisCommand,
+        an: handleAnalysisCommand,
+    };
+    ```
+
+- **Verify:** `npx jest tests/js/transactions`
+- **Guardrail:** `a` is already the `abs` alias — the analysis alias is `an`.
+
+**6. `[low]` Add autocomplete constants**
+
+- **File:** `js/transactions/terminal/constants.js`
+- **Find:**
+
+    ```js
+        'summary',
+        'beta',
+    ```
+
+- **Change:**
+
+    ```js
+        'summary',
+        'analysis',
+        'an',
+        'beta',
+    ```
+
+- **Find:** `export const HELP_SUBCOMMANDS = ['filter'];`
+- **Change:** append after it:
+
+    ```js
+    export const ANALYSIS_SUBCOMMANDS = [
+        'scenarios',
+        'value',
+        'kelly',
+        'belief',
+        'evidence',
+        'predictions',
+        'journal',
+        'mc',
+        'bull',
+        'bear',
+        'reset',
+        'close',
+    ];
+    ```
+
+- **Verify:**
+  `npx jest tests/js/transactions/autocomplete_completeness.test.js`
+- **Guardrail:** `reset` inside ANALYSIS_SUBCOMMANDS does not conflict with
+  the top-level `reset` command — the completeness test only cross-checks the
+  PLOT/STATS/HELP lists.
+
+**7. `[low]` Add the `analysis` branch to autocomplete**
+
+- **File:** `js/transactions/terminal/autocomplete.js`
+- **Find:**
+
+    ```js
+        HELP_SUBCOMMANDS,
+    } from './constants.js';
+    ```
+
+- **Change:**
+
+    ```js
+        HELP_SUBCOMMANDS,
+        ANALYSIS_SUBCOMMANDS,
+    } from './constants.js';
+    ```
+
+- **Find:** `function getSubcommandMatches(parts) {`
+- **Change:** insert before it:
+
+    ```js
+    function getAnalysisMatches(parts) {
+        const subPrefix = parts[1] ? parts[1].toLowerCase() : '';
+        return subPrefix
+            ? ANALYSIS_SUBCOMMANDS.filter((cmd) => cmd.startsWith(subPrefix))
+            : ANALYSIS_SUBCOMMANDS;
+    }
+    ```
+
+- **Find:**
+
+    ```js
+    if (parts[0] === 'help' || parts[0] === 'h') {
+        return getHelpMatches(parts);
+    }
+    return null;
+    ```
+
+- **Change:**
+
+    ```js
+    if (parts[0] === 'help' || parts[0] === 'h') {
+        return getHelpMatches(parts);
+    }
+    if (parts[0] === 'analysis' || parts[0] === 'an') {
+        return getAnalysisMatches(parts);
+    }
+    return null;
+    ```
+
+- **Find:**
+  `if (hasSpace && ['stats', 's', 'plot', 'p', 'help', 'h'].includes(parts[0])) {`
+- **Change:**
+  `if (hasSpace && ['stats', 's', 'plot', 'p', 'help', 'h', 'analysis', 'an'].includes(parts[0])) {`
+- **Verify:**
+  `npx jest tests/js/transactions/autocomplete_completeness.test.js`
+- **Guardrail:** ticker autocomplete after `analysis <TICKER>` is out of scope
+  — tickers are dynamic (from `data/analysis/index.json`); static subcommand
+  completion only.
+
+**8. `[low]` Add help text**
+
+- **File:** `js/transactions/terminal/handlers/help.js`
+- **Find:**
+
+    ```js
+                '  transaction (t)    - Toggle the transaction table visibility\n' +
+    ```
+
+- **Change:** insert before it:
+
+    ```js
+                '  analysis (an)      - Analysis lab: scenarios, Kelly sizing, Monte Carlo, beliefs\n' +
+                '                       Use "analysis" or "an"; optional ticker selects security context\n' +
+                '                       Subcommands: scenarios, value, kelly, belief, evidence,\n' +
+                '                                    predictions, journal, mc, bull, bear, reset, close\n' +
+                '                       Examples: analysis, an ANET, analysis kelly, analysis mc 20000\n' +
+    ```
+
+- **Verify:** `npx jest tests/js/transactions`
+
+**9. `[low]` Hide the analysis pane when the table is shown**
+
+- **File:** `js/transactions/terminal/viewUtils.js`
+- **Find:**
+
+    ```js
+        const plotSection = document.getElementById('runningAmountSection');
+        if (plotSection) {
+            plotSection.classList.add('is-hidden');
+        }
+    }
+    ```
+
+- **Change:**
+
+    ```js
+        const plotSection = document.getElementById('runningAmountSection');
+        if (plotSection) {
+            plotSection.classList.add('is-hidden');
+        }
+        const analysisSection = document.getElementById('analysisSection');
+        if (analysisSection) {
+            analysisSection.classList.add('is-hidden');
+        }
+    }
+    ```
+
+- **Verify:** `npx jest tests/js/transactions`
+
+**10. `[low]` Hide the analysis pane in `reset` and `clear`**
+
+- **File:** `js/transactions/terminal/handlers/misc.js`
+- **Find:**
+  `const resetPerformanceSection = document.getElementById('performanceSection');`
+- **Change:** insert after it:
+  `const resetAnalysisSection = document.getElementById('analysisSection');`
+- **Find:**
+
+    ```js
+    if (resetPerformanceSection) {
+        resetPerformanceSection.classList.add('is-hidden');
+    }
+    ```
+
+- **Change:** insert after it:
+
+    ```js
+    if (resetAnalysisSection) {
+        resetAnalysisSection.classList.add('is-hidden');
+    }
+    ```
+
+- **Find:**
+  `.querySelectorAll('.table-responsive-container, #runningAmountSection')`
+- **Change:**
+  `.querySelectorAll('.table-responsive-container, #runningAmountSection, #analysisSection')`
+- **Verify:** `npx jest tests/js/transactions`
+
+**11. `[low]` Hide the analysis pane when a chart is plotted**
+
+- **File:** `js/transactions/terminal/handlers/plot.js`
+- **Find:**
+
+    ```js
+            if (tableContainer) {
+                tableContainer.classList.add('is-hidden');
+            }
+        };
+    ```
+
+- **Change:**
+
+    ```js
+            if (tableContainer) {
+                tableContainer.classList.add('is-hidden');
+            }
+            const analysisSection = document.getElementById('analysisSection');
+            if (analysisSection) {
+                analysisSection.classList.add('is-hidden');
+            }
+        };
+    ```
+
+- **Find:**
+
+    ```js
+    if (tableContainer) {
+        tableContainer.classList.add('is-hidden');
+    }
+
+    let result = handler.getBaseMsg(dateRange);
+    ```
+
+- **Change:**
+
+    ```js
+    if (tableContainer) {
+        tableContainer.classList.add('is-hidden');
+    }
+    const analysisSection = document.getElementById('analysisSection');
+    if (analysisSection) {
+        analysisSection.classList.add('is-hidden');
+    }
+
+    let result = handler.getBaseMsg(dateRange);
+    ```
+
+- **Verify:** `npx jest tests/js/transactions`
+
+**12. `[low]` Teach zoom about the analysis pane**
+
+- **File:** `js/transactions/zoom.js`
+- **Find:**
+
+    ```js
+        if (chart && !chart.classList.contains('is-hidden')) {
+            // Method 1: Expand to chart bottom (primary goal)
+            targetBottom = chart.getBoundingClientRect().bottom;
+        } else if (table && !table.classList.contains('is-hidden')) {
+    ```
+
+- **Change:**
+
+    ```js
+        const analysisSection = document.getElementById('analysisSection');
+        if (chart && !chart.classList.contains('is-hidden')) {
+            // Method 1: Expand to chart bottom (primary goal)
+            targetBottom = chart.getBoundingClientRect().bottom;
+        } else if (analysisSection && !analysisSection.classList.contains('is-hidden')) {
+            targetBottom = analysisSection.getBoundingClientRect().bottom;
+        } else if (table && !table.classList.contains('is-hidden')) {
+    ```
+
+- **Change:** in `animateZoomIn` and `animateZoomOut`, add a fade block for
+  `#analysisSection` mirroring the existing `.table-responsive-container`
+  block exactly (same class `chart-zoomed-out`, same tween params).
+- **Verify:** `npx jest tests/js/transactions`
+- **Guardrail:** mirror the table's treatment _exactly_, including that
+  zoom-out never removes `chart-zoomed-out` from the table — do not "fix"
+  that asymmetry here; it is a separate concern.
+
+**13. `[low]` Add the pane to the glass targets**
+
+- **File:** `js/pages/terminal/index.js`
+- **Find:**
+
+    ```js
+            {
+                selector: '.table-responsive-container',
+    ```
+
+- **Change:** insert before it:
+
+    ```js
+            {
+                selector: '#analysisSection',
+                opts: {
+                    excludeHeader: false,
+                    refraction: {
+                        ...TABLE_GLASS_EFFECT.refraction,
+                        bezelWidth: 16,
+                        frost: 'blur(20px) saturate(1.7)',
+                        magnification: TERMINAL_GLASS_MAGNIFICATION,
+                    },
+                },
+            },
+    ```
+
+- **Verify:** `node scripts/page_smoke.mjs /terminal/`
+- **Guardrail:** `TableGlassEffect` uses `document.querySelector`
+  (first match only — `js/ui/tableGlassEffect.js:43`), so the existing
+  `.chart-card` entry does NOT cover the new pane; this explicit entry is
+  required, not redundant.
+
+**14. `[skip]` Wire the pane to `currencyChangedGlobal`**
+
+- **File:** `js/pages/analysis/lab.js` (and the handler from item 4)
+- **Change:** replace the hardcoded `$` formatters (`formatCurrency` /
+  `formatCompactCurrency`, lab.js:68–73) with currency-aware formatting:
+  convert USD values via `convertValueToCurrency`
+  (`js/transactions/utils.js`) using the latest FX rate for
+  `transactionState.selectedCurrency`, and re-render the active section on the
+  `currencyChangedGlobal` document event (listener precedent:
+  `js/pages/terminal/index.js:433-472`). Gate the first conversion on
+  `whenTransactionDataReady()` — FX rates load with the transaction data.
+- **Verify:** `npx jest tests/js/pages/analysis tests/js/transactions/terminal`
+- **Guardrail:** analysis prices are current USD snapshots, not dated series —
+  convert with the _latest_ rate, not a historical one.
+
+**15. `[trivial]` Delete the standalone analysis page**
+
+- **Files:** `analysis/index.html`, `css/analysis-proto.css`,
+  `js/pages/analysis/visuals.js`, `tests/js/pages/analysis/visuals.test.js`,
+  `scripts/page_smoke.mjs`
+- **Change:**
+  `git rm analysis/index.html css/analysis-proto.css js/pages/analysis/visuals.js tests/js/pages/analysis/visuals.test.js`
+- **File:** `scripts/page_smoke.mjs`
+- **Find:**
+
+    ```js
+    const ALL_PAGES = [
+        '/',
+        '/analysis/',
+        '/calendar/',
+        '/performance/',
+        '/position/',
+        '/terminal/',
+    ];
+    ```
+
+- **Change:**
+
+    ```js
+    const ALL_PAGES = ['/', '/calendar/', '/performance/', '/position/', '/terminal/'];
+    ```
+
+- **Verify:** `npx jest tests/js/pages/analysis` and
+  `node scripts/page_smoke.mjs`
+- **Guardrail:** run this LAST, only after the terminal pane works. Keep
+  `js/pages/analysis/lab.js`, `bayes.js`, `monte_carlo.worker.js` and their
+  tests (`bayes.test.js`, `lab*.test.js`, `monte_carlo.worker.test.js`).
+  `eslint-suppressions.json` references only
+  `js/transactions/terminal/stats/analysis.js` (unaffected) — do NOT touch
+  `eslint-suppressions.json`.
