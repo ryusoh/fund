@@ -99,6 +99,23 @@ python3 ~/dev/networking/tools/research/anki_generator.py --import --deck "金�
 `--auto-launch` starts Anki if it is not running. Import is deduped by
 normalized-front content hash, but never re-import the same file twice.
 
+### Revising an already-imported card
+
+Never hand-edit the note in Anki (the card would drift from its source doc)
+and never delete + re-import (loses scheduling). Edit the staged JSONL,
+re-run gates 2–3, then update the note in place:
+
+```bash
+python3 ~/dev/networking/tools/research/anki_generator.py --update --deck "金融" \
+    --cards /Users/lz/dev/fund/.agents/state/anki_cards.jsonl --auto-launch
+```
+
+`--update` matches each card to its coverage-ledger `note_id` and rewrites
+Front/Back/tags via AnkiConnect, preserving review history. Cards whose note
+was deleted in Anki are re-added; cards with no ledger entry are added as new;
+content-identical cards are skipped. Validator and density gates apply exactly
+as in `--import`.
+
 For a single ad-hoc card (no batch worth staging), the one-shot path is:
 
 ```bash
