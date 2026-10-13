@@ -158,12 +158,11 @@ enforces:
   (`AEHR`) and product names (`FOX`) are flagged as "unexpanded acronyms";
   write around them (该公司, or drop the product name). Genuinely new
   acronyms (`WLBI`, `PLBI`) must be expanded on first use — but acronyms
-  your deck already teaches are exempt via a cache
+  the 金融 deck already teaches are exempt via a cache
   (`research/.anki_deck_acronyms.json` in the networking repo, built by
-  `anki_deck_acronyms.py` from the collection dump: exempt = expanded
-  before anywhere in the collection, or ≥ 25 notes). `AI`, `GPU`, `HBM`
-  and ~1,700 others are exempt; rebuild the cache occasionally as the
-  deck grows.
+  `anki_deck_acronyms.py` scoped to the 金融 deck: exempt = expanded
+  before in the deck, or ≥ 25 notes). `AI`, `GPU`, `HBM` and ~1,500
+  others are exempt; rebuild the cache occasionally as the deck grows.
 - **Core concept names must carry an English anchor, but hyphenated terms are
   front-banned.** The front allows acronyms and single-token names only —
   `(WLBI)`, `(backlog)` pass; `(burn-in)` is rejected as multi-word (the
