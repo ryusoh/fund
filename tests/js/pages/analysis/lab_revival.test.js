@@ -1,8 +1,5 @@
 import { jest } from '@jest/globals';
 
-const FLAG = '__SKIP_ANALYSIS_AUTO_INIT__';
-global[FLAG] = true;
-
 global.Worker = class {
     constructor(stringUrl) {
         this.url = stringUrl;
@@ -12,31 +9,11 @@ global.Worker = class {
     terminate() {}
 };
 
-const domSetup = `
-    <div id="tickerList"></div>
-    <div id="summaryStats"></div>
-    <div id="scenarioResults"></div>
-    <div id="valueBands"></div>
-    <canvas id="kellyCurveCanvas" width="600" height="200"></canvas>
-    <div id="kellyMetrics"></div>
-    <div id="beliefStateCard"></div>
-    <div id="evidenceTimeline"></div>
-    <div id="predictionsCard"></div>
-    <div id="decisionJournalCard"></div>
-    <div id="bayesOutput"></div>
-    <button id="btnBayesBull"></button>
-    <button id="btnBayesBear"></button>
-    <button id="btnBayesReset"></button>
-    <button id="btnRunMonteCarlo"></button>
-    <div id="riskMetrics"></div>
-    <canvas id="monteCarloCanvas" width="600" height="200"></canvas>
-`;
-
 describe('Analysis Lab Revival (WO-7 & WO-9)', () => {
     let mockCtx;
 
     beforeEach(() => {
-        document.body.innerHTML = domSetup;
+        document.body.innerHTML = '';
         mockCtx = {
             clearRect: jest.fn(),
             fillRect: jest.fn(),
@@ -58,7 +35,16 @@ describe('Analysis Lab Revival (WO-7 & WO-9)', () => {
     afterEach(() => {
         jest.restoreAllMocks();
         jest.resetModules();
+        document.body.innerHTML = '';
     });
+
+    async function setupLab() {
+        const module = await import('@pages/analysis/lab.js');
+        const container = document.createElement('div');
+        document.body.appendChild(container);
+        await module.initAnalysisPane(container, { autoLoad: false });
+        return module;
+    }
 
     describe('Cross-Asset Covariance & Portfolio Kelly (WO-9)', () => {
         it('calibrates pairwise correlations across tech and market assets', async () => {
@@ -176,8 +162,7 @@ describe('Analysis Lab Revival (WO-7 & WO-9)', () => {
 
     describe('Kelly Curve Rendering (WO-7 Item 6)', () => {
         it('renders growth curve, reference points and badges without errors', async () => {
-            const { renderKellyCurve } = (await import('@pages/analysis/lab.js'))
-                .__analysisLabTesting;
+            const { renderKellyCurve } = (await setupLab()).__analysisLabTesting;
 
             const config = {
                 symbol: 'ANET',
@@ -208,8 +193,7 @@ describe('Analysis Lab Revival (WO-7 & WO-9)', () => {
 
     describe('Belief State Rendering (WO-7 Item 3)', () => {
         it('renders confidence, evidence for/against, and open questions', async () => {
-            const { renderBeliefState } = (await import('@pages/analysis/lab.js'))
-                .__analysisLabTesting;
+            const { renderBeliefState } = (await setupLab()).__analysisLabTesting;
 
             const config = {
                 symbol: 'ANET',
@@ -238,7 +222,7 @@ describe('Analysis Lab Revival (WO-7 & WO-9)', () => {
 
     describe('Evidence Timeline & Replay (WO-7 Item 2)', () => {
         it('loads evidence jsonl, replays Bayesian updates, and renders timeline entries', async () => {
-            const module = await import('@pages/analysis/lab.js');
+            const module = await setupLab();
             const { renderEvidenceTimeline, state } = module.__analysisLabTesting;
 
             const fakeJsonl = `
@@ -275,8 +259,7 @@ describe('Analysis Lab Revival (WO-7 & WO-9)', () => {
 
     describe('Falsifiable Predictions & Self-Scoring (WO-7 Item 4)', () => {
         it('renders predictions list and computes Brier score for resolved predictions', async () => {
-            const { renderPredictions } = (await import('@pages/analysis/lab.js'))
-                .__analysisLabTesting;
+            const { renderPredictions } = (await setupLab()).__analysisLabTesting;
 
             const config = {
                 predictions: [
@@ -310,9 +293,8 @@ describe('Analysis Lab Revival (WO-7 & WO-9)', () => {
         });
 
         it('renders stale-prediction badge when predictions are overdue and hides when zero stale', async () => {
-            const { renderPredictions, computeStalePredictions } = (
-                await import('@pages/analysis/lab.js')
-            ).__analysisLabTesting;
+            const { renderPredictions, computeStalePredictions } = (await setupLab())
+                .__analysisLabTesting;
 
             const testList = [
                 { id: 'stale1', target_date: '2025-01-01', resolved: false },
@@ -359,8 +341,7 @@ describe('Analysis Lab Revival (WO-7 & WO-9)', () => {
 
     describe('Decision Journal (WO-7 Item 7)', () => {
         it('renders latest logged action, situation, and alternatives rejected', async () => {
-            const { renderDecisionJournal } = (await import('@pages/analysis/lab.js'))
-                .__analysisLabTesting;
+            const { renderDecisionJournal } = (await setupLab()).__analysisLabTesting;
 
             const config = {
                 decision_journal: [
@@ -389,8 +370,7 @@ describe('Analysis Lab Revival (WO-7 & WO-9)', () => {
 
     describe('Monte Carlo Risk Visualization Upgrades (WO-7 Item 5)', () => {
         it('renders fan chart percentiles, 20% VaR tail, and metadata', async () => {
-            const { renderMonteCarloResults } = (await import('@pages/analysis/lab.js'))
-                .__analysisLabTesting;
+            const { renderMonteCarloResults } = (await setupLab()).__analysisLabTesting;
 
             const mockResult = {
                 mean: 250,

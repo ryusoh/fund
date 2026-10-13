@@ -1,28 +1,3 @@
-global.Worker = class {
-    constructor(stringUrl) {
-        this.url = stringUrl;
-        this.onmessage = () => {};
-    }
-    postMessage(msg) {
-        this.onmessage({ data: msg });
-    }
-};
-
-const FLAG = '__SKIP_ANALYSIS_AUTO_INIT__';
-global[FLAG] = true;
-
-// Mock the DOM elements expected by lab.js
-document.body.innerHTML = `
-    <div id="bayesOutput"></div>
-    <button id="btnBayesBull"></button>
-    <button id="btnBayesNeutral"></button>
-    <button id="btnBayesBear"></button>
-    <button id="btnBayesReset"></button>
-    <button id="btnRunMonteCarlo"></button>
-    <div id="riskMetrics"></div>
-    <canvas id="monteCarloCanvas"></canvas>
-`;
-
 const mockCtx = {
     clearRect: jest.fn(),
     fillRect: jest.fn(),
@@ -30,13 +5,30 @@ const mockCtx = {
 
 HTMLCanvasElement.prototype.getContext = jest.fn(() => mockCtx);
 
-const { __analysisLabTesting } = require('../../../../js/pages/analysis/lab.js');
+global.Worker = class {
+    constructor(stringUrl) {
+        this.url = stringUrl;
+        this.onmessage = () => {};
+        this.onerror = () => {};
+        this.postMessage = jest.fn();
+    }
+    terminate() {}
+};
 
-describe('lab.js DOM event coverage', () => {
-    let mockBayesEngine;
+describe('analysis lab pane controller', () => {
+    let lab;
+    let state;
 
-    beforeEach(() => {
-        mockBayesEngine = {
+    beforeEach(async () => {
+        jest.resetModules();
+        document.body.innerHTML = '';
+        lab = await import('@pages/analysis/lab.js');
+        const container = document.createElement('div');
+        document.body.appendChild(container);
+        await lab.initAnalysisPane(container, { autoLoad: false });
+
+        state = lab.__analysisLabTesting.state;
+        state.bayesEngine = {
             update: jest.fn(),
             reset: jest.fn(),
             priors: [
@@ -44,93 +36,114 @@ describe('lab.js DOM event coverage', () => {
                 { name: 'Bear', prob: 0.5 },
             ],
         };
-        __analysisLabTesting.state.bayesEngine = mockBayesEngine;
-        __analysisLabTesting.state.configs = [
+        state.configs = [
             {
                 symbol: 'TEST',
                 scenarios: [],
                 metrics: { price: 100, eps: 5, volatility: 0.2, horizon: 5 },
             },
         ];
-        __analysisLabTesting.state.activeSymbol = 'TEST';
+        state.activeSymbol = 'TEST';
     });
 
     afterEach(() => {
         jest.clearAllMocks();
+        document.body.innerHTML = '';
     });
 
-    it('btnBayesBull click updates engine and renders', () => {
-        const btn = document.getElementById('btnBayesBull');
-        btn.click();
-        expect(mockBayesEngine.update).toHaveBeenCalledWith('bullish', 0.6);
-        // Checking if render was called by verifying the DOM output
-        const output = document.getElementById('bayesOutput');
-        expect(output.textContent).toContain('Bull50.0%');
+    it('applyBayesSandbox bull updates the engine and renders posteriors', () => {
+        const priors = lab.applyBayesSandbox('bull');
+        expect(state.bayesEngine.update).toHaveBeenCalledWith('bullish', 0.6);
+        expect(priors).toEqual([
+            { name: 'Bull', prob: 0.5 },
+            { name: 'Bear', prob: 0.5 },
+        ]);
+        expect(document.getElementById('bayesOutput').textContent).toContain('Bull50.0%');
     });
 
-    it('btnBayesBear click updates engine and renders', () => {
-        const btn = document.getElementById('btnBayesBear');
-        btn.click();
-        expect(mockBayesEngine.update).toHaveBeenCalledWith('bearish', 0.6);
-        const output = document.getElementById('bayesOutput');
-        expect(output.textContent).toContain('Bear50.0%');
+    it('applyBayesSandbox bear updates the engine and renders posteriors', () => {
+        lab.applyBayesSandbox('bear');
+        expect(state.bayesEngine.update).toHaveBeenCalledWith('bearish', 0.6);
+        expect(document.getElementById('bayesOutput').textContent).toContain('Bear50.0%');
     });
 
-    it('btnBayesReset click resets engine and renders', () => {
-        const btn = document.getElementById('btnBayesReset');
-        btn.click();
-        expect(mockBayesEngine.reset).toHaveBeenCalledWith([]);
-        const output = document.getElementById('bayesOutput');
-        expect(output.textContent).toContain('Bull50.0%');
+    it('applyBayesSandbox reset resets the engine from the active config', () => {
+        lab.applyBayesSandbox('reset');
+        expect(state.bayesEngine.reset).toHaveBeenCalledWith([]);
+        expect(document.getElementById('bayesOutput').textContent).toContain('Bull50.0%');
     });
 
-    it('btnRunMonteCarlo click posts message to worker', () => {
-        const btn = document.getElementById('btnRunMonteCarlo');
-        const postMessageSpy = jest.spyOn(
-            __analysisLabTesting.state.monteCarloWorker,
-            'postMessage'
-        );
-
-        btn.click();
-
-        expect(btn.disabled).toBe(true);
-        expect(btn.textContent).toContain('Running...');
-        expect(postMessageSpy).toHaveBeenCalledWith(
-            expect.objectContaining({
-                type: 'RUN_SIMULATION',
-            })
-        );
+    it('applyBayesSandbox returns null for unknown actions or a missing engine', () => {
+        expect(lab.applyBayesSandbox('nope')).toBeNull();
+        state.bayesEngine = null;
+        expect(lab.applyBayesSandbox('bull')).toBeNull();
     });
 
-    it('monteCarloWorker onmessage renders monte carlo results', () => {
-        // Prepare DOM state
-        const riskMetricsEl = document.getElementById('riskMetrics');
-        const btnRunMonteCarlo = document.getElementById('btnRunMonteCarlo');
-        btnRunMonteCarlo.disabled = true;
+    it('runMonteCarloSimulation lazily creates the worker and posts the payload', async () => {
+        expect(state.monteCarloWorker).toBeNull();
 
-        // Trigger worker onmessage
-        const mockResult = {
-            mean: 120,
-            VaR_95: 10,
-            CVaR_95: 15,
-            histogram: { counts: [5, 15, 30] },
-        };
-        __analysisLabTesting.state.monteCarloWorker.onmessage({
-            data: { type: 'SIMULATION_COMPLETE', result: mockResult },
+        const promise = lab.runMonteCarloSimulation(5000);
+
+        expect(state.monteCarloWorker).not.toBeNull();
+        expect(state.monteCarloWorker.url).toContain('monte_carlo.worker.js');
+        expect(state.monteCarloWorker.postMessage).toHaveBeenCalledWith({
+            type: 'RUN_SIMULATION',
+            payload: expect.objectContaining({ paths: 5000, price: 100, eps: 5 }),
         });
 
-        // Assert button resets
-        expect(btnRunMonteCarlo.disabled).toBe(false);
-        expect(btnRunMonteCarlo.textContent).toContain('Run 10k Paths');
+        state.monteCarloWorker.onmessage({
+            data: {
+                type: 'SIMULATION_COMPLETE',
+                result: { mean: 120, VaR_95: 10, CVaR_95: 15, histogram: { counts: [5, 15, 30] } },
+            },
+        });
+        const result = await promise;
+        expect(result.mean).toBe(120);
 
-        // Assert DOM renders formatted strings
-        const textContent = riskMetricsEl.textContent;
+        const textContent = document.getElementById('riskMetrics').textContent;
         expect(textContent).toContain('Mean Terminal Price$120.00');
         expect(textContent).toContain('VaR (95%)$10.00');
         expect(textContent).toContain('CVaR (95%)$15.00');
-
-        // Assert canvas interactions
         expect(mockCtx.clearRect).toHaveBeenCalled();
-        expect(mockCtx.fillRect).toHaveBeenCalledTimes(3); // one for each count
+        expect(mockCtx.fillRect).toHaveBeenCalledTimes(3);
+    });
+
+    it('runMonteCarloSimulation renders worker-reported errors as pane text', async () => {
+        const promise = lab.runMonteCarloSimulation();
+        state.monteCarloWorker.onmessage({
+            data: { type: 'SIMULATION_COMPLETE', result: { error: 'boom' } },
+        });
+        expect(await promise).toBeNull();
+        expect(document.getElementById('riskMetrics').textContent).toContain('boom');
+    });
+
+    it('runMonteCarloSimulation resolves null without an active config', async () => {
+        state.configs = [];
+        await expect(lab.runMonteCarloSimulation()).resolves.toBeNull();
+        expect(state.monteCarloWorker).toBeNull();
+    });
+
+    it('showAnalysisSection toggles section visibility and state', () => {
+        lab.showAnalysisSection('kelly');
+        expect(state.activeSection).toBe('kelly');
+        const kelly = document.querySelector('[data-analysis-section="kelly"]');
+        const overview = document.querySelector('[data-analysis-section="overview"]');
+        expect(kelly.classList.contains('is-hidden')).toBe(false);
+        expect(overview.classList.contains('is-hidden')).toBe(true);
+
+        lab.showAnalysisSection('unknown-section');
+        expect(state.activeSection).toBe('overview');
+        expect(overview.classList.contains('is-hidden')).toBe(false);
+    });
+
+    it('setActiveAnalysisSymbol switches context and rejects unknown symbols', () => {
+        expect(lab.setActiveAnalysisSymbol('NOPE')).toBe(false);
+        expect(lab.setActiveAnalysisSymbol('TEST')).toBe(true);
+        expect(state.activeSymbol).toBe('TEST');
+    });
+
+    it('getAnalysisSymbols and getActiveAnalysisConfig expose the loaded context', () => {
+        expect(lab.getAnalysisSymbols()).toEqual(['TEST']);
+        expect(lab.getActiveAnalysisConfig().symbol).toBe('TEST');
     });
 });

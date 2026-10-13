@@ -3,38 +3,107 @@ import { compactNumber } from '../../utils/formatting.js';
 import { BayesianEngine } from './bayes.js';
 import { logger } from '../../utils/logger.js';
 
-const tickerListEl = document.getElementById('tickerList');
-const summaryStatsEl = document.getElementById('summaryStats');
-const scenarioResultsEl = document.getElementById('scenarioResults');
-const valueBandsEl = document.getElementById('valueBands');
-
-// New Elements
-const btnBayesBull = document.getElementById('btnBayesBull');
-const btnBayesBear = document.getElementById('btnBayesBear');
-const btnBayesReset = document.getElementById('btnBayesReset');
-const bayesOutput = document.getElementById('bayesOutput');
-const btnRunMonteCarlo = document.getElementById('btnRunMonteCarlo');
-const monteCarloCanvas = document.getElementById('monteCarloCanvas');
-const riskMetricsEl = document.getElementById('riskMetrics');
-const kellyCurveCanvas = document.getElementById('kellyCurveCanvas');
-const kellyMetricsEl = document.getElementById('kellyMetrics');
-const beliefStateCardEl = document.getElementById('beliefStateCard');
-const evidenceTimelineEl = document.getElementById('evidenceTimeline');
-const predictionsCardEl = document.getElementById('predictionsCard');
-const decisionJournalCardEl = document.getElementById('decisionJournalCard');
+// Element references are resolved by initAnalysisPane() — importing this
+// module must be side-effect free so the terminal can lazy-load it.
+let paneRoot = null;
+let tickerListEl = null;
+let summaryStatsEl = null;
+let scenarioResultsEl = null;
+let valueBandsEl = null;
+let bayesOutput = null;
+let monteCarloCanvas = null;
+let riskMetricsEl = null;
+let kellyCurveCanvas = null;
+let kellyMetricsEl = null;
+let beliefStateCardEl = null;
+let evidenceTimelineEl = null;
+let predictionsCardEl = null;
+let decisionJournalCardEl = null;
 
 const state = {
     configs: [],
     activeSymbol: null,
+    activeSection: 'overview',
     bayesEngine: null,
     evidenceCache: new Map(),
-    // Module worker: the worker file uses ESM `export` (imported by its jest
-    // test), which a classic worker cannot parse — it dies with a silent
-    // "Unexpected token 'export'" pageerror and Monte Carlo never runs.
-    monteCarloWorker: new Worker('../js/pages/analysis/monte_carlo.worker.js', { type: 'module' }),
+    // Created lazily on the first Monte Carlo run — spawning the module
+    // worker at import time would run it even when the pane never opens.
+    monteCarloWorker: null,
 };
 const DATA_CACHE_BUST = Date.now().toString();
 const thesisTitleCache = new Map();
+
+const WORKER_URL = '../js/pages/analysis/monte_carlo.worker.js';
+
+const ANALYSIS_SECTIONS = [
+    'overview',
+    'kelly',
+    'mc',
+    'belief',
+    'evidence',
+    'predictions',
+    'journal',
+];
+
+const PANE_MARKUP = `
+    <div class="ticker-list" id="tickerList" tabindex="0"></div>
+    <div class="analysis-stage">
+        <div class="output-grid">
+            <section data-analysis-section="overview">
+                <div class="summary-stats" id="summaryStats" tabindex="0"></div>
+                <div class="scenario-block">
+                    <div class="block-header"><h3>Scenario Analysis</h3></div>
+                    <div id="scenarioResults" class="card-row"></div>
+                </div>
+                <div class="value-card">
+                    <h3>Valuation</h3>
+                    <dl id="valueBands"></dl>
+                </div>
+            </section>
+            <section data-analysis-section="kelly">
+                <div class="kelly-card">
+                    <div class="block-header"><h3>Kelly Criterion Position Sizing</h3></div>
+                    <canvas id="kellyCurveCanvas" width="600" height="200"></canvas>
+                    <div id="kellyMetrics" class="badge-row"></div>
+                </div>
+            </section>
+            <section data-analysis-section="mc">
+                <div class="risk-sim">
+                    <div class="block-header"><h3>Monte Carlo Risk Simulation</h3></div>
+                    <div id="riskMetrics" class="card-row"></div>
+                    <canvas id="monteCarloCanvas" width="600" height="200"></canvas>
+                </div>
+            </section>
+            <section data-analysis-section="belief">
+                <div class="block-header"><h3>Belief State</h3></div>
+                <div class="belief-card" id="beliefStateCard"></div>
+                <div class="sandbox-card">
+                    <span class="sandbox-tag">What-If Sandbox — analysis bull|bear|reset</span>
+                    <div id="bayesOutput"></div>
+                </div>
+            </section>
+            <section data-analysis-section="evidence">
+                <div class="block-header" id="evidenceTimelineHeader">
+                    <h3>Verified Evidence Log (.jsonl)</h3>
+                </div>
+                <div id="evidenceTimeline" class="timeline-container" tabindex="0"></div>
+            </section>
+            <section data-analysis-section="predictions">
+                <div class="prediction-box" id="predictionsCard"></div>
+            </section>
+            <section data-analysis-section="journal">
+                <div class="decision-box" id="decisionJournalCard"></div>
+            </section>
+        </div>
+    </div>
+`;
+
+function getMonteCarloWorker() {
+    if (!state.monteCarloWorker) {
+        state.monteCarloWorker = new Worker(WORKER_URL, { type: 'module' });
+    }
+    return state.monteCarloWorker;
+}
 
 export async function fetchJson(path) {
     const url = new URL(path, window.location.href);
@@ -576,6 +645,9 @@ function renderSummary(config) {
 }
 
 function renderScenarioCards(config) {
+    if (!scenarioResultsEl) {
+        return;
+    }
     const outcomes = (config.metrics && config.metrics.outcomes) || [];
     scenarioResultsEl.replaceChildren();
     const sharesOutstanding =
@@ -614,6 +686,9 @@ function renderScenarioCards(config) {
 }
 
 function renderValueBands(config) {
+    if (!valueBandsEl) {
+        return;
+    }
     const preferences = getPreferences(config);
     const targetCagrRaw = Number(preferences.targetCagr ?? 0.1);
     const targetCagr = Number.isFinite(targetCagrRaw) ? targetCagrRaw : 0.1;
@@ -1078,7 +1153,7 @@ async function renderEvidenceTimeline(config) {
     });
 
     const headerEl =
-        document.getElementById('evidenceTimelineHeader') ||
+        (paneRoot && paneRoot.querySelector('#evidenceTimelineHeader')) ||
         (evidenceTimelineEl.previousElementSibling &&
         evidenceTimelineEl.previousElementSibling.classList.contains('block-header')
             ? evidenceTimelineEl.previousElementSibling
@@ -1375,7 +1450,7 @@ function renderActiveTicker() {
 // --- Bayesian Handlers ---
 
 function renderBayesOutput() {
-    if (!state.bayesEngine) {
+    if (!state.bayesEngine || !bayesOutput) {
         return;
     }
     const priors = state.bayesEngine.priors;
@@ -1400,78 +1475,77 @@ function renderBayesOutput() {
     bayesOutput.replaceChildren(...elements);
 }
 
-btnBayesBull.addEventListener('click', () => {
-    if (state.bayesEngine) {
+// --- Bayesian Sandbox ---
+
+export function applyBayesSandbox(action) {
+    if (!state.bayesEngine) {
+        return null;
+    }
+    if (action === 'bull') {
         state.bayesEngine.update('bullish', 0.6);
-        renderBayesOutput();
-    }
-});
-
-btnBayesBear.addEventListener('click', () => {
-    if (state.bayesEngine) {
+    } else if (action === 'bear') {
         state.bayesEngine.update('bearish', 0.6);
-        renderBayesOutput();
-    }
-});
-
-btnBayesReset.addEventListener('click', () => {
-    const config = state.configs.find((cfg) => cfg.symbol === state.activeSymbol);
-    if (config && state.bayesEngine) {
-        state.bayesEngine.reset(config.scenarios);
-        renderBayesOutput();
-    }
-});
-
-// --- Monte Carlo Handlers ---
-
-btnRunMonteCarlo.addEventListener('click', () => {
-    const config = state.configs.find((cfg) => cfg.symbol === state.activeSymbol);
-    if (!config) {
-        return;
-    }
-
-    const icon = document.createElement('i');
-    icon.className = 'fa fa-spinner fa-spin';
-    icon.setAttribute('aria-hidden', 'true');
-    btnRunMonteCarlo.replaceChildren(icon, document.createTextNode(' Running...'));
-    btnRunMonteCarlo.disabled = true;
-    btnRunMonteCarlo.setAttribute('aria-busy', 'true');
-
-    state.monteCarloWorker.postMessage({
-        type: 'RUN_SIMULATION',
-        payload: {
-            price: config.metrics.price,
-            eps: config.metrics.eps,
-            scenarios: config.scenarios,
-            volatility: config.metrics.volatility,
-            horizon: config.metrics.horizon,
-            paths: 10000,
-        },
-    });
-});
-
-state.monteCarloWorker.onmessage = function (e) {
-    const { type, result } = e.data;
-    if (type === 'SIMULATION_COMPLETE') {
-        if (result && result.error) {
-            riskMetricsEl.replaceChildren(document.createTextNode(result.error));
-        } else {
-            renderMonteCarloResults(result);
+    } else if (action === 'reset') {
+        const config = state.configs.find((cfg) => cfg.symbol === state.activeSymbol);
+        if (!config) {
+            return null;
         }
-        btnRunMonteCarlo.textContent = 'Run 10k Paths';
-        btnRunMonteCarlo.disabled = false;
-        btnRunMonteCarlo.removeAttribute('aria-busy');
+        state.bayesEngine.reset(config.scenarios);
+    } else {
+        return null;
     }
-};
+    renderBayesOutput();
+    return state.bayesEngine.priors.map((p) => ({ name: p.name, prob: p.prob }));
+}
 
-state.monteCarloWorker.onerror = function () {
-    riskMetricsEl.replaceChildren(
-        document.createTextNode('Monte Carlo simulation failed; see console for details.')
-    );
-    btnRunMonteCarlo.textContent = 'Run 10k Paths';
-    btnRunMonteCarlo.disabled = false;
-    btnRunMonteCarlo.removeAttribute('aria-busy');
-};
+// --- Monte Carlo ---
+
+export function runMonteCarloSimulation(paths = 10000) {
+    const config = state.configs.find((cfg) => cfg.symbol === state.activeSymbol);
+    if (!config || !config.metrics) {
+        return Promise.resolve(null);
+    }
+
+    const worker = getMonteCarloWorker();
+    return new Promise((resolve) => {
+        worker.onmessage = function (e) {
+            const { type, result } = e.data;
+            if (type !== 'SIMULATION_COMPLETE') {
+                return;
+            }
+            if (result && result.error) {
+                if (riskMetricsEl) {
+                    riskMetricsEl.replaceChildren(document.createTextNode(result.error));
+                }
+                resolve(null);
+                return;
+            }
+            renderMonteCarloResults(result);
+            resolve(result);
+        };
+        worker.onerror = function () {
+            if (riskMetricsEl) {
+                riskMetricsEl.replaceChildren(
+                    document.createTextNode(
+                        'Monte Carlo simulation failed; see console for details.'
+                    )
+                );
+            }
+            resolve(null);
+        };
+        worker.postMessage({
+            type: 'RUN_SIMULATION',
+            payload: {
+                price: config.metrics.price,
+                eps: config.metrics.eps,
+                scenarios: config.scenarios,
+                volatility: config.metrics.volatility,
+                horizon: config.metrics.horizon,
+                paths,
+            },
+        });
+    });
+}
 
 function _renderMonteCarloMetrics(result, riskMetricsEl) {
     riskMetricsEl.replaceChildren();
@@ -1965,52 +2039,89 @@ async function buildConfigs() {
     state.activeSymbol = ordered.length ? ordered[0].symbol : null;
 }
 
-async function init() {
+function buildPaneDom(rootEl) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'lab-container';
+    // Static markup only — no interpolated data.
+    wrapper.innerHTML = PANE_MARKUP;
+    rootEl.appendChild(wrapper);
+}
+
+function resolvePaneElements(rootEl) {
+    paneRoot = rootEl;
+    tickerListEl = rootEl.querySelector('#tickerList');
+    summaryStatsEl = rootEl.querySelector('#summaryStats');
+    scenarioResultsEl = rootEl.querySelector('#scenarioResults');
+    valueBandsEl = rootEl.querySelector('#valueBands');
+    bayesOutput = rootEl.querySelector('#bayesOutput');
+    monteCarloCanvas = rootEl.querySelector('#monteCarloCanvas');
+    riskMetricsEl = rootEl.querySelector('#riskMetrics');
+    kellyCurveCanvas = rootEl.querySelector('#kellyCurveCanvas');
+    kellyMetricsEl = rootEl.querySelector('#kellyMetrics');
+    beliefStateCardEl = rootEl.querySelector('#beliefStateCard');
+    evidenceTimelineEl = rootEl.querySelector('#evidenceTimeline');
+    predictionsCardEl = rootEl.querySelector('#predictionsCard');
+    decisionJournalCardEl = rootEl.querySelector('#decisionJournalCard');
+}
+
+export function showAnalysisSection(name) {
+    const target = ANALYSIS_SECTIONS.includes(name) ? name : 'overview';
+    state.activeSection = target;
+    if (!paneRoot) {
+        return;
+    }
+    paneRoot.querySelectorAll('[data-analysis-section]').forEach((section) => {
+        section.classList.toggle('is-hidden', section.dataset.analysisSection !== target);
+    });
+}
+
+export function setActiveAnalysisSymbol(symbol) {
+    const config = state.configs.find((cfg) => cfg.symbol === symbol);
+    if (!config) {
+        return false;
+    }
+    state.activeSymbol = config.symbol;
+    renderTickerList();
+    renderActiveTicker();
+    return true;
+}
+
+export function getAnalysisSymbols() {
+    return state.configs.map((cfg) => cfg.symbol);
+}
+
+export function getActiveAnalysisConfig() {
+    return state.configs.find((cfg) => cfg.symbol === state.activeSymbol) || null;
+}
+
+export async function initAnalysisPane(rootEl, { autoLoad = true } = {}) {
+    buildPaneDom(rootEl);
+    resolvePaneElements(rootEl);
+    showAnalysisSection(state.activeSection);
+    if (!autoLoad) {
+        return;
+    }
     try {
         if (summaryStatsEl) {
             const loadingDiv = document.createElement('div');
             loadingDiv.style.color = 'white';
             loadingDiv.style.padding = '10px';
             loadingDiv.textContent = 'Loading...';
-            if (typeof summaryStatsEl.replaceChildren === 'function') {
-                summaryStatsEl.replaceChildren(loadingDiv);
-            } else if (typeof summaryStatsEl.appendChild === 'function') {
-                summaryStatsEl.textContent = '';
-                summaryStatsEl.appendChild(loadingDiv);
-            } else {
-                summaryStatsEl.textContent = '';
-                summaryStatsEl.appendChild(loadingDiv);
-            }
+            summaryStatsEl.replaceChildren(loadingDiv);
         }
         await buildConfigs();
         renderTickerList();
         renderActiveTicker();
     } catch (err) {
-        // eslint-disable-next-line no-console
-        console.error(err);
+        logger.error('Analysis init failed:', err);
         if (summaryStatsEl) {
             const errDiv = document.createElement('div');
             errDiv.style.color = 'red';
             errDiv.style.padding = '10px';
             errDiv.textContent = `Error: ${err.message}`;
-            if (typeof summaryStatsEl.replaceChildren === 'function') {
-                summaryStatsEl.replaceChildren(errDiv);
-            } else if (typeof summaryStatsEl.appendChild === 'function') {
-                summaryStatsEl.textContent = '';
-                summaryStatsEl.appendChild(errDiv);
-            } else {
-                summaryStatsEl.textContent = '';
-                summaryStatsEl.appendChild(errDiv);
-            }
+            summaryStatsEl.replaceChildren(errDiv);
         }
-
-        // eslint-disable-next-line no-undef
-        alert(`Analysis Init Error: ${err.message}`);
     }
-}
-
-if (typeof window !== 'undefined' && !window.__SKIP_ANALYSIS_AUTO_INIT__) {
-    init();
 }
 
 export const __analysisLabTesting = {

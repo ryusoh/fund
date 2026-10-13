@@ -1,10 +1,8 @@
 describe('analysis lab data loading', () => {
     const ORIGINAL_FETCH = global.fetch;
-    const FLAG = '__SKIP_ANALYSIS_AUTO_INIT__';
 
     beforeEach(() => {
         jest.resetModules();
-        delete global[FLAG];
         global.fetch = ORIGINAL_FETCH;
         global.Worker = class {
             constructor(stringUrl) {
@@ -14,30 +12,24 @@ describe('analysis lab data loading', () => {
             postMessage() {}
             terminate() {}
         };
-
-        // Mock DOM elements required by lab.js
-        document.body.innerHTML = `
-            <div id="tickerList"></div>
-            <div id="summaryStats"></div>
-            <div id="scenarioResults"></div>
-            <div id="valueBands"></div>
-            <button id="btnBayesBull"></button>
-            <button id="btnBayesBear"></button>
-            <button id="btnBayesReset"></button>
-            <div id="bayesOutput"></div>
-            <button id="btnRunMonteCarlo"></button>
-            <canvas id="monteCarloCanvas"></canvas>
-            <div id="riskMetrics"></div>
-        `;
+        document.body.innerHTML = '';
     });
 
     afterEach(() => {
         jest.restoreAllMocks();
         jest.resetModules();
-        delete global[FLAG];
         global.fetch = ORIGINAL_FETCH;
         delete global.Worker;
+        document.body.innerHTML = '';
     });
+
+    async function setupPane(autoLoad = false) {
+        const module = await import('@pages/analysis/lab.js');
+        const container = document.createElement('div');
+        document.body.appendChild(container);
+        await module.initAnalysisPane(container, { autoLoad });
+        return { module, container };
+    }
 
     it('adds a cache-busting query param and disables caching for data fetches', async () => {
         const cacheBustValue = '1731900000000';
@@ -45,7 +37,6 @@ describe('analysis lab data loading', () => {
         const json = jest.fn().mockResolvedValue({ ok: true });
         const fetchMock = jest.fn().mockResolvedValue({ ok: true, json });
         global.fetch = fetchMock;
-        global[FLAG] = true;
 
         const { fetchJson } = await import('@pages/analysis/lab.js');
         await fetchJson('../data/analysis/ANET.json');
@@ -58,7 +49,6 @@ describe('analysis lab data loading', () => {
     });
 
     it('prefers precomputed earnings CAGR data for aggregated scenarios', async () => {
-        global[FLAG] = true;
         const module = await import('@pages/analysis/lab.js');
         const { computeScenarioOutcome } = module.__analysisLabTesting;
         const scenario = {
@@ -76,7 +66,6 @@ describe('analysis lab data loading', () => {
     });
 
     it('aggregates portfolio earnings CAGR as a weighted average', async () => {
-        global[FLAG] = true;
         const module = await import('@pages/analysis/lab.js');
         const { aggregateScenarios } = module.__analysisLabTesting;
         const configs = [
@@ -106,7 +95,6 @@ describe('analysis lab data loading', () => {
     describe('fetchText', () => {
         it('fetches text successfully', async () => {
             // Arrange
-            global[FLAG] = true;
             global.fetch = jest.fn().mockResolvedValue({
                 ok: true,
                 text: jest.fn().mockResolvedValue('markdown content'),
@@ -127,7 +115,6 @@ describe('analysis lab data loading', () => {
 
         it('throws error when fetch fails', async () => {
             // Arrange
-            global[FLAG] = true;
             global.fetch = jest.fn().mockResolvedValue({
                 ok: false,
             });
@@ -145,7 +132,6 @@ describe('analysis lab data loading', () => {
         let extractScenarioTitles;
 
         beforeEach(async () => {
-            global[FLAG] = true;
             const module = await import('@pages/analysis/lab.js');
             extractScenarioTitles = module.__analysisLabTesting.extractScenarioTitles;
         });
@@ -207,8 +193,7 @@ describe('analysis lab data loading', () => {
 
     describe('renderBayesOutput security', () => {
         it('safely renders scenario names without executing HTML (DOM XSS prevention)', async () => {
-            global[FLAG] = true;
-            const module = await import('@pages/analysis/lab.js');
+            const { module } = await setupPane();
             const { renderBayesOutput, state } = module.__analysisLabTesting;
 
             // Mock bayesEngine with malicious data
@@ -240,7 +225,6 @@ describe('analysis lab data loading', () => {
 
     describe('normalizeConfig', () => {
         it('normalizes a basic raw config correctly', async () => {
-            global[FLAG] = true;
             const module = await import('@pages/analysis/lab.js');
             const { normalizeConfig } = module.__analysisLabTesting;
             const raw = {
@@ -256,7 +240,6 @@ describe('analysis lab data loading', () => {
         });
 
         it('uses holdingDetails for fallback and calculates marketValue', async () => {
-            global[FLAG] = true;
             const module = await import('@pages/analysis/lab.js');
             const { normalizeConfig } = module.__analysisLabTesting;
             const raw = {
@@ -273,7 +256,6 @@ describe('analysis lab data loading', () => {
 
     describe('buildPortfolioConfig', () => {
         it('returns null for empty configs or zero total value', async () => {
-            global[FLAG] = true;
             const module = await import('@pages/analysis/lab.js');
             const { buildPortfolioConfig } = module.__analysisLabTesting;
             expect(buildPortfolioConfig([])).toBeNull();
@@ -283,7 +265,6 @@ describe('analysis lab data loading', () => {
         });
 
         it('builds portfolio config correctly for valid inputs', async () => {
-            global[FLAG] = true;
             const module = await import('@pages/analysis/lab.js');
             const { buildPortfolioConfig } = module.__analysisLabTesting;
 
@@ -331,53 +312,38 @@ describe('analysis lab data loading', () => {
             expect(getSharesOutstanding({ market: { marketCap: -1000, price: 10 } })).toBeNull();
             expect(getSharesOutstanding({})).toBeNull();
         });
+    });
 
-        it('handles window initialization with error', async () => {
-            const originalSkip = global.__SKIP_ANALYSIS_AUTO_INIT__;
-            delete global.__SKIP_ANALYSIS_AUTO_INIT__;
-            const originalAlert = global.alert;
-            global.alert = jest.fn();
-
-            document.body.innerHTML =
-                '<div id="summaryStats"></div><button id="btnBayesBull"></button><button id="btnBayesBear"></button><button id="btnBayesReset"></button><button id="btnRunMonteCarlo"></button>';
-            const originalFetch = global.fetch;
+    describe('initAnalysisPane', () => {
+        it('renders pane-local error text when initialization fails', async () => {
             global.fetch = jest.fn().mockRejectedValue(new Error('Network failure'));
 
-            const summaryStatsEl = document.getElementById('summaryStats');
-            summaryStatsEl.replaceChildren = undefined;
+            const { container } = await setupPane(true);
 
-            jest.isolateModules(() => {
-                require('../../../../js/pages/analysis/lab.js');
-            });
-
-            // Allow promises to resolve
-            await new Promise((resolve) => setTimeout(resolve, 10));
-
-            expect(global.alert).toHaveBeenCalled();
-            expect(summaryStatsEl.textContent).toContain('Network failure');
-
-            global.fetch = originalFetch;
-            global.alert = originalAlert;
-            global.__SKIP_ANALYSIS_AUTO_INIT__ = originalSkip;
+            expect(container.textContent).toContain('Network failure');
         });
 
-        it('handles window initialization with empty summaryStats', async () => {
-            const originalSkip = global.__SKIP_ANALYSIS_AUTO_INIT__;
-            delete global.__SKIP_ANALYSIS_AUTO_INIT__;
-
-            document.body.innerHTML =
-                '<button id="btnBayesBull"></button><button id="btnBayesBear"></button><button id="btnBayesReset"></button><button id="btnRunMonteCarlo"></button>';
-            const originalFetch = global.fetch;
+        it('renders the empty state when no tickers are available', async () => {
             global.fetch = jest.fn().mockResolvedValue({ ok: true, json: async () => ({}) });
 
-            jest.isolateModules(() => {
-                require('../../../../js/pages/analysis/lab.js');
-            });
+            const { container } = await setupPane(true);
 
-            await new Promise((resolve) => setTimeout(resolve, 10));
+            expect(container.textContent).toContain('No tickers loaded');
+        });
 
-            global.fetch = originalFetch;
-            global.__SKIP_ANALYSIS_AUTO_INIT__ = originalSkip;
+        it('does not construct the Monte Carlo worker at init time', async () => {
+            let workerConstructed = false;
+            global.Worker = class {
+                constructor() {
+                    workerConstructed = true;
+                }
+                postMessage() {}
+            };
+
+            const { module } = await setupPane();
+
+            expect(workerConstructed).toBe(false);
+            expect(module.__analysisLabTesting.state.monteCarloWorker).toBeNull();
         });
     });
 
@@ -451,40 +417,6 @@ describe('analysis lab data loading', () => {
             const result = normalizeConfig(raw);
             expect(result.model.version).toBe('1.0.0');
             expect(result.model.preferences.horizon).toBe(5);
-        });
-    });
-
-    describe('DOM manipulation fallback paths', () => {
-        it('handles replaceChildren missing and appends properly', async () => {
-            const originalSkip = global.__SKIP_ANALYSIS_AUTO_INIT__;
-            delete global.__SKIP_ANALYSIS_AUTO_INIT__;
-
-            document.body.innerHTML =
-                '<div id="summaryStats"></div><button id="btnBayesBull"></button><button id="btnBayesBear"></button><button id="btnBayesReset"></button><button id="btnRunMonteCarlo"></button>';
-            const summaryStatsEl = document.getElementById('summaryStats');
-
-            summaryStatsEl.replaceChildren = undefined;
-            // Provide a mock appendChild that won't throw
-            summaryStatsEl.appendChild = jest.fn();
-
-            const originalFetch = global.fetch;
-            global.fetch = jest.fn().mockRejectedValue(new Error('Test error'));
-
-            const originalConsoleError = console.error;
-            console.error = jest.fn();
-
-            jest.isolateModules(() => {
-                require('../../../../js/pages/analysis/lab.js');
-            });
-
-            await new Promise((resolve) => setTimeout(resolve, 50));
-
-            global.fetch = originalFetch;
-            console.error = originalConsoleError;
-            global.__SKIP_ANALYSIS_AUTO_INIT__ = originalSkip;
-
-            // First for loading state, then for error state
-            expect(summaryStatsEl.appendChild).toHaveBeenCalledTimes(2);
         });
     });
 });

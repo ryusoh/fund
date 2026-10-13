@@ -1,25 +1,7 @@
-const domSetup = `
-    <div id="tickerList"></div>
-    <div id="summaryStats"></div>
-    <div id="scenarioResults"></div>
-    <div id="valueBands"></div>
-    <div id="bayesOutput"></div>
-    <button id="btnBayesBull"></button>
-    <button id="btnBayesBear"></button>
-    <button id="btnBayesReset"></button>
-    <button id="btnRunMonteCarlo"></button>
-    <div id="riskMetrics"></div>
-    <canvas id="monteCarloCanvas"></canvas>
-    <div class="block-header" id="evidenceTimelineHeader"><h4>Verified Evidence Log (.jsonl)</h4></div>
-    <div id="evidenceTimeline"></div>
-`;
-
-describe('DOM render coverage explicitly testing internal render functions', () => {
-    let originalSkip, originalWorker, originalFetch, originalGetContext;
+describe('analysis lab pane rendering', () => {
+    let originalFetch, originalGetContext;
 
     beforeAll(() => {
-        originalSkip = global.__SKIP_ANALYSIS_AUTO_INIT__;
-        originalWorker = global.Worker;
         originalFetch = global.fetch;
         originalGetContext = HTMLCanvasElement.prototype.getContext;
 
@@ -35,17 +17,24 @@ describe('DOM render coverage explicitly testing internal render functions', () 
     });
 
     afterAll(() => {
-        global.__SKIP_ANALYSIS_AUTO_INIT__ = originalSkip;
-        global.Worker = originalWorker;
         global.fetch = originalFetch;
         HTMLCanvasElement.prototype.getContext = originalGetContext;
+        delete global.Worker;
     });
 
     beforeEach(() => {
-        document.body.innerHTML = domSetup;
-        delete global.__SKIP_ANALYSIS_AUTO_INIT__;
+        document.body.innerHTML = '';
         jest.resetModules();
     });
+
+    async function setupPane(fetchMock, { autoLoad = true } = {}) {
+        global.fetch = fetchMock;
+        const lab = await import('@pages/analysis/lab.js');
+        const container = document.createElement('div');
+        document.body.appendChild(container);
+        await lab.initAnalysisPane(container, { autoLoad });
+        return { lab, container };
+    }
 
     it('covers DOM rendering branches unconditionally and asserts UI states', async () => {
         const mockIndex = {
@@ -70,7 +59,7 @@ describe('DOM render coverage explicitly testing internal render functions', () 
             scenarios: [{ id: 'base', prob: 1, multiple: 2, earningsCagr: 0.1, priceCagr: 0.1 }],
         };
 
-        global.fetch = jest.fn((url) => {
+        const fetchMock = jest.fn((url) => {
             const u = url.toString();
             if (u.includes('index.json')) {
                 return Promise.resolve({ ok: true, json: async () => mockIndex });
@@ -90,13 +79,7 @@ describe('DOM render coverage explicitly testing internal render functions', () 
             return Promise.resolve({ ok: true, json: async () => ({}) });
         });
 
-        const lab = require('../../../../js/pages/analysis/lab.js');
-
-        await new Promise(process.nextTick);
-        await new Promise(process.nextTick);
-        await new Promise(process.nextTick);
-        await new Promise(process.nextTick);
-        await new Promise(process.nextTick);
+        const { lab } = await setupPane(fetchMock);
 
         const tickerList = document.getElementById('tickerList');
         expect(tickerList.children.length).toBeGreaterThan(0);
@@ -124,7 +107,7 @@ describe('DOM render coverage explicitly testing internal render functions', () 
         };
         const mockHoldings = {};
 
-        global.fetch = jest.fn((url) => {
+        const fetchMock = jest.fn((url) => {
             const u = url.toString();
             if (u.includes('index.json')) {
                 return Promise.resolve({ ok: true, json: async () => mockIndex });
@@ -135,53 +118,14 @@ describe('DOM render coverage explicitly testing internal render functions', () 
             return Promise.resolve({ ok: true, json: async () => ({}) });
         });
 
-        require('../../../../js/pages/analysis/lab.js');
-
-        await new Promise(process.nextTick);
-        await new Promise(process.nextTick);
-        await new Promise(process.nextTick);
+        await setupPane(fetchMock);
 
         expect(document.getElementById('tickerList').textContent).toContain('No tickers loaded');
     });
 
-    it('handles summaryStats fallback rendering when replaceChildren is missing', async () => {
-        const summaryStatsEl = document.getElementById('summaryStats');
-        summaryStatsEl.replaceChildren = undefined;
-        summaryStatsEl.appendChild = jest.fn();
-
-        const mockIndex = { tickers: [{ symbol: 'PORT', path: 'port.json' }] };
-        const mockPort = {
-            symbol: 'PORT',
-            name: 'Portfolio',
-            market: { price: 1000 },
-            scenarios: [],
-        };
-
-        global.fetch = jest.fn((url) => {
-            const u = url.toString();
-            if (u.includes('index.json')) {
-                return Promise.resolve({ ok: true, json: async () => mockIndex });
-            }
-            if (u.includes('port.json')) {
-                return Promise.resolve({ ok: true, json: async () => mockPort });
-            }
-            return Promise.resolve({ ok: true, json: async () => ({}) });
-        });
-
-        require('../../../../js/pages/analysis/lab.js');
-
-        await new Promise(process.nextTick);
-        await new Promise(process.nextTick);
-        await new Promise(process.nextTick);
-
-        expect(summaryStatsEl.appendChild).toHaveBeenCalled();
-        // Since replaceChildren is missing, the init fallback clears textContent then calls appendChild.
-        expect(summaryStatsEl.textContent).toBe('');
-    });
-
     it('renders evidence timeline marking superseded entries and displaying valid/superseded count', async () => {
-        const { renderEvidenceTimeline, state } =
-            require('../../../../js/pages/analysis/lab.js').__analysisLabTesting;
+        const { lab } = await setupPane(jest.fn(), { autoLoad: false });
+        const { renderEvidenceTimeline, state } = lab.__analysisLabTesting;
 
         const fakeEvidence = [
             {
