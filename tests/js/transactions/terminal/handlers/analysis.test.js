@@ -69,14 +69,14 @@ describe('handleAnalysisCommand', () => {
         );
     });
 
-    it('maps scenarios and value to the overview section', async () => {
+    it('maps scenarios and value to their own sections', async () => {
         labModule.getActiveAnalysisConfig.mockReturnValue({ symbol: 'PORT', metrics: null });
         await handleAnalysisCommand(['scenarios'], { appendMessage });
-        expect(labModule.showAnalysisSection).toHaveBeenCalledWith('overview');
+        expect(labModule.showAnalysisSection).toHaveBeenCalledWith('scenarios');
         expect(appendMessage).toHaveBeenCalledWith("Showing analysis 'scenarios'.");
 
         await handleAnalysisCommand(['value'], { appendMessage });
-        expect(labModule.showAnalysisSection).toHaveBeenCalledWith('overview');
+        expect(labModule.showAnalysisSection).toHaveBeenCalledWith('value');
         expect(appendMessage).toHaveBeenCalledWith("Showing analysis 'value'.");
     });
 

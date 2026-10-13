@@ -1,17 +1,16 @@
 /* Analysis lab pane, scoped for embedding in the terminal page.
-   Coherent with the terminal design language (css/terminal/base.css tokens):
-   light-gray text on dark glass, gold primary accent, semantic green/red/blue,
-   no matrix glow. The pane root is a .chart-card, so inner cards stay
-   translucent to let the liquid-glass backdrop read through. */
+   Minimalist by design: flat text on the .chart-card glass, hairline
+   dividers, small-caps muted labels, gold reserved for the active state.
+   One function code per screen — each section is small enough to stay
+   fully inside the pane; the stage scrolls internally as a safety net.
+   Aliases the lab markup references inline (var(--accent), var(--ink),
+   var(--border-thin), var(--text-muted)) resolve from this root. */
 
 .analysis-pane {
-    /* Aliases the lab markup references inline (var(--accent), var(--ink),
-       var(--border-thin), var(--text-muted)) resolve from this root. */
     --accent: var(--primary-color);
     --ink: var(--text-color);
     --border-thin: 1px solid var(--border-color);
 
-    /* Legacy matrix-named palette vars, re-pointed at terminal tokens. */
     --text-main: var(--text-color);
     --text-muted: var(--muted-text);
     --text-dim: rgba(139, 148, 158, 0.6);
@@ -20,44 +19,38 @@
     --accent-dim: var(--hover-bg);
     --accent-glow: rgba(240, 185, 11, 0.25);
     --border-color: rgba(109, 121, 155, 0.35);
-    --border-glow: rgba(255, 255, 255, 0.1);
+    --border-glow: rgba(255, 255, 255, 0.08);
 
     --font-display: var(--font-family-mono);
     --font-mono: var(--font-family-mono);
 
     color: var(--text-color);
     font-family: var(--font-family-mono);
+    font-size: 12px;
     line-height: 1.5;
-}
 
-/* Layout */
-.analysis-pane .lab-container {
-    display: block;
-    overflow: hidden;
-}
-
-.analysis-pane .nav-divider {
-    width: 1px;
-    height: 30px;
-    background: var(--border-color);
-    flex-shrink: 0;
-}
-
-.analysis-pane .ticker-list {
+    /* Keep the whole pane inside the viewport; the stage scrolls within. */
     display: flex;
-    flex-direction: row;
-    gap: 5px;
-    overflow-x: auto;
-    align-items: center;
-    scrollbar-width: none;
-    flex-shrink: 0;
-    max-width: 40%;
+    flex-direction: column;
+    max-height: min(560px, 62vh);
 }
 
-.analysis-pane .ticker-list:focus-visible {
+.analysis-pane :focus-visible {
     outline: 2px solid rgba(255, 255, 255, 0.5);
     outline-offset: -2px;
     border-radius: 4px;
+}
+
+/* Ticker context — text buttons, gold marks the active security */
+.analysis-pane .ticker-list {
+    display: flex;
+    flex-direction: row;
+    gap: 14px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    flex-shrink: 0;
+    padding: 0 20px;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .analysis-pane .ticker-list::-webkit-scrollbar {
@@ -66,70 +59,78 @@
 
 .analysis-pane .ticker-btn {
     background: transparent;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
+    border: none;
+    border-bottom: 2px solid transparent;
     color: var(--muted-text);
-    padding: 6px 16px;
-    text-align: center;
+    padding: 8px 2px;
     font-family: var(--font-family-mono);
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: color 0.15s ease;
     text-transform: uppercase;
     white-space: nowrap;
 }
 
 .analysis-pane .ticker-btn:hover:not(:disabled) {
-    background: var(--hover-bg);
     color: var(--text-color);
-    border-color: var(--primary-color);
 }
 
 .analysis-pane .ticker-btn.active {
-    background: var(--primary-color);
-    color: #05070d;
-    border-color: var(--primary-color);
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
     font-weight: 700;
 }
 
-.analysis-pane .ticker-btn:focus-visible {
-    outline: 2px solid rgba(255, 255, 255, 0.5);
-    outline-offset: -2px;
-    border-radius: 8px;
-}
-
-.analysis-pane .ticker-divider {
+.analysis-pane .ticker-divider,
+.analysis-pane .nav-divider {
     display: none;
-    /* Hide dividers in horizontal mode */
 }
 
-/* Main Content */
+/* Stage — the scrollable body of the pane */
 .analysis-pane .analysis-stage {
-    padding: 20px;
+    padding: 14px 20px 18px;
     display: flex;
     flex-direction: column;
-    gap: 20px;
-    background: transparent;
-    max-width: 100%;
-    margin: 0 auto;
-    overflow: hidden;
+    gap: 14px;
+    overflow-y: auto;
+    min-height: 0;
 }
 
-/* Summary Stats (Top Bar Version) */
+.analysis-pane .output-grid,
+.analysis-pane .left-col,
+.analysis-pane .right-col {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-height: 0;
+}
+
+.analysis-pane section[data-analysis-section] {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Section headers — small caps, one hairline */
+.analysis-pane .block-header h3,
+.analysis-pane .value-card h3 {
+    margin: 0;
+    font-size: 0.7rem;
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted-text);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 6px;
+}
+
+/* Summary stats — one flat row of label/value pairs */
 .analysis-pane .summary-stats {
     display: flex;
     flex-direction: row;
-    gap: 20px;
-    align-items: center;
-    overflow-x: auto;
-    scrollbar-width: none;
-    flex: 1;
-}
-
-.analysis-pane .summary-stats:focus-visible {
-    outline: 2px solid rgba(255, 255, 255, 0.5);
-    outline-offset: -2px;
-    border-radius: 4px;
+    flex-wrap: wrap;
+    gap: 6px 22px;
+    align-items: baseline;
 }
 
 .analysis-pane .stat-card {
@@ -140,7 +141,7 @@
     display: flex;
     flex-direction: row;
     align-items: baseline;
-    gap: 8px;
+    gap: 6px;
 }
 
 .analysis-pane .stat-card:hover {
@@ -149,128 +150,69 @@
 }
 
 .analysis-pane .stat-card h3 {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
+    font-weight: 400;
     color: var(--muted-text);
     margin: 0;
     white-space: nowrap;
 }
 
 .analysis-pane .stat-card p {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     font-weight: 700;
     margin: 0;
     color: var(--text-color);
     white-space: nowrap;
 }
 
-/* Output Grid — flattened from two columns to a single-column stack */
-.analysis-pane .output-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    flex: 1;
-    min-height: 0;
-}
-
-.analysis-pane .left-col {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    overflow-y: auto;
-    padding-right: 5px;
-}
-
-.analysis-pane .left-col:focus-visible,
-.analysis-pane .right-col:focus-visible {
-    outline: 2px solid rgba(255, 255, 255, 0.5);
-    outline-offset: -2px;
-    border-radius: 4px;
-}
-
-.analysis-pane .right-col {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    overflow-y: auto;
-    padding-right: 5px;
-}
-
-.analysis-pane .scenario-block,
-.analysis-pane .value-card,
-.analysis-pane .bayes-lab,
-.analysis-pane .risk-sim {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid var(--glass-border);
-    border-radius: 12px;
-    padding: 20px;
-    position: relative;
-}
-
-.analysis-pane .bayes-lab {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.analysis-pane .risk-sim {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.analysis-pane .block-header h3,
-.analysis-pane .value-card h3 {
-    margin: 0 0 15px 0;
-    font-size: 1rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 5px;
-    color: var(--primary-color);
-}
-
-/* Scenario Cards */
+/* Scenario rows — flat list, hairline separators, metrics flow inline */
 .analysis-pane .card-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
 }
 
 .analysis-pane .result-card {
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid var(--glass-border);
-    border-radius: 10px;
-    padding: 12px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border-color);
+    padding: 8px 0;
+}
+
+.analysis-pane .result-card:last-child {
+    border-bottom: none;
 }
 
 .analysis-pane .result-card:hover {
-    background: var(--hover-bg);
-    border-color: var(--primary-color);
+    background: transparent;
+    border-bottom-color: var(--border-color);
 }
 
 .analysis-pane .result-card h4 {
-    margin: 0 0 10px 0;
-    font-size: 0.9rem;
+    margin: 0 0 4px 0;
+    font-size: 0.8rem;
+    font-weight: 700;
     color: var(--text-color);
     text-transform: uppercase;
 }
 
 .analysis-pane .result-card p {
-    margin: 4px 0;
-    font-size: 0.8rem;
+    margin: 2px 14px 2px 0;
+    font-size: 0.78rem;
     color: var(--muted-text);
-    display: flex;
+    display: inline-flex;
     justify-content: space-between;
+    gap: 6px;
+    white-space: nowrap;
 }
 
-/* Value Bands */
+/* Value bands */
 .analysis-pane dl {
     display: grid;
     grid-template-columns: 1fr auto;
-    gap: 10px 20px;
+    gap: 6px 20px;
     margin: 0;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
 }
 
 .analysis-pane dt {
@@ -280,80 +222,68 @@
 .analysis-pane dd {
     color: var(--text-color);
     text-align: right;
+    margin: 0;
 }
 
-/* Scrollbar — matches the glassy terminal scrollbars (css/terminal/base.css) */
-.analysis-pane ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+/* Kelly / Monte Carlo — canvas scales to the pane width */
+.analysis-pane canvas {
+    width: 100%;
+    height: auto;
 }
 
-.analysis-pane ::-webkit-scrollbar-track {
-    background: rgba(30, 30, 35, 0.35);
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.analysis-pane ::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, rgba(140, 140, 148, 0.55) 0%, rgba(92, 92, 98, 0.55) 100%);
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.analysis-pane ::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(
-        180deg,
-        rgba(170, 170, 178, 0.65) 0%,
-        rgba(120, 120, 128, 0.65) 100%
-    );
-}
-
-/* Kelly Curve & Concentration Card */
-.analysis-pane .kelly-card {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid var(--glass-border);
-    border-radius: 12px;
-    padding: 20px;
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.analysis-pane .concentration-badge {
-    font-size: 0.75rem;
-    color: var(--muted-text);
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid var(--border-color);
-    border-radius: 2px;
-    padding: 3px 8px;
-}
-
-/* Belief State Card */
-.analysis-pane .belief-card {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid var(--glass-border);
-    border-radius: 12px;
-    padding: 15px;
+.analysis-pane .kelly-card,
+.analysis-pane .risk-sim,
+.analysis-pane .bayes-lab {
+    background: transparent;
+    border: none;
+    padding: 0;
     display: flex;
     flex-direction: column;
     gap: 10px;
+}
+
+.analysis-pane .badge-row {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+    font-size: 0.78rem;
+    color: var(--muted-text);
+}
+
+.analysis-pane .concentration-badge {
+    font-size: 0.72rem;
+    color: var(--muted-text);
+    border: 1px solid var(--border-color);
+    border-radius: 2px;
+    padding: 2px 8px;
+}
+
+/* Belief state */
+.analysis-pane .belief-card {
+    background: transparent;
+    border: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 0.8rem;
 }
 
 .analysis-pane .belief-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px dashed var(--border-color);
+    border-bottom: 1px solid var(--border-color);
     padding-bottom: 6px;
-    font-size: 0.85rem;
+    font-size: 0.78rem;
 }
 
 .analysis-pane .belief-list {
     margin: 0;
     padding-left: 18px;
-    font-size: 0.8rem;
-    line-height: 1.5;
+    font-size: 0.78rem;
+    line-height: 1.6;
 }
 
 .analysis-pane .evidence-against-item {
@@ -368,25 +298,24 @@
     color: var(--blue-color);
 }
 
-/* Evidence Timeline */
+/* Evidence timeline — flat entries with a status tick on the left */
 .analysis-pane .timeline-container {
-    max-height: 220px;
+    max-height: 260px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 0;
     padding-right: 5px;
 }
 
 .analysis-pane .timeline-entry {
-    background: rgba(255, 255, 255, 0.02);
-    border-left: 3px solid var(--border-color);
-    border-radius: 0 8px 8px 0;
-    padding: 8px 10px;
-    font-size: 0.8rem;
+    background: transparent;
+    border-left: 2px solid var(--border-color);
+    padding: 6px 0 6px 10px;
+    font-size: 0.78rem;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 2px;
 }
 
 .analysis-pane .timeline-entry.bullish {
@@ -402,7 +331,7 @@
 }
 
 .analysis-pane .timeline-entry.superseded {
-    opacity: 0.55;
+    opacity: 0.5;
     border-left-style: dashed;
 }
 
@@ -415,7 +344,7 @@
 
 .analysis-pane .timeline-claim {
     color: var(--text-color);
-    line-height: 1.3;
+    line-height: 1.4;
 }
 
 .analysis-pane .timeline-source {
@@ -424,15 +353,15 @@
     text-decoration: underline;
 }
 
-/* Falsifiable Predictions */
+/* Falsifiable predictions */
 .analysis-pane .prediction-box {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid var(--glass-border);
-    border-radius: 12px;
-    padding: 12px;
+    background: transparent;
+    border: none;
+    padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 0;
+    font-size: 0.78rem;
 }
 
 .analysis-pane .prediction-item {
@@ -440,72 +369,90 @@
     justify-content: space-between;
     align-items: flex-start;
     gap: 10px;
-    font-size: 0.8rem;
-    border-bottom: 1px dotted var(--border-color);
-    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border-color);
+    padding: 6px 0;
+}
+
+.analysis-pane .prediction-item:last-child {
+    border-bottom: none;
 }
 
 .analysis-pane .prediction-status {
-    font-size: 0.7rem;
-    padding: 2px 6px;
+    font-size: 0.68rem;
+    padding: 1px 6px;
     border-radius: 2px;
     text-transform: uppercase;
+    white-space: nowrap;
 }
 
 .analysis-pane .status-pending {
-    background: rgba(100, 181, 246, 0.12);
     border: 1px solid var(--blue-color);
     color: var(--blue-color);
 }
 
 .analysis-pane .status-resolved {
-    background: rgba(52, 168, 83, 0.12);
     border: 1px solid var(--green-color);
     color: var(--green-color);
 }
 
 .analysis-pane .prediction-stale-badge {
-    font-size: 0.7rem;
-    padding: 2px 6px;
-    border-radius: 2px;
-    background: rgba(234, 67, 53, 0.12);
+    font-size: 0.68rem;
+    padding: 1px 6px;
     border: 1px solid var(--red-color);
+    border-radius: 2px;
     color: var(--red-color);
     text-transform: uppercase;
-    font-weight: 600;
+    white-space: nowrap;
 }
 
-/* Decision Journal */
+/* Decision journal */
 .analysis-pane .decision-box {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid var(--glass-border);
-    border-radius: 12px;
-    padding: 12px;
-    font-size: 0.8rem;
+    background: transparent;
+    border: none;
+    padding: 0;
+    font-size: 0.78rem;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.analysis-pane .decision-action {
+    font-weight: 700;
+    color: var(--text-color);
+}
+
+/* What-If sandbox — a single hairline, gold tag */
+.analysis-pane .sandbox-card {
+    background: transparent;
+    border-top: 1px solid var(--border-color);
+    padding: 10px 0 0 0;
     display: flex;
     flex-direction: column;
     gap: 6px;
 }
 
-.analysis-pane .decision-action {
-    font-weight: 700;
-    color: var(--primary-color);
-}
-
-/* What-If Sandbox Container */
-.analysis-pane .sandbox-card {
-    background: rgba(240, 185, 11, 0.06);
-    border: 1px dashed var(--primary-color);
-    border-radius: 12px;
-    padding: 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
 .analysis-pane .sandbox-tag {
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     text-transform: uppercase;
-    color: var(--primary-color);
     letter-spacing: 1px;
+    color: var(--primary-color);
+}
+
+/* Scrollbar — subtle, matches the terminal (css/terminal/base.css) */
+.analysis-pane ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.analysis-pane ::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.analysis-pane ::-webkit-scrollbar-thumb {
+    background: rgba(140, 140, 148, 0.4);
+    border-radius: 8px;
+}
+
+.analysis-pane ::-webkit-scrollbar-thumb:hover {
+    background: rgba(170, 170, 178, 0.55);
 }

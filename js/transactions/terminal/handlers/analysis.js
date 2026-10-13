@@ -16,11 +16,11 @@ function loadLabModule() {
     return labModulePromise;
 }
 
-// Function subcommands mapped to their pane section. `scenarios` and `value`
-// live inside the overview block (summary + scenario cards + value bands).
+// Function subcommands mapped to their pane section — each function code
+// gets its own screen (Bloomberg model), nothing jammed into one view.
 const SECTION_BY_SUBCOMMAND = {
-    scenarios: 'overview',
-    value: 'overview',
+    scenarios: 'scenarios',
+    value: 'value',
     kelly: 'kelly',
     belief: 'belief',
     evidence: 'evidence',

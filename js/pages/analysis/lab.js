@@ -55,6 +55,8 @@ const PANE_CHART_COLORS = {
 
 const ANALYSIS_SECTIONS = [
     'overview',
+    'scenarios',
+    'value',
     'kelly',
     'mc',
     'belief',
@@ -69,10 +71,14 @@ const PANE_MARKUP = `
         <div class="output-grid">
             <section data-analysis-section="overview">
                 <div class="summary-stats" id="summaryStats" tabindex="0"></div>
+            </section>
+            <section data-analysis-section="scenarios">
                 <div class="scenario-block">
                     <div class="block-header"><h3>Scenario Analysis</h3></div>
                     <div id="scenarioResults" class="card-row"></div>
                 </div>
+            </section>
+            <section data-analysis-section="value">
                 <div class="value-card">
                     <h3>Valuation</h3>
                     <dl id="valueBands"></dl>
