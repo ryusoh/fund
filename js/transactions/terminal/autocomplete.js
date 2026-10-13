@@ -3,6 +3,7 @@ import {
     STATS_SUBCOMMANDS,
     PLOT_SUBCOMMANDS,
     HELP_SUBCOMMANDS,
+    ANALYSIS_SUBCOMMANDS,
 } from './constants.js';
 
 export const autocompleteState = {
@@ -39,6 +40,13 @@ function getHelpMatches(parts) {
         : HELP_SUBCOMMANDS;
 }
 
+function getAnalysisMatches(parts) {
+    const subPrefix = parts[1] ? parts[1].toLowerCase() : '';
+    return subPrefix
+        ? ANALYSIS_SUBCOMMANDS.filter((cmd) => cmd.startsWith(subPrefix))
+        : ANALYSIS_SUBCOMMANDS;
+}
+
 function getSubcommandMatches(parts) {
     if (parts.length < 2) {
         return null;
@@ -51,6 +59,9 @@ function getSubcommandMatches(parts) {
     }
     if (parts[0] === 'help' || parts[0] === 'h') {
         return getHelpMatches(parts);
+    }
+    if (parts[0] === 'analysis' || parts[0] === 'an') {
+        return getAnalysisMatches(parts);
     }
     return null;
 }
@@ -81,7 +92,7 @@ function applyAutocomplete(input, matches, hasSpace, parts) {
     const completed = autocompleteState.matches[autocompleteState.index];
     const suffix = matches.length === 1 ? ' ' : '';
 
-    if (hasSpace && ['stats', 's', 'plot', 'p', 'help', 'h'].includes(parts[0])) {
+    if (hasSpace && ['stats', 's', 'plot', 'p', 'help', 'h', 'analysis', 'an'].includes(parts[0])) {
         input.value = `${parts[0]} ${completed}${suffix}`;
     } else {
         input.value = `${completed}${suffix}`;
