@@ -230,14 +230,36 @@ globals; drop `#holo-bg` matrix rain (the terminal owns the background via
 inline `style="…var(--border-thin)…"` markup with classes so the pane root
 controls the vars.
 
-## Open questions / what I couldn't verify
+## Open questions — resolved
 
-- Whether `/analysis/` remains as a standalone page (redirect? deletion?) —
-  product decision; `make smoke` and external links were not fully traced.
-- Mobile treatment: hide the `analysis` command on coarse pointers, or add the
-  pane to `mobileControls.js`'s swipe list.
-- Currency: keep analysis explicitly USD-only (label it), or wire it to
-  `currencyChangedGlobal`.
-- `docs/thesis/<SYM>.md` fetches and the hardcoded `CORRELATION_MAP`
-  (`lab.js:1787-1794`) become more exposed as terminal commands — consult
-  `docs/fermat-pascal-kelly-system.md` before exposing them.
+- **Fate of `/analysis/`:** the standalone page will be **deleted** once the
+  terminal submodule ships. Deletion scope: `analysis/index.html`,
+  `css/analysis-proto.css`, `js/pages/analysis/visuals.js` (matrix rain), and
+  any smoke-test references; `js/pages/analysis/lab.js` (refactored),
+  `bayes.js`, and `monte_carlo.worker.js` survive as the submodule source.
+  Since nothing outside the page links to `/analysis/`, no redirect is needed.
+- **Mobile:** hide the `analysis` command on coarse pointers for v1 (simplest);
+  don't add the pane to `mobileControls.js`'s swipe list.
+- **Currency:** wire the analysis pane to `currencyChangedGlobal` for
+  consistency with the terminal (re-render on toggle), replacing the hardcoded
+  `$` formatting (`lab.js:68–73`) with the shared currency formatting path.
+- **Thesis fetch + `CORRELATION_MAP`** — determination after consulting
+  `docs/fermat-pascal-kelly-system.md`:
+    - **Thesis `<SYM>.md` fetch** (`lab.js:155-172`): **keep as-is.** It is
+      fail-open (warn + cache null on miss), purely cosmetic (scenario display
+      names), and already cached per symbol. Optional later cleanup: move
+      scenario titles into `data/analysis/<SYM>.json` so the frontend stops
+      parsing markdown.
+    - **`CORRELATION_MAP`** (`lab.js:1787-1794`): **the doc rules against
+      hardcoding.** §7.2 prescribes *estimating* inter-asset correlations
+      (historical or scenario-based) to build the covariance matrix. The
+      hardcoded six-pair map silently returns `0.0` for any unknown pair —
+      exposing portfolio Kelly over CLI makes that worse: any new ticker in
+      `data/analysis/index.json` is treated as uncorrelated with everything,
+      understating portfolio volatility and overstating the Kelly weight with
+      no error. Resolution: keep the map for v1 but (a) surface the
+      correlation source in the pane output (the "Covariance Dampener" badge
+      already shows the ratio — add the estimate-source label), and (b) file a
+      follow-up to generate a correlation matrix in the Python pipeline
+      (`data/analysis/correlations.json` from historical prices) that the
+      frontend consumes instead of the hardcoded map.
