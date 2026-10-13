@@ -51,6 +51,7 @@
         <link rel="stylesheet" href="../css/terminal/table.css" />
         <link rel="stylesheet" href="../css/terminal/chart.css" />
         <link rel="stylesheet" href="../css/terminal/responsive.css" />
+        <link rel="stylesheet" href="../css/terminal/analysis.css" />
         <link rel="stylesheet" href="../css/toggle.css" />
         <link rel="stylesheet" href="../css/cursor.css" />
         <script type="importmap">
@@ -185,6 +186,14 @@
                     <div class="chart-empty" id="runningAmountEmpty" style="display: none"></div>
                 </div>
                 <div class="chart-legend"></div>
+            </section>
+
+            <section
+                id="analysisSection"
+                class="chart-card analysis-pane is-hidden"
+                aria-labelledby="analysisTitle"
+            >
+                <h2 id="analysisTitle" class="sr-only">Analysis Lab</h2>
             </section>
 
             <div class="table-responsive-container is-hidden" tabindex="0" aria-live="polite">
