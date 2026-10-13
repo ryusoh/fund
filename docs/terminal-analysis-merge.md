@@ -10,11 +10,13 @@ financial-industry terminal conventions.*
 Model the analysis lab as a **third pane** in the terminal, driven by an
 `analysis` command family that follows the repo's existing
 `command + subcommand + [tokens]` grammar and the Bloomberg "load a security,
-then run a function" convention. Presentation is **full-pane takeover** (the
-existing `plot` precedent: a chart pane plus a one-line text snapshot in the
-scrollback), **lazy-loaded** via dynamic import (the existing chart-renderer
-precedent), with CSS scoped under a pane root. `lab.js` must first be refactored
-from module-eval side effects to an explicit `init(rootEl)`.
+then run a function" convention. Presentation is **full-pane takeover with
+per-section function views** — each function code (`kelly`, `mc`, `belief`, …)
+shows only its section in the pane and prints a one-line snapshot to the
+scrollback (the existing `plot` hybrid precedent), **lazy-loaded** via dynamic
+import (the existing chart-renderer precedent), with CSS scoped under a pane
+root. `lab.js` must first be refactored from module-eval side effects to an
+explicit `init(rootEl)`.
 
 ## Section A — how the terminal CLI works today
 
@@ -172,31 +174,43 @@ codes (`AAPL US Equity GP <GO>`); typed commands beat menus. Sources:
 [function overview](https://tradingtoolshub.com/blog/bloomberg-terminal-cost-features-2026/).
 Map onto this repo's existing `command + subcommand + [tokens]` grammar:
 
-- `analysis` (alias `an`) — open the analysis pane (portfolio view, the
+- `analysis` (alias `an`) — open the analysis pane on the **overview** section
+  (summary stats + scenario cards + value bands), portfolio context (the
   synthetic `PORT` config, `lab.js:1879-1917`).
-- `analysis <TICKER>` — select security context (tickers come from
-  `data/analysis/index.json`, so autocomplete can offer them like
-  `PLOT_SUBCOMMANDS`).
-- Function subcommands that print text into the scrollback (via
-  `appendMessage`/`renderAsciiTable`; precedent: `stats financial`):
-  `analysis kelly`, `analysis scenarios`, `analysis value`, `analysis belief`,
-  `analysis evidence`, `analysis predictions`, `analysis journal`.
+- `analysis <TICKER>` — select security context, staying on the current
+  section (tickers come from `data/analysis/index.json`, so autocomplete can
+  offer them like `PLOT_SUBCOMMANDS`).
+- Function subcommands — each switches the pane to **its section only** and
+  prints a one-line snapshot to the scrollback (the `plot` hybrid precedent,
+  `handlers/plot.js:230-236`):
+    - `analysis scenarios` — scenario cards
+    - `analysis value` — value bands
+    - `analysis kelly` — Kelly curve + metric badges
+    - `analysis belief` — belief state card
+    - `analysis evidence` — evidence timeline
+    - `analysis predictions` — falsifiable predictions (Brier)
+    - `analysis journal` — decision journal
 - `analysis mc [paths]` — run Monte Carlo (default 10000, matching
-  `lab.js:1448`), render into the pane canvas, print VaR/CVaR to scrollback.
-- `analysis bull|bear|reset` — the what-if sandbox buttons, already pure
-  `BayesianEngine.update` calls (`lab.js:1403-1423`).
+  `lab.js:1448`), show the MC section (canvas + risk metrics), print the
+  VaR/CVaR line to scrollback.
+- `analysis bull|bear|reset` — the what-if sandbox, applied to the active
+  security context; already pure `BayesianEngine.update` calls
+  (`lab.js:1403-1423`); prints the resulting posterior probabilities.
 - `analysis close` — Bloomberg's MENU/back analogy; existing `reset`/`clear`/
   `plot …`/`transaction` implicitly close the pane too.
 
-### Presentation model: third sibling pane, full-pane takeover
+### Presentation model: third sibling pane, one section visible at a time
 
 Add `<section id="analysisSection" class="chart-card is-hidden">` next to
-`#runningAmountSection` in `terminal/index.html`. This reuses the exact
-exclusion mechanism (`.is-hidden`, viewUtils helpers), gets liquid glass by
-adding it to `glassTargets` (`js/pages/terminal/index.js:312-355`), and matches
-terminal-industry panel UX (a function takes over the window). Text summaries
-stay inline as `<pre>` — the existing `plot` hybrid (chart pane + printed
-snapshot line, `handlers/plot.js:230-236`).
+`#runningAmountSection` in `terminal/index.html`. Inside it, each lab card is a
+section block; a `showSection(func)` helper hides all but the active one
+(overview shows summary + scenarios + value bands together). This reuses the
+exact pane-exclusion mechanism (`.is-hidden`, viewUtils helpers), gets liquid
+glass by adding the pane to `glassTargets`
+(`js/pages/terminal/index.js:312-355`), and matches Bloomberg function UX: each
+function code presents only its own screen. The lab's two-column
+`.output-grid` flattens into a single-column stack of section blocks inside the
+pane.
 
 Rejected alternatives:
 
@@ -262,7 +276,23 @@ controls the vars.
       understating portfolio volatility and overstating the Kelly weight with
       no error. Resolution: keep the map for v1 but (a) surface the
       correlation source in the pane output (the "Covariance Dampener" badge
-      already shows the ratio — add the estimate-source label), and (b) file a
-      follow-up to generate a correlation matrix in the Python pipeline
-      (`data/analysis/correlations.json` from historical prices) that the
-      frontend consumes instead of the hardcoded map.
+      already shows the ratio — add the estimate-source label), and (b) track
+      the pipeline-generated replacement as a follow-up (below).
+
+## Follow-ups (post-merge, separate work)
+
+1. **Pipeline-generated correlation matrix.** Replace the hardcoded
+   `CORRELATION_MAP` (`lab.js:1787-1794`) with a Python-pipeline output:
+   compute pairwise return correlations from historical prices and write
+   `data/analysis/correlations.json` (generated data — never hand-edit
+   `data/`); the frontend consumes it in `getAssetPairCorrelation` and falls
+   back to an explicit "unestimated" label rather than a silent `0.0` for
+   unknown pairs. Motivation: `docs/fermat-pascal-kelly-system.md` §7.2
+   prescribes *estimating* correlations (historical or scenario-based), and a
+   hardcoded map silently treats any new ticker as uncorrelated with
+   everything — understating portfolio volatility and overstating the
+   portfolio Kelly weight.
+2. **Scenario titles in data.** Move thesis-derived scenario display names out
+   of the `../docs/thesis/<SYM>.md` markdown fetch (`lab.js:155-172`) into
+   `data/analysis/<SYM>.json` at generation time, so the frontend consumes a
+   data contract instead of parsing markdown.
