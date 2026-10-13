@@ -143,6 +143,7 @@ export async function handleResetCommand(
     const resetTableContainer = document.querySelector('.table-responsive-container');
     const resetPlotSection = document.getElementById('runningAmountSection');
     const resetPerformanceSection = document.getElementById('performanceSection');
+    const resetAnalysisSection = document.getElementById('analysisSection');
 
     if (resetTableContainer) {
         resetTableContainer.classList.add('is-hidden');
@@ -152,6 +153,9 @@ export async function handleResetCommand(
     }
     if (resetPerformanceSection) {
         resetPerformanceSection.classList.add('is-hidden');
+    }
+    if (resetAnalysisSection) {
+        resetAnalysisSection.classList.add('is-hidden');
     }
 
     filterAndSort('');
@@ -188,7 +192,7 @@ export function handleClearCommand(
     }
     filterAndSort('');
     document
-        .querySelectorAll('.table-responsive-container, #runningAmountSection')
+        .querySelectorAll('.table-responsive-container, #runningAmountSection, #analysisSection')
         .forEach((el) => el.classList.add('is-hidden'));
     requestFadeUpdate();
 }
