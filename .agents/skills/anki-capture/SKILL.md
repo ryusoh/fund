@@ -166,9 +166,10 @@ enforces:
       EOF
       ```
 
-- **Verdicts file is cwd-relative** (`research/anki_density_verdicts.jsonl`);
-  read it under `~/dev/networking/research/`, and if you forgot and ran from
-  the fund repo, delete the stray `research/` directory it created there.
+- **Verdicts and pipeline state anchor to the networking repo** — read them at
+  `~/dev/networking/research/anki_density_verdicts.jsonl`, not under the fund
+  repo. (Pre-fix runs from the fund repo may have left a stray `research/`
+  directory behind; delete it if you find one.)
 
 ## After import
 
