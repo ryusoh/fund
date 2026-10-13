@@ -25,6 +25,10 @@ export function ensureTransactionTableVisible() {
     if (plotSection) {
         plotSection.classList.add('is-hidden');
     }
+    const analysisSection = document.getElementById('analysisSection');
+    if (analysisSection) {
+        analysisSection.classList.add('is-hidden');
+    }
 }
 
 export function isTransactionTableVisible() {
