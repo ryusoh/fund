@@ -27,6 +27,8 @@ export const COMMAND_ALIASES = [
     'zoom',
     'z',
     'summary',
+    'analysis',
+    'an',
     'beta',
     'yield',
     'rolling',
@@ -74,3 +76,18 @@ export const PLOT_SUBCOMMANDS = [
 ];
 
 export const HELP_SUBCOMMANDS = ['filter'];
+
+export const ANALYSIS_SUBCOMMANDS = [
+    'scenarios',
+    'value',
+    'kelly',
+    'belief',
+    'evidence',
+    'predictions',
+    'journal',
+    'mc',
+    'bull',
+    'bear',
+    'reset',
+    'close',
+];
