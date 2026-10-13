@@ -8,7 +8,7 @@
 
 Aehr Test Systems (Fremont, CA; Nasdaq: AEHR) sells wafer-level and package-level burn-in/test systems (FOX-XP/NP/CP + WaferPak contactors; Sonoma/Tahoe/Echo package systems via the Incal acquisition). The story has **rotated from a single-thread SiC/EV bet to an AI-infrastructure bet**: fiscal 2024 was 92% EV/power-semiconductor revenue with one customer at 67%; fiscal 2026 was 17% EV/power with the top customer at 26% and growth driven by silicon photonics and AI-processor burn-in.
 
-The bull case rests on hard numbers: **$80.6M backlog (5.3× YoY), $100.6M effective backlog, FY2027 guidance of $130–150M revenue (~2.6–3× growth) with 18–22% non-GAAP net margin**, $116.5M cash and no debt. The bear case is equally concrete: the market already prices this in — **$2.61B market cap on $50M trailing revenue (P/S ~55, ~90× guided forward non-GAAP earnings)**, +244.8% over 52 weeks, 16% short interest, FY2026 was GAAP-loss-making (−$0.23 diluted), and concentration has shifted to new unnamed AI/hyperscale customers rather than disappeared. Next hard catalyst: **Q1 FY2027 earnings on 2026-11-02** — the first print against the FY2027 guide.
+The bull case rests on hard numbers: **$80.6M backlog (5.3× YoY), $100.6M effective backlog, FY2027 guidance of $130–150M revenue (~2.6–3× growth) with 18–22% non-GAAP net margin**, $116.4M cash and no debt. The bear case is equally concrete: the market already prices this in — **$2.61B market cap on $50M trailing revenue (P/S ~55, ~90× guided forward non-GAAP earnings)**, +244.8% over 52 weeks, 16% short interest, FY2026 was GAAP-loss-making (−$0.23 diluted), and concentration has shifted to new unnamed AI/hyperscale customers rather than disappeared. Next hard catalyst: **Q1 FY2027 earnings on 2026-11-02** — the first print against the FY2027 guide.
 
 ## Baseline vs. new evidence
 
@@ -92,15 +92,19 @@ Price **$80.10**; market cap **$2.61B**; EV $2.51B; P/S 55.2 TTM / ~20 forward-g
 4. Aug 2026 S-3 shelf size/terms — check EDGAR before assuming dilution intent.
 5. Named wafer-level burn-in competitors — not established from primary sources this pass.
 6. CEO ~40k-share sale (~Aug 2026, secondary sources) — verifiable via Form 4 if relevant.
-7. XBRL values in the vendored filings layer returned null — numbers here are from HTML statement text, not XBRL cross-check (see tooling notes).
+7. ~~XBRL values in the vendored filings layer returned null~~ — **resolved 2026-10-13:** XBRL extraction fixed (`scripts/filings` period-column parsing); income statement and balance sheet cross-checked live against the 10-K XBRL and every figure in this doc matched (revenue 50,001/58,968/66,218K, gross margin 35.3/40.6/49.1%, diluted EPS −0.23/−0.13/1.12, cash 116,358K, equity 219,511K = assets 246,694K − liabilities 27,183K, no debt rows). Numbers are now XBRL-grade, not just HTML-statement reads.
 
 ## Filings-layer evaluation (feeds the engine's "unevaluated" component)
 
-The vendored stack **partially worked**, first real appliance test:
+First real appliance test (2026-10-12) found the stack partially working; **all gaps found that day have since been closed** (2026-10-13):
 
-- **Works:** `SecDownloader` ingestion (driven via a throwaway script; the CLI has no download command and the ingestion host layer was deliberately not vendored — `scripts/vendor/filings/VENDORED.md`); `list`/`sections`/`read`/`verify` against `~/.cache/filings`. SEC User-Agent via `SEC_USER_AGENT` env var.
-- **Broken/gaps:** (1) XBRL value extraction returns nulls (`get_financial_statement` labels OK, all values empty); (2) `list` CLI prints `form_type` as N/A; (3) `verify` passes but its top BM25 spans are noisy cover-page fragments, not the load-bearing paragraph.
-- **Implication:** usable for section reading and coarse confirm passes; not yet trustworthy for XBRL-grade number extraction. A small ingestion CLI wrapper would remove the throwaway-script step.
+- **Ingestion:** was a throwaway script → now `filings_adapter ingest --ticker <T>` (idempotent, workspace `~/.cache/filings`; SEC User-Agent via `SEC_USER_AGENT`).
+- **XBRL value extraction:** was returning nulls → fixed; edgartools' suffixed period columns (`2026-05-29 (FY)`) are parsed and statement values verified live against the AEHR 10-K (regression tests: `tests/python/test_sec_xbrl_query.py`).
+- **`list` form_type:** was printing N/A → now prints `annual`/`quarterly`.
+- **`verify` span quality:** was noisy cover-page fragments → spans re-ranked (numeric overlap → exact phrase → cover-page demoted); number-bearing claims are capped at 0.60 confidence unless a number-anchored span is found.
+- **Layout:** the stack migrated `scripts/vendor/filings/` → `scripts/filings/` as first-party code (provenance in `scripts/filings/PROVENANCE.md`).
+
+The stack is now trustworthy for section reading, confirm passes, and XBRL-grade number extraction.
 
 ## Action items
 
@@ -108,5 +112,5 @@ The vendored stack **partially worked**, first real appliance test:
 2. **Calendar the 2026-11-02 Q1 FY2027 print** as the first falsifiable checkpoint; candidate predictions (with target dates): FY2027 revenue ≥ $130M (guide low end); top-customer concentration stays ≤ 30% in FY2027; SiC/power revenue mix continues recovering off the 17% trough.
 3. **Resolve open items 3–5** (proxy, S-3, competitor naming) before any sizing decision.
 4. **Decide on an industry-layer doc** — nothing in `docs/thesis/industry/` covers semiconductor test/SiC; AEHR's AI angle overlaps `cloud-ai-ecosystem.md` but its SiC leg does not.
-5. **Filings-layer follow-ups** — evaluate fixing XBRL value extraction and adding an ingestion CLI to the vendored adapter (out of scope for this research run).
+5. ~~**Filings-layer follow-ups**~~ — **done 2026-10-13:** ingestion CLI added, XBRL value extraction fixed, `verify` spans re-ranked (see §Filings-layer evaluation).
 6. **Pipeline note** — AEHR prices are not fetched (TWRR universe derives from `transactions.csv`); if price monitoring is wanted pre-position, an explicit mechanism is needed.

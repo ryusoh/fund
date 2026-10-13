@@ -310,6 +310,6 @@ Append-only log. Machine-readable records: `data/analysis/AEHR.evidence.jsonl`. 
 - Planned research:
     - Post-print `/thesis-update AEHR` on 2026-11-02 results with confirm pass against the 10-Q.
     - Consider authoring `docs/thesis/industry/semiconductor-test.md` if a second test-chain name joins coverage.
-    - Fix vendored XBRL value extraction so future confirm passes can cross-check numbers (see findings doc §Filings-layer evaluation).
+    - ~~Fix vendored XBRL value extraction~~ — done 2026-10-13: XBRL statements return values and the FY2026 figures were cross-checked against the 10-K XBRL (see findings doc §Filings-layer evaluation).
 
 {% endraw %}
