@@ -1473,8 +1473,7 @@ state.monteCarloWorker.onerror = function () {
     btnRunMonteCarlo.removeAttribute('aria-busy');
 };
 
-function renderMonteCarloResults(result) {
-    // Render Metrics
+function _renderMonteCarloMetrics(result, riskMetricsEl) {
     riskMetricsEl.replaceChildren();
 
     const createStatCard = (title, value) => {
@@ -1507,10 +1506,9 @@ function renderMonteCarloResults(result) {
     }
     riskMetricsEl.appendChild(createStatCard('VaR (95%)', formatCurrency(result.VaR_95)));
     riskMetricsEl.appendChild(createStatCard('CVaR (95%)', formatCurrency(result.CVaR_95)));
+}
 
-    // Render Histogram
-    const ctx = monteCarloCanvas.getContext('2d');
-    const { width, height } = monteCarloCanvas;
+function _renderMonteCarloHistogram(result, ctx, width, height) {
     if (typeof ctx.clearRect === 'function') {
         ctx.clearRect(0, 0, width, height);
     }
@@ -1531,8 +1529,9 @@ function renderMonteCarloResults(result) {
             ctx.fillRect(i * barWidth, height - barHeight, barWidth - 1, barHeight);
         });
     }
+}
 
-    // Overlay fan chart bands if fanChart is available
+function _renderMonteCarloFanChart(result, ctx, width, height) {
     if (result.fanChart && result.fanChart.length > 1 && typeof ctx.beginPath === 'function') {
         const fan = result.fanChart;
         const padL = 40;
@@ -1591,7 +1590,15 @@ function renderMonteCarloResults(result) {
         }
     }
 }
+function renderMonteCarloResults(result) {
+    _renderMonteCarloMetrics(result, riskMetricsEl);
 
+    const ctx = monteCarloCanvas.getContext('2d');
+    const { width, height } = monteCarloCanvas;
+
+    _renderMonteCarloHistogram(result, ctx, width, height);
+    _renderMonteCarloFanChart(result, ctx, width, height);
+}
 function aggregateScenarios(configs, horizon) {
     const scenarioMap = new Map();
     configs.forEach((cfg) => {
