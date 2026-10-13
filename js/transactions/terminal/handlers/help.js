@@ -20,6 +20,11 @@ export function handleHelpCommand(args, { appendMessage }) {
             '                                 plot composition abs 2023, plot sectors, plot sectors abs,\n' +
             '                                 plot geography, plot geography abs, plot marketcap,\n' +
             '                                 plot marketcap abs, plot concentration, plot pe, plot fx\n' +
+            '  analysis (an)      - Analysis lab: scenarios, Kelly sizing, Monte Carlo, beliefs\n' +
+            '                       Use "analysis" or "an"; optional ticker selects security context\n' +
+            '                       Subcommands: scenarios, value, kelly, belief, evidence,\n' +
+            '                                    predictions, journal, mc, bull, bear, reset, close\n' +
+            '                       Examples: analysis, an ANET, analysis kelly, analysis mc 20000\n' +
             '  transaction (t)    - Toggle the transaction table visibility\n' +
             '  zoom (z)           - Toggle terminal zoom (expand to take over chart area)\n' +
             '  summary            - Show summary of the currently active chart\n' +
