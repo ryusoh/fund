@@ -238,8 +238,11 @@ controls the vars.
   any smoke-test references; `js/pages/analysis/lab.js` (refactored),
   `bayes.js`, and `monte_carlo.worker.js` survive as the submodule source.
   Since nothing outside the page links to `/analysis/`, no redirect is needed.
-- **Mobile:** hide the `analysis` command on coarse pointers for v1 (simplest);
-  don't add the pane to `mobileControls.js`'s swipe list.
+- **Mobile:** moot — the terminal has **no command input on mobile** (the input
+  pane is hidden on coarse viewports, `js/pages/terminal/index.js:406-418`), so
+  there is no command surface to gate. The `analysis` command simply doesn't
+  exist on mobile like every other command; no `mobileControls.js` swipe-list
+  work, no special casing.
 - **Currency:** wire the analysis pane to `currencyChangedGlobal` for
   consistency with the terminal (re-render on toggle), replacing the hardcoded
   `$` formatting (`lab.js:68–73`) with the shared currency formatting path.
