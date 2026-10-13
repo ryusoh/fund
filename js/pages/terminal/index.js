@@ -334,6 +334,18 @@ function initialize() {
             },
         },
         {
+            selector: '#analysisSection',
+            opts: {
+                excludeHeader: false,
+                refraction: {
+                    ...TABLE_GLASS_EFFECT.refraction,
+                    bezelWidth: 16,
+                    frost: 'blur(20px) saturate(1.7)',
+                    magnification: TERMINAL_GLASS_MAGNIFICATION,
+                },
+            },
+        },
+        {
             selector: '.table-responsive-container',
             opts: {
                 excludeHeader: true,
