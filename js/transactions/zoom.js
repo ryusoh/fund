@@ -41,9 +41,12 @@ function calculateZoomedOutputHeight(terminal, chart, terminalOutput) {
 
     let targetBottom;
 
+    const analysisSection = document.getElementById('analysisSection');
     if (chart && !chart.classList.contains('is-hidden')) {
         // Method 1: Expand to chart bottom (primary goal)
         targetBottom = chart.getBoundingClientRect().bottom;
+    } else if (analysisSection && !analysisSection.classList.contains('is-hidden')) {
+        targetBottom = analysisSection.getBoundingClientRect().bottom;
     } else if (table && !table.classList.contains('is-hidden')) {
         // Method 2: Expand to table bottom if chart is hidden
         targetBottom = table.getBoundingClientRect().bottom;
@@ -117,6 +120,22 @@ function animateZoomIn(terminal, chart, terminalOutput) {
             table.classList.add('chart-zoomed-out'); // Use same class for ease
             timeline.to(
                 table,
+                {
+                    opacity: 0,
+                    scale: 0.98,
+                    duration: ANIMATION_DURATION * 0.8,
+                    ease: EASING,
+                },
+                0
+            );
+        }
+
+        // Fade out analysis pane if visible (mirrors the table treatment)
+        const analysisSection = document.getElementById('analysisSection');
+        if (analysisSection && !analysisSection.classList.contains('is-hidden')) {
+            analysisSection.classList.add('chart-zoomed-out');
+            timeline.to(
+                analysisSection,
                 {
                     opacity: 0,
                     scale: 0.98,
@@ -204,6 +223,21 @@ function animateZoomOut(terminal, chart, terminalOutput) {
         if (table && !table.classList.contains('is-hidden')) {
             timeline.to(
                 table,
+                {
+                    opacity: 1,
+                    scale: 1,
+                    duration: ANIMATION_DURATION * 0.8,
+                    ease: EASING,
+                },
+                ANIMATION_DURATION * 0.3
+            );
+        }
+
+        // Fade in analysis pane if present (mirrors the table treatment)
+        const analysisSection = document.getElementById('analysisSection');
+        if (analysisSection && !analysisSection.classList.contains('is-hidden')) {
+            timeline.to(
+                analysisSection,
                 {
                     opacity: 1,
                     scale: 1,
