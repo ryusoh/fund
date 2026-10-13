@@ -81,27 +81,29 @@ describe('analysis lab pane rendering', () => {
 
         const { lab } = await setupPane(fetchMock);
 
-        const tickerList = document.getElementById('tickerList');
-        expect(tickerList.children.length).toBeGreaterThan(0);
+        const contextStrip = document.getElementById('paneContext');
+        expect(contextStrip.children.length).toBeGreaterThan(0);
 
-        const tickerBtns = document.querySelectorAll('.ticker-btn');
-        expect(tickerBtns.length).toBeGreaterThan(1);
+        const contextSymbols = document.querySelectorAll('.context-symbol');
+        expect(contextSymbols.length).toBeGreaterThan(1);
+        // The strip is read-only — no buttons inside the pane.
+        expect(contextStrip.querySelectorAll('button').length).toBe(0);
 
-        tickerBtns[0].click();
+        lab.setActiveAnalysisSymbol('PORT');
         let summaryStats = document.getElementById('summaryStats');
         expect(summaryStats.textContent).toContain('Price');
 
-        tickerBtns[1].click();
+        lab.setActiveAnalysisSymbol('AAPL');
         summaryStats = document.getElementById('summaryStats');
         expect(summaryStats.textContent).toContain('Price');
 
-        // Test the empty configs scenario by clearing state and clicking
+        // Test the empty configs scenario by clearing state and re-rendering
         lab.__analysisLabTesting.state.configs = [];
-        tickerBtns[0].click();
-        expect(document.getElementById('tickerList').textContent).toContain('No tickers loaded');
+        lab.__analysisLabTesting.renderContextStrip();
+        expect(document.getElementById('paneContext').textContent).toContain('No tickers loaded');
     });
 
-    it('handles empty tickerList and state configs correctly and asserts warning message', async () => {
+    it('handles empty configs and shows the context-strip warning', async () => {
         const mockIndex = {
             tickers: [],
         };
@@ -120,7 +122,7 @@ describe('analysis lab pane rendering', () => {
 
         await setupPane(fetchMock);
 
-        expect(document.getElementById('tickerList').textContent).toContain('No tickers loaded');
+        expect(document.getElementById('paneContext').textContent).toContain('No tickers loaded');
     });
 
     it('renders evidence timeline marking superseded entries and displaying valid/superseded count', async () => {

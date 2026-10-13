@@ -11,7 +11,7 @@ import { getSelectedCurrency, whenTransactionDataReady } from '../../transaction
 // Element references are resolved by initAnalysisPane() — importing this
 // module must be side-effect free so the terminal can lazy-load it.
 let paneRoot = null;
-let tickerListEl = null;
+let contextEl = null;
 let summaryStatsEl = null;
 let scenarioResultsEl = null;
 let valueBandsEl = null;
@@ -66,11 +66,11 @@ const ANALYSIS_SECTIONS = [
 ];
 
 const PANE_MARKUP = `
-    <div class="ticker-list" id="tickerList" tabindex="0"></div>
+    <div class="pane-context" id="paneContext"></div>
     <div class="analysis-stage">
         <div class="output-grid">
             <section data-analysis-section="overview">
-                <div class="summary-stats" id="summaryStats" tabindex="0"></div>
+                <div class="summary-stats" id="summaryStats"></div>
             </section>
             <section data-analysis-section="scenarios">
                 <div class="scenario-block">
@@ -110,7 +110,7 @@ const PANE_MARKUP = `
                 <div class="block-header" id="evidenceTimelineHeader">
                     <h3>Verified Evidence Log (.jsonl)</h3>
                 </div>
-                <div id="evidenceTimeline" class="timeline-container" tabindex="0"></div>
+                <div id="evidenceTimeline" class="timeline-container"></div>
             </section>
             <section data-analysis-section="predictions">
                 <div class="prediction-box" id="predictionsCard"></div>
@@ -1396,18 +1396,19 @@ function renderDecisionJournal(config) {
     }
 }
 
-function renderTickerList() {
-    if (!tickerListEl) {
+// Read-only context strip — security context is switched via the terminal
+// command `analysis <TICKER>`, never by clicking inside the pane.
+function renderContextStrip() {
+    if (!contextEl) {
         return;
     }
-    tickerListEl.replaceChildren();
+    contextEl.replaceChildren();
 
     if (!state.configs || !state.configs.length) {
         const span = document.createElement('span');
-        span.style.color = 'var(--text-muted)';
-        span.style.padding = '0 10px';
+        span.className = 'context-empty';
         span.textContent = 'No tickers loaded';
-        tickerListEl.appendChild(span);
+        contextEl.appendChild(span);
         return;
     }
 
@@ -1417,36 +1418,20 @@ function renderTickerList() {
         .sort((a, b) => b.weight - a.weight);
 
     if (portfolio) {
-        appendTickerButton(portfolio, ' ticker-btn-port');
-        if (others.length) {
-            const divider = document.createElement('div');
-            divider.className = 'ticker-divider';
-            tickerListEl.appendChild(divider);
-        }
+        appendContextSymbol(portfolio);
     }
-
     others.forEach((config) => {
-        appendTickerButton(config);
+        appendContextSymbol(config);
     });
 }
 
-function appendTickerButton(config, extraClass = '') {
-    const button = document.createElement('button');
+function appendContextSymbol(config) {
+    const span = document.createElement('span');
     const isActive = config.symbol === state.activeSymbol;
-    button.className = `ticker-btn${extraClass}${isActive ? ' active' : ''}`;
-    button.textContent = config.symbol;
-    button.title = `${config.name} · ${formatPercent(config.weight)}`;
-    button.setAttribute(
-        'aria-label',
-        `${config.symbol}, ${config.name}, Weight: ${formatPercent(config.weight)}`
-    );
-    button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
-    button.addEventListener('click', () => {
-        state.activeSymbol = config.symbol;
-        renderTickerList();
-        renderActiveTicker();
-    });
-    tickerListEl.appendChild(button);
+    span.className = `context-symbol${isActive ? ' active' : ''}`;
+    span.textContent = config.symbol;
+    span.title = `${config.name} · ${formatPercent(config.weight)}`;
+    contextEl.appendChild(span);
 }
 
 function renderActiveTicker() {
@@ -2083,7 +2068,7 @@ function buildPaneDom(rootEl) {
 
 function resolvePaneElements(rootEl) {
     paneRoot = rootEl;
-    tickerListEl = rootEl.querySelector('#tickerList');
+    contextEl = rootEl.querySelector('#paneContext');
     summaryStatsEl = rootEl.querySelector('#summaryStats');
     scenarioResultsEl = rootEl.querySelector('#scenarioResults');
     valueBandsEl = rootEl.querySelector('#valueBands');
@@ -2115,7 +2100,7 @@ export function setActiveAnalysisSymbol(symbol) {
         return false;
     }
     state.activeSymbol = config.symbol;
-    renderTickerList();
+    renderContextStrip();
     renderActiveTicker();
     return true;
 }
@@ -2144,7 +2129,7 @@ export async function initAnalysisPane(rootEl, { autoLoad = true } = {}) {
             summaryStatsEl.replaceChildren(loadingDiv);
         }
         await buildConfigs();
-        renderTickerList();
+        renderContextStrip();
         renderActiveTicker();
     } catch (err) {
         logger.error('Analysis init failed:', err);
@@ -2196,4 +2181,5 @@ export const __analysisLabTesting = {
     computeStalePredictions,
     renderDecisionJournal,
     renderMonteCarloResults,
+    renderContextStrip,
 };

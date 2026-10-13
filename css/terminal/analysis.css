@@ -41,8 +41,9 @@
     border-radius: 4px;
 }
 
-/* Ticker context — text buttons, gold marks the active security */
-.analysis-pane .ticker-list {
+/* Read-only context strip — the active security is marked in gold;
+   context is switched via the terminal command `analysis <TICKER>`. */
+.analysis-pane .pane-context {
     display: flex;
     flex-direction: row;
     gap: 14px;
@@ -51,39 +52,28 @@
     flex-shrink: 0;
     padding: 0 20px;
     border-bottom: 1px solid var(--border-color);
+    font-size: 0.8rem;
+    line-height: 2.2;
+    text-transform: uppercase;
 }
 
-.analysis-pane .ticker-list::-webkit-scrollbar {
+.analysis-pane .pane-context::-webkit-scrollbar {
     display: none;
 }
 
-.analysis-pane .ticker-btn {
-    background: transparent;
-    border: none;
-    border-bottom: 2px solid transparent;
+.analysis-pane .context-symbol {
     color: var(--muted-text);
-    padding: 8px 2px;
-    font-family: var(--font-family-mono);
-    font-size: 0.8rem;
-    cursor: pointer;
-    transition: color 0.15s ease;
-    text-transform: uppercase;
     white-space: nowrap;
 }
 
-.analysis-pane .ticker-btn:hover:not(:disabled) {
-    color: var(--text-color);
-}
-
-.analysis-pane .ticker-btn.active {
+.analysis-pane .context-symbol.active {
     color: var(--primary-color);
-    border-bottom-color: var(--primary-color);
     font-weight: 700;
+    box-shadow: 0 2px 0 var(--primary-color);
 }
 
-.analysis-pane .ticker-divider,
-.analysis-pane .nav-divider {
-    display: none;
+.analysis-pane .context-empty {
+    color: var(--muted-text);
 }
 
 /* Stage — the scrollable body of the pane */
