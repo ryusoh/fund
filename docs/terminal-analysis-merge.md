@@ -1,9 +1,9 @@
 # Merging `analysis/` into `terminal/` as a submodule — design
 
-Findings doc for the question: *how to merge `analysis/index.html` into
+Findings doc for the question: _how to merge `analysis/index.html` into
 `terminal/index.html` as a submodule, with a CLI system and
 visualization/presentation system coherent with the existing terminal and
-financial-industry terminal conventions.*
+financial-industry terminal conventions._
 
 ## The answer (short version)
 
@@ -63,7 +63,7 @@ Visualization: one canvas `#runningAmountCanvas`; `createChartManager`
 (`js/transactions/chart.js:52`) redraws via rAF and **lazy-loads renderers with
 a cache** — `loadRenderer(name)` → `await import(\`./chart/renderers/${name}.js\`)`
 (`js/transactions/chart.js:39-48`), 19 chart keys. Zoom lives in
-`js/transactions/zoom.js` (`getZoomElements` knows only terminal + chart +
+`js/transactions/zoom.js`(`getZoomElements` knows only terminal + chart +
 table).
 
 ## Section B — what the analysis page contains
@@ -115,7 +115,7 @@ import `@pages/analysis/lab.js` and rely on `__SKIP_ANALYSIS_AUTO_INIT__`.
 ## Section C — constraints and landmines
 
 1. **Output-model mismatch (the biggest gap).** Terminal output is text-only
-   `<pre>`; analysis is rich DOM + two canvases. A merge needs a *pane* model.
+   `<pre>`; analysis is rich DOM + two canvases. A merge needs a _pane_ model.
    Precedent: `#runningAmountSection` vs `.table-responsive-container` are
    mutually exclusive via `.is-hidden`
    (`js/transactions/terminal/viewUtils.js:19-28`,
@@ -282,7 +282,7 @@ controls the vars.
       scenario titles into `data/analysis/<SYM>.json` so the frontend stops
       parsing markdown.
     - **`CORRELATION_MAP`** (`lab.js:1787-1794`): **the doc rules against
-      hardcoding.** §7.2 prescribes *estimating* inter-asset correlations
+      hardcoding.** §7.2 prescribes _estimating_ inter-asset correlations
       (historical or scenario-based) to build the covariance matrix. The
       hardcoded six-pair map silently returns `0.0` for any unknown pair —
       exposing portfolio Kelly over CLI makes that worse: any new ticker in
@@ -302,7 +302,7 @@ controls the vars.
    `data/`); the frontend consumes it in `getAssetPairCorrelation` and falls
    back to an explicit "unestimated" label rather than a silent `0.0` for
    unknown pairs. Motivation: `docs/fermat-pascal-kelly-system.md` §7.2
-   prescribes *estimating* correlations (historical or scenario-based), and a
+   prescribes _estimating_ correlations (historical or scenario-based), and a
    hardcoded map silently treats any new ticker as uncorrelated with
    everything — understating portfolio volatility and overstating the
    portfolio Kelly weight.
