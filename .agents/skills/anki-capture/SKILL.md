@@ -42,10 +42,19 @@ theory, anything already in the deck's theory base.
 
 ## Pipeline
 
-All pipeline paths are absolute (the tools anchor their state to their own
-repo, so any cwd works). The staging file is
-`.agents/state/anki_cards.jsonl` **in this repo** (gitignored; overwrite —
-never append — each run; stale lines re-import as duplicates).
+The staging file is `.agents/state/anki_cards.jsonl` **in this repo**
+(gitignored; overwrite — never append — each run; stale lines re-import as
+duplicates).
+
+All networking-repo tools require the repo root on `sys.path` and write some
+state cwd-relative (the density gate drops `research/anki_density_verdicts.jsonl`
+under the current directory — run from the fund repo it pollutes the fund
+worktree). So prefix every command with `PYTHONPATH` and run them from the
+networking repo:
+
+```bash
+cd ~/dev/networking && export PYTHONPATH=~/dev/networking
+```
 
 ```bash
 # 0. Optional but recommended: list current 金融 hub concepts so card fronts
@@ -125,6 +134,41 @@ enforces:
   `finance`, optionally one or two of `valuation`, `moat`, `earnings`,
   `industry`, `macro` (or networking concept tags when the card is
   infrastructure-domain). Invented tags are rejected.
+
+## Gotchas (learned on the first real run, 2026-10-13)
+
+- **Validator acronym scan is a dumb uppercase-token match.** Tickers
+  (`AEHR`) and product names (`FOX`) are flagged as "unexpanded acronyms";
+  write around them (该公司, or drop the product name). Even `AI` and `GPU`
+  are NOT in `COMMON_ACRONYMS` — expand them (`AI (Artificial Intelligence)`).
+- **The density metric** (`tools/research/anki_density.py`) is
+  `0.4·compression + 0.2·MTLD + 0.2·concept + 0.2·domain`. Practical levers
+  when a card is flagged `enrich`:
+    - Adding prose can LOWER the score — MTLD (lexical diversity) is usually
+      the binding constraint for Chinese text, so cut repeated words instead
+      of adding sentences.
+    - Every `file://` citation link is tokenized and drags MTLD down — a card
+      that passes can fall back under threshold when the judge pass (3.5) adds
+      citation links. Leave headroom above the threshold, and re-run both
+      gates after judge-pass edits.
+    - Debug with the component breakdown before rewriting:
+
+      ```bash
+      python3 - <<'EOF'
+      import json
+      from tools.research.anki_density import card_density
+      from tools.research.anki_density_baseline import compute_baseline, DEFAULT_BASELINE_CACHE_PATH
+      b = compute_baseline(deck="金融", k=10, cache_path=DEFAULT_BASELINE_CACHE_PATH)
+      for l in open("/Users/lz/dev/fund/.agents/state/anki_cards.jsonl"):
+          c = json.loads(l)
+          r = card_density(c["front"], c["back"], b.lexicon)
+          print(c["chunk_id"], r.composite, r.d_comp, r.d_lex, r.d_concept, r.d_domain)
+      EOF
+      ```
+
+- **Verdicts file is cwd-relative** (`research/anki_density_verdicts.jsonl`);
+  read it under `~/dev/networking/research/`, and if you forgot and ran from
+  the fund repo, delete the stray `research/` directory it created there.
 
 ## After import
 
