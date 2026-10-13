@@ -140,6 +140,14 @@ enforces:
   (`AEHR`) and product names (`FOX`) are flagged as "unexpanded acronyms";
   write around them (该公司, or drop the product name). Even `AI` and `GPU`
   are NOT in `COMMON_ACRONYMS` — expand them (`AI (Artificial Intelligence)`).
+- **Core concept names must carry an English anchor, but hyphenated terms are
+  front-banned.** The front allows acronyms and single-token names only —
+  `(WLBI)`, `(backlog)` pass; `(burn-in)` is rejected as multi-word (the
+  tokenizer splits on hyphens). For hyphenated/multi-word terms, keep the
+  front pure Chinese and gloss on first mention in the back instead:
+  `老化测试（burn-in）`. Never let a card's central concept
+  (老化测试, 晶圆级方案) go without any English original or acronym — the
+  deck's graph links and English-source cross-reference depend on it.
 - **The density metric** (`tools/research/anki_density.py`) is
   `0.4·compression + 0.2·MTLD + 0.2·concept + 0.2·domain`. Practical levers
   when a card is flagged `enrich`:

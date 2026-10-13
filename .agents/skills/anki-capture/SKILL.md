@@ -141,6 +141,14 @@ enforces:
   (`AEHR`) and product names (`FOX`) are flagged as "unexpanded acronyms";
   write around them (该公司, or drop the product name). Even `AI` and `GPU`
   are NOT in `COMMON_ACRONYMS` — expand them (`AI (Artificial Intelligence)`).
+- **Core concept names must carry an English anchor, but hyphenated terms are
+  front-banned.** The front allows acronyms and single-token names only —
+  `(WLBI)`, `(backlog)` pass; `(burn-in)` is rejected as multi-word (the
+  tokenizer splits on hyphens). For hyphenated/multi-word terms, keep the
+  front pure Chinese and gloss on first mention in the back instead:
+  `老化测试（burn-in）`. Never let a card's central concept
+  (老化测试, 晶圆级方案) go without any English original or acronym — the
+  deck's graph links and English-source cross-reference depend on it.
 - **The density metric** (`tools/research/anki_density.py`) is
   `0.4·compression + 0.2·MTLD + 0.2·concept + 0.2·domain`. Practical levers
   when a card is flagged `enrich`:
@@ -153,18 +161,18 @@ enforces:
       gates after judge-pass edits.
     - Debug with the component breakdown before rewriting:
 
-      ```bash
-      python3 - <<'EOF'
-      import json
-      from tools.research.anki_density import card_density
-      from tools.research.anki_density_baseline import compute_baseline, DEFAULT_BASELINE_CACHE_PATH
-      b = compute_baseline(deck="金融", k=10, cache_path=DEFAULT_BASELINE_CACHE_PATH)
-      for l in open("/Users/lz/dev/fund/.agents/state/anki_cards.jsonl"):
-          c = json.loads(l)
-          r = card_density(c["front"], c["back"], b.lexicon)
-          print(c["chunk_id"], r.composite, r.d_comp, r.d_lex, r.d_concept, r.d_domain)
-      EOF
-      ```
+        ```bash
+        python3 - <<'EOF'
+        import json
+        from tools.research.anki_density import card_density
+        from tools.research.anki_density_baseline import compute_baseline, DEFAULT_BASELINE_CACHE_PATH
+        b = compute_baseline(deck="金融", k=10, cache_path=DEFAULT_BASELINE_CACHE_PATH)
+        for l in open("/Users/lz/dev/fund/.agents/state/anki_cards.jsonl"):
+            c = json.loads(l)
+            r = card_density(c["front"], c["back"], b.lexicon)
+            print(c["chunk_id"], r.composite, r.d_comp, r.d_lex, r.d_concept, r.d_domain)
+        EOF
+        ```
 
 - **Verdicts and pipeline state anchor to the networking repo** — read them at
   `~/dev/networking/research/anki_density_verdicts.jsonl`, not under the fund
