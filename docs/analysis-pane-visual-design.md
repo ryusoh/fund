@@ -48,9 +48,9 @@ page?
 
 ### Shell and integration (what exists, all verified)
 
-- Pane markup: `<section id="analysisSection" class="chart-card analysis-pane
-is-hidden" aria-labelledby="analysisTitle">` plus an sr-only `<h2>`
-  (`terminal/index.html:191-197`); stylesheet loaded at `terminal/index.html:54`.
+- Pane markup: `<section id="analysisSection" class="chart-card analysis-pane is-hidden" aria-labelledby="analysisTitle">`
+  plus an sr-only `<h2>` (`terminal/index.html:191-197`); stylesheet loaded at
+  `terminal/index.html:54`.
 - The pane is a `.chart-card`, so it inherits the shared glass slab
   (`css/terminal/chart.css:1-47`) and the desktop pane-height rule
   `height: min(clamp(320px, 50vh, 480px), calc(100vh - 260px))`
@@ -95,10 +95,10 @@ is-hidden" aria-labelledby="analysisTitle">` plus an sr-only `<h2>`
   (2086-2095).
 - Renderers build DOM with `createElement`/`textContent` (XSS-safe): summary
   stats (643-679), scenario cards (681-720), value bands (722-753), Kelly curve
-    - metric badges (755-1034), belief state (1036-1135), evidence timeline
-      (1137-1255), predictions (1270-1344), decision journal (1346-1397), context
-      strip (1401-1435), sandbox rows (1471-1495), MC metrics + canvases
-      (1569-1694).
+  and metric badges (755-1034), belief state (1036-1135), evidence timeline
+  (1137-1255), predictions (1270-1344), decision journal (1346-1397), context
+  strip (1401-1435), sandbox rows (1471-1495), MC metrics and canvases
+  (1569-1694).
 - Two canvases, both fixed `width="600" height="200"` with **no role/aria
   attributes** (lines 90, 98) — contrast `#runningAmountCanvas`
   `role="img" aria-label` (`terminal/index.html:181-185`).
@@ -111,8 +111,8 @@ is-hidden" aria-labelledby="analysisTitle">` plus an sr-only `<h2>`
 
 ### Scrollback snapshots (`js/transactions/terminal/handlers/analysis.js`)
 
-- One generic line for all seven function views: `Showing analysis '<func>' —
-SYM, price X, EPS Y, vol Z%, Ny horizon.` (49-69). Pinned by tests
+- One generic line for all seven function views: `Showing analysis '<func>' — SYM, price X, EPS Y, vol Z%, Ny horizon.`
+  (49-69). Pinned by tests
   (`tests/js/transactions/terminal/handlers/analysis.test.js:60-89`).
 - MC prints VaR/CVaR (102-106); sandbox prints posteriors (109-117); ticker
   switch prints `Analysis context: SYM.` (158-168); bare `analysis` prints the
@@ -354,8 +354,8 @@ in the existing handler-test shape
 
 ### State design — loading, error, empty
 
-empty/placeholder text — replaces the seven ad-hoc inline variants (G9).
-
+- One shared `.pane-empty` class (muted, 12px, no inline styles) for all
+  empty/placeholder text — replaces the seven ad-hoc inline variants (G9).
 - Loading: `Loading analysis data…` in the stage (not just the summary block);
   remove the hardcoded white/red (lab.js:2124-2141) in favor of
   `--text-muted`/`--red-color` classes.
@@ -479,9 +479,10 @@ final legibility is a human-review item.
   is computed against modeled composites of the actual background photo; the
   Chromium refraction lens, WebGL overlay, and canvas-2D overlay
   (`docs/liquid-glass.md:34-41`) shift the effective background in ways I
-  cannot see. Verify with `make screenshot URL=/terminal/ ARGS='--type
-"analysis kelly"'` (the `--type` mechanism runs a real command,
-  `docs/liquid-glass.md:118-126`) and human eyes.
+  cannot see. Verify with
+  `make screenshot URL=/terminal/ ARGS='--type "analysis kelly"'` (the `--type`
+  mechanism runs a real command, `docs/liquid-glass.md:118-126`) and human
+  eyes.
 - **Whether the two-canvas MC split reads better than the overlay** — proposed
   on information-design grounds (two unrelated encodings share one coordinate
   system today), but the visual call is the owner's.
