@@ -124,6 +124,14 @@ days by `isTradingDay`.
   _live_ prices via `latestTrade`; for a completed-session baseline it is
   pure poison. The default feed keeps the daily bars regular-session, which
   the session-date selection handles in every window.
+- **Alpaca and yfinance disagree on the same official close by cents** —
+  verified 2026-10-14: Alpaca's 2026-10-13 closes were VT 159.73 / GOOG 349.60
+  where yfinance (and the TWRR parquet) had 159.76 / 349.52. Fetch priority
+  flips with run time (yfinance-first 04:00-20:00 ET, Alpaca-first overnight),
+  so the committed baseline's provider depends on when the run landed.
+  Negligible at cent scale, but it makes a same-evening rerun non-idempotent
+  and can move the /position/ day-change by a tick; if that column ever looks
+  off by a few cents, check which provider wrote the baseline.
 - After-hours the live quote ≈ the baseline, so the day change reads ~0 / the
   pure after-hours drift by design.
 - The previous `prev_close.json` sidecar was removed (2026-09-09): written
@@ -167,3 +175,16 @@ The bots commit `data/`, so use git forensics: `git log --oneline --
 data/historical_prices.parquet`, then `git show <rev>:<file>` and diff the
 same logical record (one date, one ticker) across revisions. When a value
 changed tells you which step; which tickers changed tells you why.
+
+To test whether a rerun changes the data (an idempotency question), don't
+reason from the code — exercise it. Back up first (`cp -a data
+/tmp/data_backup`), rerun the workflow steps (`venv/bin/python
+scripts/data/update_fund_data.py`, `venv/bin/python
+scripts/pnl/update_daily_pnl.py`, `make twrr-refresh`), inspect `git status
+--porcelain data/`, and compare parquet contents against HEAD with
+`git show HEAD:<path>` piped through `pd.read_parquet(io.BytesIO(...))`.
+Restore with `rm -rf data && cp -a /tmp/data_backup data` — never
+`git checkout -- data/` (AGENTS.md non-negotiable 11: concurrent agents share
+the worktree). As of 2026-10-14 the pipeline is **not** idempotent: a rerun
+rewrites `fund_data.json` (provider flip, see above), re-adjusts history, and
+restamps `generated_at` metadata.

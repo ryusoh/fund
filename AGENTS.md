@@ -415,6 +415,13 @@ files as the only source of truth.
   `js/transactions/terminal/handlers/help.js`: `transaction` toggles the table,
   `plot` needs a subcommand, `all` only clears filters.) Guessing here has twice
   cost a correction round-trip.
+  The same applies to **operational properties**: never claim a workflow or
+  pipeline is idempotent / a no-op / safe to rerun without actually rerunning it
+  and diffing the artifacts — the TWRR pipeline "should have found no changes"
+  but rewrote 21 data files when actually rerun (2026-10-14).
+- **A bare affirmative (`ok`, `yes`, `sure`) answering your own offer is
+  acceptance.** If you ended your last message with "want me to X?" / "say the
+  word", a bare `ok` IS the word — do X, don't close out the task.
 - **Externalized state & transaction boundaries (State-Oriented Architecture & SDN Control Plane).**
   On multi-step workflows (action-item sweeps, TDD loops, bug diagnosis), never rely on
   conversation memory as an execution ledger ($P = p^N$ failure). Follow Arista EOS's
