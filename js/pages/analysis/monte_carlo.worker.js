@@ -13,6 +13,10 @@ export function initWorker(selfContext) {
             const result = runSimulation(payload);
             selfContext.postMessage({ type: 'SIMULATION_COMPLETE', result });
         }
+        if (type === 'RUN_PATH_SIMULATION') {
+            const result = runPathSimulation(payload);
+            selfContext.postMessage({ type: 'PATH_SIMULATION_COMPLETE', result });
+        }
     };
 }
 
@@ -160,6 +164,144 @@ function runSimulation(config) {
         histogram,
         paths: terminalValues, // Optional: send back all paths if needed for scatter plot
     };
+}
+
+function percentileOf(sorted, q) {
+    return sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * q))];
+}
+
+// Draws the path's terminal anchors with rho = 0.4 correlated shocks. Owns
+// the first three RNG draws of a path (pickScenario runs before this).
+function drawPathAnchors(scenario, config, volatility, horizon) {
+    const epsSigma = scenario.growth.epsCagrSigma || volatility * 0.5;
+    const peSigma = scenario.valuation.exitPeSigma || volatility * 0.5;
+    const GROWTH_PE_CORR = 0.4;
+    const zGrowth = normalSample(0, 1);
+    const zPe = GROWTH_PE_CORR * zGrowth + Math.sqrt(1 - GROWTH_PE_CORR ** 2) * normalSample(0, 1);
+    const sampledCagr = scenario.growth.epsCagr + (zGrowth * epsSigma) / Math.sqrt(horizon);
+    const sampledPe = scenario.valuation.exitPe + zPe * peSigma;
+    const terminalEps = config.eps * Math.pow(1 + sampledCagr, horizon);
+    const terminalPrice = terminalEps * Math.max(1, sampledPe);
+    return { sampledCagr, sampledPe, terminalPrice };
+}
+
+// Brownian bridge around the fundamental path, pinned to the terminal draw.
+// Consumes one normal per year in order (the remaining RNG draws of a path).
+function simulateBridgedYears(config, anchors, T, volatility, fGrid, riskFreeRate) {
+    const pe0 = config.price > 0 && config.eps > 0 ? config.price / config.eps : anchors.sampledPe;
+    const epsSteps = [];
+    for (let t = 1; t <= T; t++) {
+        epsSteps.push(normalSample(0, volatility));
+    }
+    const wTotal = epsSteps.reduce((sum, e) => sum + e, 0);
+    let wRunning = 0;
+    let prevPrice = config.price > 0 ? config.price : anchors.terminalPrice;
+    let peak = prevPrice;
+    let maxDd = 0;
+    const yearlyPrices = [];
+    const wealthByGrid = fGrid.map(() => 1);
+    const peakByGrid = fGrid.map(() => 1);
+    const ddByGrid = fGrid.map(() => 0);
+    for (let t = 1; t <= T; t++) {
+        wRunning += epsSteps[t - 1];
+        const peT = Math.pow(pe0, 1 - t / T) * Math.pow(Math.max(1, anchors.sampledPe), t / T);
+        const vT = config.eps * Math.pow(1 + anchors.sampledCagr, t) * peT;
+        const priceT = vT * Math.exp(wRunning - (t / T) * wTotal);
+        yearlyPrices.push(priceT);
+        const rT = prevPrice > 0 ? priceT / prevPrice - 1 : 0;
+        if (priceT > peak) {
+            peak = priceT;
+        }
+        const dd = peak > 0 ? 1 - priceT / peak : 0;
+        if (dd > maxDd) {
+            maxDd = dd;
+        }
+        for (let g = 0; g < fGrid.length; g++) {
+            const f = fGrid[g];
+            wealthByGrid[g] *= 1 + riskFreeRate + f * (rT - riskFreeRate);
+            if (wealthByGrid[g] > peakByGrid[g]) {
+                peakByGrid[g] = wealthByGrid[g];
+            }
+            const ddG = peakByGrid[g] > 0 ? 1 - wealthByGrid[g] / peakByGrid[g] : 0;
+            if (ddG > ddByGrid[g]) {
+                ddByGrid[g] = ddG;
+            }
+        }
+        prevPrice = priceT;
+    }
+    return { yearlyPrices, maxDd, ddByGrid };
+}
+
+function summarizePathRuns(terminalValues, yearlyPrices, maxDrawdowns, exceedCounts, fGrid, paths) {
+    terminalValues.sort((a, b) => a - b);
+    const annualFan = yearlyPrices.map((values, idx) => {
+        const sorted = [...values].sort((a, b) => a - b);
+        return {
+            t: idx + 1,
+            year: idx + 1,
+            median: percentileOf(sorted, 0.5),
+            p5: percentileOf(sorted, 0.05),
+            p25: percentileOf(sorted, 0.25),
+            p75: percentileOf(sorted, 0.75),
+            p95: percentileOf(sorted, 0.95),
+        };
+    });
+    const sortedDd = [...maxDrawdowns].sort((a, b) => a - b);
+
+    return {
+        terminalValues,
+        annualFan,
+        maxDrawdown: {
+            mean: maxDrawdowns.reduce((sum, v) => sum + v, 0) / paths,
+            p50: percentileOf(sortedDd, 0.5),
+            p80: percentileOf(sortedDd, 0.8),
+            p95: percentileOf(sortedDd, 0.95),
+        },
+        exceedance: fGrid.map((f, g) => ({ f, prob: exceedCounts[g] / paths })),
+        runCount: paths,
+        asOf: new Date().toISOString(),
+    };
+}
+
+function runPathSimulation(config) {
+    const { scenarios, volatility, horizon, paths = 10000, riskFreeRate = 0 } = config;
+    const fGrid = Array.isArray(config.fGrid) ? config.fGrid : [];
+    const maxDrawdownLevel = Number(config.maxDrawdown) > 0 ? Number(config.maxDrawdown) : 0.3;
+
+    if (!scenarios.length || scenarios.some((s) => !s.growth || !s.valuation)) {
+        return { error: 'Scenario data lacks growth/valuation blocks' };
+    }
+
+    const T = Math.max(1, Math.round(horizon));
+    const terminalValues = [];
+    const yearlyPrices = Array.from({ length: T }, () => []);
+    const maxDrawdowns = [];
+    const exceedCounts = fGrid.map(() => 0);
+
+    // RNG call order per path is pinned by tests: pickScenario, zGrowth,
+    // zPe, then one normal per year in order.
+    for (let i = 0; i < paths; i++) {
+        const scenario = pickScenario(scenarios);
+        const anchors = drawPathAnchors(scenario, config, volatility, horizon);
+        terminalValues.push(anchors.terminalPrice);
+        const pathRun = simulateBridgedYears(config, anchors, T, volatility, fGrid, riskFreeRate);
+        pathRun.yearlyPrices.forEach((priceT, idx) => yearlyPrices[idx].push(priceT));
+        maxDrawdowns.push(pathRun.maxDd);
+        for (let g = 0; g < fGrid.length; g++) {
+            if (pathRun.ddByGrid[g] > maxDrawdownLevel) {
+                exceedCounts[g]++;
+            }
+        }
+    }
+
+    return summarizePathRuns(
+        terminalValues,
+        yearlyPrices,
+        maxDrawdowns,
+        exceedCounts,
+        fGrid,
+        paths
+    );
 }
 
 function secureRandom() {

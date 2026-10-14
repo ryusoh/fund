@@ -98,6 +98,53 @@ describe('monte_carlo.worker', () => {
         expect(result.mean).toBeCloseTo(123.8928, 3);
     });
 
+    it('simulates bridged annual paths with drawdown stats', () => {
+        const queue = [];
+        for (let p = 0; p < 10; p++) {
+            queue.push(0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0, 0.5, 0.5);
+        }
+        let call = 0;
+        global.self.crypto.getRandomValues.mockImplementation((array) => {
+            array[0] = Math.floor(queue[call % queue.length] * (0xffffffff + 1));
+            call++;
+            return array;
+        });
+
+        const payload = {
+            scenarios: [
+                {
+                    prob: 1,
+                    growth: { epsCagr: 0.1, epsCagrSigma: 0.05 },
+                    valuation: { exitPe: 15, exitPeSigma: 2 },
+                },
+            ],
+            volatility: 0.2,
+            horizon: 2,
+            paths: 10,
+            eps: 10,
+            price: 100,
+            riskFreeRate: 0,
+            fGrid: [0, 1, 2],
+            maxDrawdown: 0.05,
+        };
+
+        global.self.onmessage({ data: { type: 'RUN_PATH_SIMULATION', payload } });
+
+        const msg = mockPostMessage.mock.calls[0][0];
+        expect(msg.type).toBe('PATH_SIMULATION_COMPLETE');
+        const result = msg.result;
+        // All paths identical: bridge lands on the perturbed terminal price.
+        expect(result.terminalValues[0]).toBeCloseTo(133.2963, 3);
+        expect(result.annualFan[0].median).toBeCloseTo(146.1092, 3);
+        expect(result.annualFan[1].median).toBeCloseTo(133.2963, 3);
+        expect(result.maxDrawdown.mean).toBeCloseTo(0.087694, 4);
+        expect(result.exceedance).toEqual([
+            { f: 0, prob: 0 },
+            { f: 1, prob: 1 },
+            { f: 2, prob: 1 },
+        ]);
+    });
+
     it('returns an error for scenarios missing growth/valuation blocks (PORT view)', () => {
         const payload = {
             scenarios: [{ prob: 1.0, precomputedCagr: 0.1 }],
