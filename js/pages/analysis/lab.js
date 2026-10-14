@@ -582,6 +582,145 @@ function computeScenarioOutcome(scenario, { price, eps, horizon }) {
     );
 }
 
+const DEFAULT_RISK_FREE_RATE = 0.04;
+const KELLY_FRACTION_CAP = 10;
+
+function getRiskFreeRate(preferences) {
+    const raw = Number(preferences?.riskFreeRate);
+    return Number.isFinite(raw) ? raw : DEFAULT_RISK_FREE_RATE;
+}
+
+function buildKellyReturns(outcomes) {
+    if (!Array.isArray(outcomes)) {
+        return [];
+    }
+    const valid = outcomes.filter(
+        (outcome) => outcome.prob > 0 && Number.isFinite(outcome.priceCagr)
+    );
+    const totalProb = valid.reduce((sum, outcome) => sum + outcome.prob, 0);
+    if (!(totalProb > 0)) {
+        return [];
+    }
+    return valid.map((outcome) => ({
+        prob: outcome.prob / totalProb,
+        ret: outcome.priceCagr,
+    }));
+}
+
+function kellyLogGrowth(f, kellyReturns, riskFreeRate) {
+    let sum = 0;
+    for (let i = 0; i < kellyReturns.length; i++) {
+        const { prob, ret } = kellyReturns[i];
+        const wealth = 1 + riskFreeRate + f * (ret - riskFreeRate);
+        if (wealth <= 0) {
+            return -Infinity;
+        }
+        sum += prob * Math.log(wealth);
+    }
+    return sum;
+}
+
+function kellyGrowthDerivative(f, kellyReturns, riskFreeRate) {
+    let sum = 0;
+    for (let i = 0; i < kellyReturns.length; i++) {
+        const { prob, ret } = kellyReturns[i];
+        const excess = ret - riskFreeRate;
+        const wealth = 1 + riskFreeRate + f * excess;
+        if (wealth <= 0) {
+            return -Infinity;
+        }
+        sum += (prob * excess) / wealth;
+    }
+    return sum;
+}
+
+function kellyMaxFraction(kellyReturns, riskFreeRate) {
+    let fMax = Infinity;
+    for (let i = 0; i < kellyReturns.length; i++) {
+        const excess = kellyReturns[i].ret - riskFreeRate;
+        if (excess < 0) {
+            fMax = Math.min(fMax, (1 + riskFreeRate) / -excess);
+        }
+    }
+    return fMax;
+}
+
+function solveKellyFraction(kellyReturns, riskFreeRate) {
+    if (!kellyReturns.length) {
+        return 0;
+    }
+    if (kellyGrowthDerivative(0, kellyReturns, riskFreeRate) <= 0) {
+        return 0;
+    }
+    const fMax = kellyMaxFraction(kellyReturns, riskFreeRate);
+    if (!Number.isFinite(fMax)) {
+        return KELLY_FRACTION_CAP;
+    }
+    let lo = 0;
+    let hi = fMax * (1 - 1e-9);
+    for (let i = 0; i < 80; i++) {
+        const mid = (lo + hi) / 2;
+        if (kellyGrowthDerivative(mid, kellyReturns, riskFreeRate) > 0) {
+            lo = mid;
+        } else {
+            hi = mid;
+        }
+    }
+    return (lo + hi) / 2;
+}
+
+function solveZeroGrowthFraction(kellyReturns, riskFreeRate, fullKelly) {
+    if (!kellyReturns.length || !(fullKelly > 0)) {
+        return null;
+    }
+    const baseline = Math.log(1 + riskFreeRate);
+    const fMax = kellyMaxFraction(kellyReturns, riskFreeRate);
+    const hiBound = Number.isFinite(fMax) ? fMax * (1 - 1e-9) : KELLY_FRACTION_CAP;
+    if (kellyLogGrowth(hiBound, kellyReturns, riskFreeRate) >= baseline) {
+        return null;
+    }
+    let lo = fullKelly;
+    let hi = hiBound;
+    for (let i = 0; i < 80; i++) {
+        const mid = (lo + hi) / 2;
+        if (kellyLogGrowth(mid, kellyReturns, riskFreeRate) > baseline) {
+            lo = mid;
+        } else {
+            hi = mid;
+        }
+    }
+    return (lo + hi) / 2;
+}
+
+function computeGeometricCagr(kellyReturns) {
+    if (!kellyReturns.length) {
+        return null;
+    }
+    let sum = 0;
+    for (let i = 0; i < kellyReturns.length; i++) {
+        if (kellyReturns[i].ret <= -1) {
+            return -1;
+        }
+        sum += kellyReturns[i].prob * Math.log(1 + kellyReturns[i].ret);
+    }
+    return Math.exp(sum) - 1;
+}
+
+function computeScenarioVolatility(kellyReturns) {
+    if (!kellyReturns.length) {
+        return null;
+    }
+    let mean = 0;
+    for (let i = 0; i < kellyReturns.length; i++) {
+        mean += kellyReturns[i].prob * kellyReturns[i].ret;
+    }
+    let variance = 0;
+    for (let i = 0; i < kellyReturns.length; i++) {
+        variance += kellyReturns[i].prob * (kellyReturns[i].ret - mean) ** 2;
+    }
+    return Math.sqrt(variance);
+}
+
 function computeMetrics(config) {
     const preferences = getPreferences(config);
     const market = config.market || {};
@@ -610,9 +749,14 @@ function computeMetrics(config) {
     }
     const expectedCagr = expectedMultiple > 0 ? expectedMultiple ** (1 / horizon) - 1 : 0;
     const edge = expectedCagr - benchmark;
-    const variance = volatility ** 2;
-    const fullKelly = variance > 0 ? edge / variance : 0;
+    const riskFreeRate = getRiskFreeRate(preferences);
+    const kellyReturns = buildKellyReturns(outcomes);
+    const fullKelly = solveKellyFraction(kellyReturns, riskFreeRate);
     const scaledKelly = fullKelly * kellyScale;
+    const geometricCagr = computeGeometricCagr(kellyReturns);
+    const scenarioVolatility = computeScenarioVolatility(kellyReturns);
+    const maxKellyFraction = kellyMaxFraction(kellyReturns, riskFreeRate);
+    const zeroGrowthFraction = solveZeroGrowthFraction(kellyReturns, riskFreeRate, fullKelly);
     const expectedTerminalPrice = expectedMultiple * price;
     const entryPriceForTarget =
         targetCagr > -1 && price > 0 ? expectedTerminalPrice / (1 + targetCagr) ** horizon : 0;
@@ -621,9 +765,15 @@ function computeMetrics(config) {
         outcomes,
         expectedMultiple,
         expectedCagr,
+        geometricCagr,
         edge,
         fullKelly,
         scaledKelly,
+        scenarioVolatility,
+        riskFreeRate,
+        kellyReturns,
+        kellyMaxFraction: maxKellyFraction,
+        zeroGrowthFraction,
         expectedTerminalPrice,
         entryPriceForTarget,
         price,
@@ -662,6 +812,12 @@ function renderSummary(config) {
 
     [
         { label: 'Expected CAGR', value: formatPercent(metrics.expectedCagr) },
+        {
+            label: 'Geo CAGR',
+            value: Number.isFinite(metrics.geometricCagr)
+                ? formatPercent(metrics.geometricCagr)
+                : 'n/a',
+        },
         { label: edgeLabel, value: formatPercent(metrics.edge) },
         { label: 'Full Kelly', value: formatPercent(metrics.fullKelly) },
         { label: 'Scaled Kelly', value: formatPercent(metrics.scaledKelly) },
@@ -848,6 +1004,21 @@ function updateKellyMetricsBadges(
     targetEl.appendChild(createBadge('Full Kelly', formatPercent(fullKelly)));
     targetEl.appendChild(createBadge('Scaled (½K)', formatPercent(scaledKelly), true));
     targetEl.appendChild(createBadge('Current Weight', formatPercent(currentWeight)));
+    if (Number.isFinite(metrics.riskFreeRate)) {
+        targetEl.appendChild(createBadge('Rf', formatPercent(metrics.riskFreeRate)));
+    }
+    if (
+        Number.isFinite(metrics.scenarioVolatility) &&
+        Number.isFinite(metrics.volatility) &&
+        metrics.volatility > 0
+    ) {
+        targetEl.appendChild(
+            createBadge(
+                'σ Scen/Input',
+                `${formatPercent(metrics.scenarioVolatility)} / ${formatPercent(metrics.volatility)}`
+            )
+        );
+    }
     if (config.symbol === 'PORT' && metrics.covarianceRatio) {
         targetEl.appendChild(
             createBadge(
@@ -869,7 +1040,9 @@ function drawAllKellyMarkers(
     g,
     padTop,
     plotH,
-    width
+    width,
+    zeroGrowthFraction,
+    hasExactCurve
 ) {
     if (fullKelly > 0) {
         drawKellyMarker(
@@ -914,20 +1087,30 @@ function drawAllKellyMarkers(
             'Full K',
             true
         );
-        drawKellyMarker(
-            ctx,
-            fullKelly * 2,
-            maxF,
-            toX,
-            toY,
-            g,
-            padTop,
-            plotH,
-            width,
-            PANE_CHART_COLORS.red,
-            '2x K (0 Growth)',
-            true
-        );
+        let zeroGrowthF = null;
+        let zeroGrowthLabel = '0 Growth';
+        if (Number.isFinite(zeroGrowthFraction)) {
+            zeroGrowthF = zeroGrowthFraction;
+        } else if (!hasExactCurve) {
+            zeroGrowthF = fullKelly * 2;
+            zeroGrowthLabel = '2x K (0 Growth)';
+        }
+        if (zeroGrowthF !== null) {
+            drawKellyMarker(
+                ctx,
+                zeroGrowthF,
+                maxF,
+                toX,
+                toY,
+                g,
+                padTop,
+                plotH,
+                width,
+                PANE_CHART_COLORS.red,
+                zeroGrowthLabel,
+                true
+            );
+        }
     }
     if (currentWeight > 0) {
         drawKellyMarker(
@@ -946,22 +1129,49 @@ function drawAllKellyMarkers(
     }
 }
 
+function buildKellyGrowthCurve(metrics, edge, variance) {
+    const kellyReturns = Array.isArray(metrics.kellyReturns) ? metrics.kellyReturns : null;
+    const hasExactCurve = !!(kellyReturns && kellyReturns.length);
+    const riskFreeRate = Number.isFinite(metrics.riskFreeRate)
+        ? metrics.riskFreeRate
+        : DEFAULT_RISK_FREE_RATE;
+    const r = hasExactCurve ? riskFreeRate : metrics.benchmark || 0.065;
+    const g = hasExactCurve
+        ? (f) => Math.exp(kellyLogGrowth(f, kellyReturns, riskFreeRate)) - 1
+        : (f) => r + f * edge - 0.5 * f * f * variance;
+    return { r, g, hasExactCurve };
+}
+
+function resolveKellyMaxF(fullKelly, metrics, hasExactCurve) {
+    const baseMaxF = fullKelly > 0 ? fullKelly * 2.4 : 0.6;
+    let maxF = Math.max(0.4, baseMaxF);
+    if (hasExactCurve && Number.isFinite(metrics.zeroGrowthFraction)) {
+        maxF = Math.min(maxF, metrics.zeroGrowthFraction * 1.2);
+    }
+    if (hasExactCurve && Number.isFinite(metrics.kellyMaxFraction)) {
+        maxF = Math.min(maxF, metrics.kellyMaxFraction * 0.999);
+    }
+    return maxF;
+}
+
 function computeKellyParameters(config, metrics) {
     const edge = metrics.edge || 0;
     const volatility = metrics.volatility || 0.3;
     const variance = volatility ** 2;
-    const fullKelly = metrics.fullKelly || (variance > 0 ? edge / variance : 0);
-    const scaledKelly = metrics.scaledKelly || fullKelly * (metrics.kellyScale || 0.5);
+    const fallbackKelly = variance > 0 ? edge / variance : 0;
+    const fullKelly = Number.isFinite(metrics.fullKelly) ? metrics.fullKelly : fallbackKelly;
+    const scaledKelly = Number.isFinite(metrics.scaledKelly)
+        ? metrics.scaledKelly
+        : fullKelly * (metrics.kellyScale || 0.5);
     const currentWeight =
         config.position && Number.isFinite(config.position.currentWeight)
             ? config.position.currentWeight
             : config.weight || 0;
 
-    const maxF = Math.max(0.4, fullKelly > 0 ? fullKelly * 2.4 : 0.6);
-    const r = metrics.benchmark || 0.065;
-    const g = (f) => r + f * edge - 0.5 * f * f * variance;
+    const { r, g, hasExactCurve } = buildKellyGrowthCurve(metrics, edge, variance);
+    const maxF = resolveKellyMaxF(fullKelly, metrics, hasExactCurve);
     const peakG = g(fullKelly > 0 ? fullKelly : 0);
-    const minG = Math.min(r - 0.05, g(maxF));
+    const minG = Math.min(r - 0.05, Math.max(g(maxF), r - 0.75));
     const rangeG = Math.max(0.05, peakG - minG);
 
     return {
@@ -973,6 +1183,10 @@ function computeKellyParameters(config, metrics) {
         g,
         minG,
         rangeG,
+        zeroGrowthFraction: Number.isFinite(metrics.zeroGrowthFraction)
+            ? metrics.zeroGrowthFraction
+            : null,
+        hasExactCurve,
     };
 }
 
@@ -1019,7 +1233,9 @@ function renderKellyCurve(config) {
             params.g,
             padTop,
             plotH,
-            width
+            width,
+            params.zeroGrowthFraction,
+            params.hasExactCurve
         );
     }
 
@@ -1796,6 +2012,10 @@ function _normalizeModelPreferences(preferences, legacyManual) {
         preferences.targetCagr ?? legacyManual.targetCagr,
         0.1
     );
+    preferences.riskFreeRate = _normalizeNumber(
+        preferences.riskFreeRate ?? legacyManual.riskFreeRate,
+        DEFAULT_RISK_FREE_RATE
+    );
 
     const benchmarkSource =
         preferences.benchmark !== undefined
@@ -1939,6 +2159,9 @@ function buildPortfolioConfig(configs) {
     const benchmarkValue = weighted((cfg) => getBenchmarkDescriptor(getPreferences(cfg)).value);
     const kellyScale = weighted((cfg) => getPreferences(cfg).kellyScale ?? 0.5);
     const targetCagr = weighted((cfg) => getPreferences(cfg).targetCagr ?? 0.1);
+    const riskFreeRate = weighted(
+        (cfg) => getPreferences(cfg).riskFreeRate ?? DEFAULT_RISK_FREE_RATE
+    );
 
     const covResult = computePortfolioCovarianceVolatility(configs);
     const volatility = covResult.volatility;
@@ -1965,6 +2188,7 @@ function buildPortfolioConfig(configs) {
             },
             kellyScale,
             targetCagr,
+            riskFreeRate,
             overrides,
         },
     };
@@ -2164,6 +2388,13 @@ if (typeof document !== 'undefined') {
 export const __analysisLabTesting = {
     normalizeScenario,
     computeScenarioOutcome,
+    computeMetrics,
+    solveKellyFraction,
+    solveZeroGrowthFraction,
+    computeGeometricCagr,
+    computeScenarioVolatility,
+    kellyLogGrowth,
+    kellyGrowthDerivative,
     aggregateScenarios,
     extractScenarioTitles,
     renderBayesOutput,

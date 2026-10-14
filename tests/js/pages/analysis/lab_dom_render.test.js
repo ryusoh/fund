@@ -92,10 +92,12 @@ describe('analysis lab pane rendering', () => {
         lab.setActiveAnalysisSymbol('PORT');
         let summaryStats = document.getElementById('summaryStats');
         expect(summaryStats.textContent).toContain('Price');
+        expect(summaryStats.textContent).toContain('Geo CAGR');
 
         lab.setActiveAnalysisSymbol('AAPL');
         summaryStats = document.getElementById('summaryStats');
         expect(summaryStats.textContent).toContain('Price');
+        expect(summaryStats.textContent).toContain('Geo CAGR');
 
         // Test the empty configs scenario by clearing state and re-rendering
         lab.__analysisLabTesting.state.configs = [];

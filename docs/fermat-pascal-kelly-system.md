@@ -40,12 +40,14 @@ Build a reusable analysis engine that:
 ### 1.3 Expected Return vs Benchmark
 
 - Expected multiple = Σ(probability × scenario multiple).
-- Expected CAGR = expected multiple<sup>1/T</sup> - 1.
+- Expected CAGR (arithmetic) = expected multiple<sup>1/T</sup> - 1 — expected terminal wealth; overstates achievable growth under uncertainty (Jensen's inequality).
+- Geometric expected CAGR = exp(Σ probability × ln scenario multiple)<sup>1/T</sup> - 1 — the long-run growth rate Kelly actually maximizes (~median outcome); reported alongside the arithmetic figure.
 - Benchmark CAGR (e.g., 6.5%) defines a baseline; difference versus expected CAGR is the “edge”.
 
 ### 1.4 Kelly Criterion
 
-- Approximate full-Kelly fraction f<sub>full</sub> ≈ edge / variance.
+- Exact discrete Kelly over the scenario set: f<sub>full</sub> maximizes G(f) = Σ p<sub>i</sub> ln(1 + r<sub>f</sub> + f·(r<sub>i</sub> − r<sub>f</sub>)), where r<sub>i</sub> is the scenario's annualized return and r<sub>f</sub> the risk-free rate. Solved by bisection on the first-order condition Σ p<sub>i</sub>(r<sub>i</sub> − r<sub>f</sub>) / (1 + r<sub>f</sub> + f·(r<sub>i</sub> − r<sub>f</sub>)) = 0, subject to the feasibility bound f < (1 + r<sub>f</sub>) / (r<sub>f</sub> − r<sub>i</sub>) for every losing scenario; capped (10×) when all scenarios beat r<sub>f</sub>. Long-only: assets with no excess return over r<sub>f</sub> get f = 0 rather than a short signal.
+- The continuous approximation f ≈ excess return ÷ variance (Thorp 2006, §7) is retained only as a fallback when no scenario returns exist; its numerator is excess over the **risk-free rate**, not over a benchmark index.
 - Apply a risk-scaling factor (e.g., 0.5) for a practical allocation.
 
 ---
@@ -59,6 +61,7 @@ Build a reusable analysis engine that:
 - Current price & PE (or EPS).
 - Investment horizon <em>T</em>.
 - Benchmark annual return.
+- Risk-free rate (Kelly sizing numeraire; default 4%).
 - Annual volatility estimate.
 - Risk-scaling factor.
 
@@ -81,13 +84,16 @@ For each scenario compute:
 ### 2.3 Expected Return & Edge
 
 - Expected terminal multiple: Σ(probability × scenario multiple).
-- Expected CAGR: expected multiple<sup>1/T</sup> - 1.
-- Edge: expected CAGR − benchmark CAGR.
+- Expected CAGR (arithmetic): expected multiple<sup>1/T</sup> - 1.
+- Geometric expected CAGR: exp(Σ probability × ln multiple)<sup>1/T</sup> - 1.
+- Edge: expected CAGR − benchmark CAGR (display only; Kelly sizing uses the risk-free rate, §2.4).
 
 ### 2.4 Kelly Position Sizing
 
-- Variance ≈ volatility²; full Kelly = edge ÷ variance.
+- Full Kelly: exact discrete optimum over the scenario annualized returns versus the risk-free rate (see §1.4) — not edge ÷ variance, which is only the small-return approximation.
+- Scenario-implied σ (dispersion of the annualized scenario returns) is computed and displayed next to the volatility input as a consistency check; sizing uses the scenario distribution directly.
 - Adjusted Kelly = full Kelly × risk-scaling factor (practical position suggestion).
+- Zero-growth fraction (where G(f) falls back to r<sub>f</sub>) is solved numerically and marked on the Kelly curve.
 
 ### 2.5 Target Entry Price for Desired CAGR
 

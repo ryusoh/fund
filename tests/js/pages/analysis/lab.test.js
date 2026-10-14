@@ -92,6 +92,154 @@ describe('analysis lab data loading', () => {
         expect(baseScenario.precomputedEarningsCagr).toBeCloseTo(0.6 * 0.1 + 0.4 * 0.25, 5);
     });
 
+    describe('Kelly criterion math (Tier-A fixes)', () => {
+        function kellyConfig(overrides = {}) {
+            return {
+                market: { price: 100, eps: 10 },
+                model: {
+                    preferences: {
+                        horizon: 1,
+                        benchmark: 0.065,
+                        kellyScale: 0.5,
+                        riskFreeRate: 0,
+                    },
+                },
+                scenarios: [
+                    { id: 'bull', prob: 0.5, precomputedMultiple: 1.2 },
+                    { id: 'bear', prob: 0.5, precomputedMultiple: 0.9 },
+                ],
+                ...overrides,
+            };
+        }
+
+        it('solves exact discrete Kelly instead of the edge/variance approximation', async () => {
+            const { computeMetrics } = (await import('@pages/analysis/lab.js'))
+                .__analysisLabTesting;
+            const metrics = computeMetrics(kellyConfig());
+            // G(f) = 0.5·ln(1+0.2f) + 0.5·ln(1−0.1f) → FOC gives f* = 2.5
+            expect(metrics.fullKelly).toBeCloseTo(2.5, 3);
+            expect(metrics.scaledKelly).toBeCloseTo(1.25, 3);
+            expect(metrics.kellyMaxFraction).toBeCloseTo(10, 5);
+        });
+
+        it('reports geometric CAGR alongside the arithmetic expected CAGR', async () => {
+            const { computeMetrics } = (await import('@pages/analysis/lab.js'))
+                .__analysisLabTesting;
+            const metrics = computeMetrics(
+                kellyConfig({
+                    scenarios: [
+                        { id: 'bull', prob: 0.5, precomputedMultiple: 2 },
+                        { id: 'bear', prob: 0.5, precomputedMultiple: 0.5 },
+                    ],
+                })
+            );
+            expect(metrics.expectedCagr).toBeCloseTo(0.25, 6);
+            expect(metrics.geometricCagr).toBeCloseTo(Math.sqrt(2 * 0.5) - 1, 6);
+        });
+
+        it('returns zero Kelly when the risk-free rate beats the expected return', async () => {
+            const { computeMetrics } = (await import('@pages/analysis/lab.js'))
+                .__analysisLabTesting;
+            const metrics = computeMetrics(
+                kellyConfig({
+                    model: { preferences: { horizon: 1, kellyScale: 0.5, riskFreeRate: 0.06 } },
+                })
+            );
+            // E[r] = 0.05 < rf = 0.06 → no position
+            expect(metrics.fullKelly).toBe(0);
+            expect(metrics.scaledKelly).toBe(0);
+            expect(metrics.zeroGrowthFraction).toBeNull();
+        });
+
+        it('defaults the risk-free rate to 4% and sizes against it', async () => {
+            const { computeMetrics } = (await import('@pages/analysis/lab.js'))
+                .__analysisLabTesting;
+            const config = kellyConfig();
+            delete config.model.preferences.riskFreeRate;
+            const metrics = computeMetrics(config);
+            expect(metrics.riskFreeRate).toBeCloseTo(0.04, 10);
+            // FOC: 0.08(1.04−0.14f) = 0.07(1.04+0.16f) → f* ≈ 0.4643
+            expect(metrics.fullKelly).toBeCloseTo(0.4643, 3);
+        });
+
+        it('computes the scenario-implied volatility as a consistency check', async () => {
+            const { computeMetrics } = (await import('@pages/analysis/lab.js'))
+                .__analysisLabTesting;
+            const metrics = computeMetrics(kellyConfig());
+            // mean 0.05; var = 0.5·0.15² + 0.5·0.15² = 0.0225
+            expect(metrics.scenarioVolatility).toBeCloseTo(0.15, 6);
+        });
+
+        it('finds the zero-growth fraction where the exact curve returns to the risk-free rate', async () => {
+            const { computeMetrics } = (await import('@pages/analysis/lab.js'))
+                .__analysisLabTesting;
+            const metrics = computeMetrics(kellyConfig());
+            // (1+0.2f)(1−0.1f) = 1 → f = 5
+            expect(metrics.zeroGrowthFraction).toBeCloseTo(5, 3);
+        });
+
+        it('caps the Kelly fraction when no scenario loses to the risk-free rate', async () => {
+            const { computeMetrics } = (await import('@pages/analysis/lab.js'))
+                .__analysisLabTesting;
+            const metrics = computeMetrics(
+                kellyConfig({
+                    scenarios: [
+                        { id: 'bull', prob: 0.5, precomputedMultiple: 1.2 },
+                        { id: 'base', prob: 0.5, precomputedMultiple: 1.1 },
+                    ],
+                })
+            );
+            expect(metrics.kellyMaxFraction).toBe(Infinity);
+            expect(metrics.fullKelly).toBe(10);
+            expect(metrics.zeroGrowthFraction).toBeNull();
+        });
+
+        it('returns zero Kelly and null metrics when there are no scenarios', async () => {
+            const { computeMetrics } = (await import('@pages/analysis/lab.js'))
+                .__analysisLabTesting;
+            const metrics = computeMetrics(kellyConfig({ scenarios: [] }));
+            expect(metrics.fullKelly).toBe(0);
+            expect(metrics.geometricCagr).toBeNull();
+            expect(metrics.scenarioVolatility).toBeNull();
+            expect(metrics.kellyReturns).toEqual([]);
+        });
+
+        it('handles ruin scenarios without leaving the feasible region', async () => {
+            const {
+                computeGeometricCagr,
+                solveKellyFraction,
+                kellyLogGrowth,
+                kellyGrowthDerivative,
+            } = (await import('@pages/analysis/lab.js')).__analysisLabTesting;
+            expect(computeGeometricCagr([{ prob: 1, ret: -1 }])).toBe(-1);
+            const returns = [
+                { prob: 0.6, ret: 0.4 },
+                { prob: 0.4, ret: -0.5 },
+            ];
+            // FOC: 0.24(1−0.5f) = 0.2(1+0.4f) → f* = 0.2
+            expect(solveKellyFraction(returns, 0)).toBeCloseTo(0.2, 3);
+            expect(kellyLogGrowth(2, returns, 0)).toBe(-Infinity);
+            expect(kellyGrowthDerivative(2, returns, 0)).toBe(-Infinity);
+        });
+
+        it('normalizes riskFreeRate with a 4% default and preserves explicit values', async () => {
+            const { normalizeConfig } = (await import('@pages/analysis/lab.js'))
+                .__analysisLabTesting;
+            const defaulted = normalizeConfig({
+                symbol: 'X',
+                scenarios: [],
+                model: { preferences: {} },
+            });
+            expect(defaulted.model.preferences.riskFreeRate).toBe(0.04);
+            const explicit = normalizeConfig({
+                symbol: 'X',
+                scenarios: [],
+                model: { preferences: { riskFreeRate: 0.03 } },
+            });
+            expect(explicit.model.preferences.riskFreeRate).toBe(0.03);
+        });
+    });
+
     describe('fetchText', () => {
         it('fetches text successfully', async () => {
             // Arrange

@@ -157,6 +157,7 @@ describe('Analysis Lab Revival (WO-7 & WO-9)', () => {
             expect(portfolio.risk.correlations).toBe('calibrated-cross-asset');
             expect(portfolio.risk.volatility).toBeGreaterThan(portfolio.risk.volatilityZeroCorr);
             expect(portfolio.metrics.covarianceRatio).toBeGreaterThan(1.0);
+            expect(portfolio.model.preferences.riskFreeRate).toBeCloseTo(0.04);
         });
     });
 
@@ -188,6 +189,65 @@ describe('Analysis Lab Revival (WO-7 & WO-9)', () => {
             expect(kellyMetrics.textContent).toContain('Full Kelly');
             expect(kellyMetrics.textContent).toContain('Scaled (½K)');
             expect(kellyMetrics.textContent).toContain('Current Weight');
+        });
+
+        it('renders the exact scenario log-growth curve with Rf and sigma badges', async () => {
+            const { renderKellyCurve } = (await setupLab()).__analysisLabTesting;
+
+            const config = {
+                symbol: 'ANET',
+                weight: 0.05,
+                position: { currentWeight: 0.05 },
+                metrics: {
+                    edge: 0.05,
+                    volatility: 0.35,
+                    fullKelly: 2.5,
+                    scaledKelly: 1.25,
+                    kellyScale: 0.5,
+                    riskFreeRate: 0,
+                    kellyReturns: [
+                        { prob: 0.5, ret: 0.2 },
+                        { prob: 0.5, ret: -0.1 },
+                    ],
+                    kellyMaxFraction: 10,
+                    zeroGrowthFraction: 5,
+                    scenarioVolatility: 0.15,
+                },
+            };
+
+            renderKellyCurve(config);
+
+            expect(mockCtx.clearRect).toHaveBeenCalled();
+            expect(mockCtx.stroke).toHaveBeenCalled();
+
+            const kellyMetrics = document.getElementById('kellyMetrics');
+            expect(kellyMetrics.textContent).toContain('Full Kelly');
+            expect(kellyMetrics.textContent).toContain('Rf');
+            expect(kellyMetrics.textContent).toContain('σ Scen/Input');
+        });
+
+        it('skips the zero-growth marker when growth never falls back to the risk-free rate', async () => {
+            const { renderKellyCurve } = (await setupLab()).__analysisLabTesting;
+
+            const config = {
+                symbol: 'ANET',
+                weight: 0.05,
+                position: { currentWeight: 0.05 },
+                metrics: {
+                    fullKelly: 0.5,
+                    scaledKelly: 0.25,
+                    riskFreeRate: 0,
+                    kellyReturns: [{ prob: 1, ret: 0.2 }],
+                    kellyMaxFraction: Infinity,
+                    zeroGrowthFraction: null,
+                },
+            };
+
+            renderKellyCurve(config);
+
+            expect(mockCtx.stroke).toHaveBeenCalled();
+            const kellyMetrics = document.getElementById('kellyMetrics');
+            expect(kellyMetrics.textContent).toContain('Rf');
         });
     });
 
