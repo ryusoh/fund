@@ -721,6 +721,66 @@ function computeScenarioVolatility(kellyReturns) {
     return Math.sqrt(variance);
 }
 
+function resolveCurrentWeight(config) {
+    const raw = Number(config.position?.currentWeight ?? config.weight);
+    return Number.isFinite(raw) ? raw : 0;
+}
+
+function solveImpliedEdgeBelief(kellyReturns, riskFreeRate, fullKelly, currentWeight) {
+    if (!kellyReturns.length || !(fullKelly > 0) || !(currentWeight > 0)) {
+        return null;
+    }
+    if (currentWeight >= fullKelly) {
+        return 1;
+    }
+    const meanReturn = kellyReturns.reduce((sum, r) => sum + r.prob * r.ret, 0);
+    const meanExcess = meanReturn - riskFreeRate;
+    if (!(meanExcess > 0)) {
+        return null;
+    }
+    // f* falls monotonically as a uniform haircut δ on scenario returns grows
+    // from 0 to meanExcess; bisect for the δ where f* equals the position.
+    let lo = 0;
+    let hi = meanExcess;
+    for (let i = 0; i < 80; i++) {
+        const mid = (lo + hi) / 2;
+        const shifted = kellyReturns.map((r) => ({ prob: r.prob, ret: r.ret - mid }));
+        if (solveKellyFraction(shifted, riskFreeRate) > currentWeight) {
+            lo = mid;
+        } else {
+            hi = mid;
+        }
+    }
+    return 1 - (lo + hi) / 2 / meanExcess;
+}
+
+function computeKellyExtras(kellyReturns, riskFreeRate, fullKelly, scaledKelly, currentWeight) {
+    const baselineGrowth = Math.log(1 + riskFreeRate);
+    const growthAtFull =
+        fullKelly > 0 ? kellyLogGrowth(fullKelly, kellyReturns, riskFreeRate) : baselineGrowth;
+    const scaledGrowthRetention =
+        fullKelly > 0 && growthAtFull > baselineGrowth
+            ? (kellyLogGrowth(scaledKelly, kellyReturns, riskFreeRate) - baselineGrowth) /
+              (growthAtFull - baselineGrowth)
+            : null;
+    const meanReturn = kellyReturns.reduce((sum, r) => sum + r.prob * r.ret, 0);
+    const meanExcess = meanReturn - riskFreeRate;
+    const kellyAtHalfEdge =
+        meanExcess > 0
+            ? solveKellyFraction(
+                  kellyReturns.map((r) => ({ prob: r.prob, ret: r.ret - meanExcess / 2 })),
+                  riskFreeRate
+              )
+            : null;
+    const impliedEdgeBelief = solveImpliedEdgeBelief(
+        kellyReturns,
+        riskFreeRate,
+        fullKelly,
+        currentWeight
+    );
+    return { scaledGrowthRetention, kellyAtHalfEdge, impliedEdgeBelief };
+}
+
 function computeMetrics(config) {
     const preferences = getPreferences(config);
     const market = config.market || {};
@@ -757,6 +817,13 @@ function computeMetrics(config) {
     const scenarioVolatility = computeScenarioVolatility(kellyReturns);
     const maxKellyFraction = kellyMaxFraction(kellyReturns, riskFreeRate);
     const zeroGrowthFraction = solveZeroGrowthFraction(kellyReturns, riskFreeRate, fullKelly);
+    const kellyExtras = computeKellyExtras(
+        kellyReturns,
+        riskFreeRate,
+        fullKelly,
+        scaledKelly,
+        resolveCurrentWeight(config)
+    );
     const expectedTerminalPrice = expectedMultiple * price;
     const entryPriceForTarget =
         targetCagr > -1 && price > 0 ? expectedTerminalPrice / (1 + targetCagr) ** horizon : 0;
@@ -774,6 +841,9 @@ function computeMetrics(config) {
         kellyReturns,
         kellyMaxFraction: maxKellyFraction,
         zeroGrowthFraction,
+        scaledGrowthRetention: kellyExtras.scaledGrowthRetention,
+        kellyAtHalfEdge: kellyExtras.kellyAtHalfEdge,
+        impliedEdgeBelief: kellyExtras.impliedEdgeBelief,
         expectedTerminalPrice,
         entryPriceForTarget,
         price,
@@ -1017,6 +1087,22 @@ function updateKellyMetricsBadges(
                 'σ Scen/Input',
                 `${formatPercent(metrics.scenarioVolatility)} / ${formatPercent(metrics.volatility)}`
             )
+        );
+    }
+    if (Number.isFinite(metrics.scaledGrowthRetention)) {
+        targetEl.appendChild(
+            createBadge(
+                'Scaled Growth',
+                `${(metrics.scaledGrowthRetention * 100).toFixed(0)}% of max`
+            )
+        );
+    }
+    if (Number.isFinite(metrics.kellyAtHalfEdge)) {
+        targetEl.appendChild(createBadge('Half-Edge K', formatPercent(metrics.kellyAtHalfEdge)));
+    }
+    if (Number.isFinite(metrics.impliedEdgeBelief)) {
+        targetEl.appendChild(
+            createBadge('Implied Edge', `${(metrics.impliedEdgeBelief * 100).toFixed(0)}% of model`)
         );
     }
     if (config.symbol === 'PORT' && metrics.covarianceRatio) {

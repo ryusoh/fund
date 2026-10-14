@@ -222,6 +222,31 @@ describe('analysis lab data loading', () => {
             expect(kellyGrowthDerivative(2, returns, 0)).toBe(-Infinity);
         });
 
+        it('reports scaled-growth retention, half-edge Kelly, and implied belief', async () => {
+            const { computeMetrics } = (await import('@pages/analysis/lab.js'))
+                .__analysisLabTesting;
+            const metrics = computeMetrics(kellyConfig({ position: { currentWeight: 1.25 } }));
+            // G(1.25)/G(2.5) in log units ≈ 0.764 (half-Kelly keeps ~3/4 of growth)
+            expect(metrics.scaledGrowthRetention).toBeCloseTo(0.764, 2);
+            // mean haircut 0.025 → returns 0.175/-0.125 → f* = 0.05/0.04375
+            expect(metrics.kellyAtHalfEdge).toBeCloseTo(1.1429, 3);
+            // haircut δ with f*(δ) = 1.25 is 0.02288 → belief = 1 - δ/0.05 ≈ 0.542
+            expect(metrics.impliedEdgeBelief).toBeCloseTo(0.542, 2);
+        });
+
+        it('returns null robustness readouts when there is no edge or no position', async () => {
+            const { computeMetrics } = (await import('@pages/analysis/lab.js'))
+                .__analysisLabTesting;
+            const metrics = computeMetrics(
+                kellyConfig({
+                    model: { preferences: { horizon: 1, kellyScale: 0.5, riskFreeRate: 0.06 } },
+                })
+            );
+            expect(metrics.scaledGrowthRetention).toBeNull();
+            expect(metrics.kellyAtHalfEdge).toBeNull();
+            expect(metrics.impliedEdgeBelief).toBeNull();
+        });
+
         it('normalizes riskFreeRate with a 4% default and preserves explicit values', async () => {
             const { normalizeConfig } = (await import('@pages/analysis/lab.js'))
                 .__analysisLabTesting;

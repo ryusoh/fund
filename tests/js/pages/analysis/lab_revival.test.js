@@ -212,6 +212,9 @@ describe('Analysis Lab Revival (WO-7 & WO-9)', () => {
                     kellyMaxFraction: 10,
                     zeroGrowthFraction: 5,
                     scenarioVolatility: 0.15,
+                    scaledGrowthRetention: 0.76,
+                    kellyAtHalfEdge: 1.14,
+                    impliedEdgeBelief: 0.54,
                 },
             };
 
@@ -224,6 +227,9 @@ describe('Analysis Lab Revival (WO-7 & WO-9)', () => {
             expect(kellyMetrics.textContent).toContain('Full Kelly');
             expect(kellyMetrics.textContent).toContain('Rf');
             expect(kellyMetrics.textContent).toContain('σ Scen/Input');
+            expect(kellyMetrics.textContent).toContain('Scaled Growth');
+            expect(kellyMetrics.textContent).toContain('Half-Edge K');
+            expect(kellyMetrics.textContent).toContain('Implied Edge');
         });
 
         it('skips the zero-growth marker when growth never falls back to the risk-free rate', async () => {
