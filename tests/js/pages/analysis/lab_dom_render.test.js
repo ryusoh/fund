@@ -73,6 +73,13 @@ describe('analysis lab pane rendering', () => {
             if (u.includes('aapl.json')) {
                 return Promise.resolve({ ok: true, json: async () => mockAapl });
             }
+            if (u.includes('AAPL.evidence.jsonl')) {
+                return Promise.resolve({
+                    ok: true,
+                    text: async () =>
+                        '{"date": "2026-01-15", "claim": "FY print", "metric": "epsCagr", "observed": 0.2, "noise": 0.05}',
+                });
+            }
             if (u.includes('.md')) {
                 return Promise.resolve({ ok: true, text: async () => '' });
             }
@@ -98,6 +105,14 @@ describe('analysis lab pane rendering', () => {
         summaryStats = document.getElementById('summaryStats');
         expect(summaryStats.textContent).toContain('Price');
         expect(summaryStats.textContent).toContain('Geo CAGR');
+
+        // Evidence posterior applied at load: prior epsCagr 0 with fallback
+        // sigma 0.175 (default vol 0.35 x 0.5), observation 0.2 +/- 0.05.
+        // postVar = 1/(1/0.030625 + 1/0.0025) = 0.002311 -> mean 0.1849
+        const aaplConfig = lab.__analysisLabTesting.state.configs.find(
+            (cfg) => cfg.symbol === 'AAPL'
+        );
+        expect(aaplConfig.scenarios[0].growth.epsCagr).toBeCloseTo(0.1849, 3);
 
         // Test the empty configs scenario by clearing state and re-rendering
         lab.__analysisLabTesting.state.configs = [];

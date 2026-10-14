@@ -1,5 +1,5 @@
 /* global Worker */
-import { BayesianEngine } from './bayes.js';
+import { BayesianEngine, applyParameterPosteriors } from './bayes.js';
 import { logger } from '../../utils/logger.js';
 import {
     convertValueToCurrency,
@@ -2441,9 +2441,10 @@ async function buildConfigs() {
     const configs = await Promise.all(
         (analysisIndex.tickers || []).map(async (entry) => {
             try {
-                const [raw, thesisTitles] = await Promise.all([
+                const [raw, thesisTitles, evidenceText] = await Promise.all([
                     fetchJson(entry.path),
                     fetchThesisScenarioTitles(entry.symbol),
+                    fetchText(`../data/analysis/${entry.symbol}.evidence.jsonl`).catch(() => null),
                 ]);
                 const config = normalizeConfig(
                     { ...raw, symbol: raw.symbol || entry.symbol, name: raw.name || entry.name },
@@ -2452,6 +2453,15 @@ async function buildConfigs() {
                 config.symbol = entry.symbol;
                 config.name = raw.name || entry.name || entry.symbol;
                 applyThesisScenarioTitles(config, thesisTitles);
+                if (evidenceText) {
+                    const evidenceList = BayesianEngine.parseJsonl(evidenceText);
+                    state.evidenceCache.set(entry.symbol, evidenceList);
+                    config.scenarios = applyParameterPosteriors(
+                        config.scenarios,
+                        evidenceList,
+                        getEffectiveVolatility(config) * 0.5
+                    );
+                }
                 config.metrics = computeMetrics(config);
                 return config;
             } catch (error) {
