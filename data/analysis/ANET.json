@@ -3,7 +3,7 @@
     "name": "Arista Networks",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-10-14T02:41:18.467340+00:00",
+        "asOf": "2026-10-14T13:06:07.305728+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -38,14 +38,14 @@
         "currency": "USD",
         "fiftyTwoWeekHigh": 217.41,
         "fiftyTwoWeekLow": 114.52,
-        "marketDataUpdatedAt": "2026-10-14T02:41:17.344557+00:00",
+        "marketDataUpdatedAt": "2026-10-14T13:06:07.134150+00:00",
         "evToEbitda": 52.7206,
         "eps": 3.17,
         "price": 204.52,
-        "fiftyDayAverage": 198.4744,
-        "twoHundredDayAverage": 161.47,
-        "averageVolume": 6012420.0,
-        "averageDailyVolume10Day": 4584270.0,
+        "fiftyDayAverage": 198.867,
+        "twoHundredDayAverage": 161.8387,
+        "averageVolume": 6043181.0,
+        "averageDailyVolume10Day": 4927200.0,
         "pegRatio": 1.58,
         "dividendYield": 0.0
     },
