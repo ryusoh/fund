@@ -248,24 +248,401 @@ problems:
    that would make it optimal — a cheap, high-signal "what do I have to
    believe?" output.
 
-## Ranked action items
+## Action items
 
-| #   | Item                                                                       | Effort  | Why first                                    |
-| --- | -------------------------------------------------------------------------- | ------- | -------------------------------------------- |
-| 1   | Geometric expected CAGR alongside arithmetic (A1)                          | trivial | correctness of the headline number           |
-| 2   | Risk-free vs benchmark in Kelly numerator; document which sizing mode (A2) | trivial | positions are systematically mis-sized today |
-| 3   | Exact discrete Kelly + true G(f) curve in the Lab UI (A3)                  | low     | removes approximation error; better UI curve |
-| 4   | Scenario-implied σ consistency check (A4)                                  | low     | silent input contradiction                   |
-| 5   | Fix Omega definition (A5)                                                  | trivial | wrong statistic                              |
-| 6   | Fractional-Kelly tradeoff display + edge-sensitivity tornado (B1)          | low     | the practical case for the scaling factor    |
-| 7   | Drawdown-constraint input + sizing (B2)                                    | medium  | the real objective for a personal fund       |
-| 8   | Correlated MC perturbations + path simulation (B3)                         | medium  | left tail and drawdowns both depend on it    |
-| 9   | Tail scenario, dividends, exit-PE anchors (C1–C3)                          | low     | input hygiene                                |
-| 10  | Joint multi-asset scenarios + constraints (C4)                             | medium  | portfolio layer correctness                  |
-| 11  | Calibration wiring to Brier scoring (C7)                                   | low     | closes the feedback loop                     |
+Items 1–5 (Tier A) are **implemented** (2026-10-14, commits `5dd36b6e` and
+`4054e97e`). The work orders below cover the remaining recommendations.
 
-Items 1–5 are behavior fixes in `js/pages/analysis/lab.js` (+ tests) and
-matching edits to the design doc; 6–11 are design-doc-first enhancements.
+### Preamble — rules for the implementer
+
+- One work order per change. Work directly on `main`; **commit after each
+  work order, never push**. Stage files by name (`git add <file> ...`, never
+  `git add -A`); unrelated dirty files in the tree belong to other sessions.
+  Conventional-commit messages (`feat(analysis): ...`, `docs(analysis): ...`).
+- `Find` strings are unique anchors verified against the working tree on
+  2026-10-14. **If one does not match exactly, STOP that item and report the
+  mismatch — do not improvise an alternative anchor.** Line numbers are dated
+  and may drift; trust the `Find` string, not the line number.
+- Never edit `data/` (pipeline-generated).
+- Code style: 4-space indent, single quotes, semicolons; internal functions are
+  tested via the existing `__analysisLabTesting` export object.
+- `js/pages/analysis/lab.js` has an eslint complexity ratchet (max 20 per
+  function). The snippets below are designed to stay under it; if eslint still
+  reports a complexity error, STOP and report — do not refactor on your own.
+- After each JS work order run its scoped `Verify` command, not a full-repo
+  gate. After each doc work order run
+  `npm exec -- markdownlint-cli2 "docs/fermat-pascal-kelly-system.md"`.
+
+### WO-1 [low] — Kelly robustness readouts: scaled-growth retention, half-edge Kelly, implied beliefs (review items 6 + C8)
+
+Three badges on the Kelly panel answering "how much growth do I keep at the
+scaled fraction?", "what if my edge is half what I think?", and "what edge does
+my current position imply?". All math is paste-ready below.
+
+**File:** `/Users/lz/dev/fund/js/pages/analysis/lab.js`
+
+**Step 1 — Find:**
+
+```text
+function computeMetrics(config) {
+```
+
+**Change:** insert these two functions immediately before that line:
+
+```js
+function resolveCurrentWeight(config) {
+    const raw = Number(config.position?.currentWeight ?? config.weight);
+    return Number.isFinite(raw) ? raw : 0;
+}
+
+function solveImpliedEdgeBelief(kellyReturns, riskFreeRate, fullKelly, currentWeight) {
+    if (!kellyReturns.length || !(fullKelly > 0) || !(currentWeight > 0)) {
+        return null;
+    }
+    if (currentWeight >= fullKelly) {
+        return 1;
+    }
+    const meanReturn = kellyReturns.reduce((sum, r) => sum + r.prob * r.ret, 0);
+    const meanExcess = meanReturn - riskFreeRate;
+    if (!(meanExcess > 0)) {
+        return null;
+    }
+    // f* falls monotonically as a uniform haircut δ on scenario returns grows
+    // from 0 to meanExcess; bisect for the δ where f* equals the position.
+    let lo = 0;
+    let hi = meanExcess;
+    for (let i = 0; i < 80; i++) {
+        const mid = (lo + hi) / 2;
+        const shifted = kellyReturns.map((r) => ({ prob: r.prob, ret: r.ret - mid }));
+        if (solveKellyFraction(shifted, riskFreeRate) > currentWeight) {
+            lo = mid;
+        } else {
+            hi = mid;
+        }
+    }
+    return 1 - (lo + hi) / 2 / meanExcess;
+}
+
+function computeKellyExtras(kellyReturns, riskFreeRate, fullKelly, scaledKelly, currentWeight) {
+    const baselineGrowth = Math.log(1 + riskFreeRate);
+    const growthAtFull =
+        fullKelly > 0 ? kellyLogGrowth(fullKelly, kellyReturns, riskFreeRate) : baselineGrowth;
+    const scaledGrowthRetention =
+        fullKelly > 0 && growthAtFull > baselineGrowth
+            ? (kellyLogGrowth(scaledKelly, kellyReturns, riskFreeRate) - baselineGrowth) /
+              (growthAtFull - baselineGrowth)
+            : null;
+    const meanReturn = kellyReturns.reduce((sum, r) => sum + r.prob * r.ret, 0);
+    const meanExcess = meanReturn - riskFreeRate;
+    const kellyAtHalfEdge =
+        meanExcess > 0
+            ? solveKellyFraction(
+                  kellyReturns.map((r) => ({ prob: r.prob, ret: r.ret - meanExcess / 2 })),
+                  riskFreeRate
+              )
+            : null;
+    const impliedEdgeBelief = solveImpliedEdgeBelief(
+        kellyReturns,
+        riskFreeRate,
+        fullKelly,
+        currentWeight
+    );
+    return { scaledGrowthRetention, kellyAtHalfEdge, impliedEdgeBelief };
+}
+```
+
+**Step 2 — Find:**
+
+```text
+    const zeroGrowthFraction = solveZeroGrowthFraction(kellyReturns, riskFreeRate, fullKelly);
+```
+
+**Change:** append immediately after that line:
+
+```js
+const kellyExtras = computeKellyExtras(
+    kellyReturns,
+    riskFreeRate,
+    fullKelly,
+    scaledKelly,
+    resolveCurrentWeight(config)
+);
+```
+
+**Step 3 — Find:**
+
+```text
+        zeroGrowthFraction,
+        expectedTerminalPrice,
+```
+
+**Change:** insert between those two lines:
+
+```js
+        scaledGrowthRetention: kellyExtras.scaledGrowthRetention,
+        kellyAtHalfEdge: kellyExtras.kellyAtHalfEdge,
+        impliedEdgeBelief: kellyExtras.impliedEdgeBelief,
+```
+
+**Step 4 — Find:**
+
+```text
+    if (config.symbol === 'PORT' && metrics.covarianceRatio) {
+```
+
+**Change:** insert immediately before that line:
+
+```js
+if (Number.isFinite(metrics.scaledGrowthRetention)) {
+    targetEl.appendChild(
+        createBadge('Scaled Growth', `${(metrics.scaledGrowthRetention * 100).toFixed(0)}% of max`)
+    );
+}
+if (Number.isFinite(metrics.kellyAtHalfEdge)) {
+    targetEl.appendChild(createBadge('Half-Edge K', formatPercent(metrics.kellyAtHalfEdge)));
+}
+if (Number.isFinite(metrics.impliedEdgeBelief)) {
+    targetEl.appendChild(
+        createBadge('Implied Edge', `${(metrics.impliedEdgeBelief * 100).toFixed(0)}% of model`)
+    );
+}
+```
+
+**Step 5 (tests) — File:** `/Users/lz/dev/fund/tests/js/pages/analysis/lab.test.js`
+**Find:**
+
+```text
+        it('normalizes riskFreeRate with a 4% default and preserves explicit values', async () => {
+```
+
+**Change:** insert immediately before that line:
+
+```js
+it('reports scaled-growth retention, half-edge Kelly, and implied belief', async () => {
+    const { computeMetrics } = (await import('@pages/analysis/lab.js')).__analysisLabTesting;
+    const metrics = computeMetrics(kellyConfig({ position: { currentWeight: 1.25 } }));
+    // G(1.25)/G(2.5) in log units ≈ 0.764 (half-Kelly keeps ~3/4 of growth)
+    expect(metrics.scaledGrowthRetention).toBeCloseTo(0.764, 2);
+    // mean haircut 0.025 → returns 0.175/-0.125 → f* = 0.05/0.04375
+    expect(metrics.kellyAtHalfEdge).toBeCloseTo(1.1429, 3);
+    // haircut δ with f*(δ) = 1.25 is 0.02288 → belief = 1 - δ/0.05 ≈ 0.542
+    expect(metrics.impliedEdgeBelief).toBeCloseTo(0.542, 2);
+});
+
+it('returns null robustness readouts when there is no edge or no position', async () => {
+    const { computeMetrics } = (await import('@pages/analysis/lab.js')).__analysisLabTesting;
+    const metrics = computeMetrics(
+        kellyConfig({
+            model: { preferences: { horizon: 1, kellyScale: 0.5, riskFreeRate: 0.06 } },
+        })
+    );
+    expect(metrics.scaledGrowthRetention).toBeNull();
+    expect(metrics.kellyAtHalfEdge).toBeNull();
+    expect(metrics.impliedEdgeBelief).toBeNull();
+});
+```
+
+**Step 6 (render test) — File:** `/Users/lz/dev/fund/tests/js/pages/analysis/lab_revival.test.js`
+**Find:**
+
+```text
+                    scenarioVolatility: 0.15,
+```
+
+**Change:** replace that line with:
+
+```js
+                    scenarioVolatility: 0.15,
+                    scaledGrowthRetention: 0.76,
+                    kellyAtHalfEdge: 1.14,
+                    impliedEdgeBelief: 0.54,
+```
+
+**Find:**
+
+```text
+            expect(kellyMetrics.textContent).toContain('σ Scen/Input');
+```
+
+**Change:** append immediately after that line:
+
+```js
+expect(kellyMetrics.textContent).toContain('Scaled Growth');
+expect(kellyMetrics.textContent).toContain('Half-Edge K');
+expect(kellyMetrics.textContent).toContain('Implied Edge');
+```
+
+**Verify:**
+`npx jest tests/js/pages/analysis/lab.test.js tests/js/pages/analysis/lab_revival.test.js && npx eslint js/pages/analysis/lab.js tests/js/pages/analysis/lab.test.js tests/js/pages/analysis/lab_revival.test.js`
+
+**Guardrail:** `solveImpliedEdgeBelief` bisects a uniform mean haircut, not a
+return scale — scaling returns by s moves f\* by 1/s (variance scales too),
+which is the wrong direction for this readout. Don't "simplify" it.
+
+### WO-2 [low] — Correlated growth/valuation shocks in the Monte Carlo worker (review item 8a)
+
+Growth misses and multiple compression coincide; the worker currently samples
+them independently. Single-file change plus test plus one design-doc line.
+
+**File:** `/Users/lz/dev/fund/js/pages/analysis/monte_carlo.worker.js`
+
+**Step 1 — Find:**
+
+```text
+        const sampledCagr = normalSample(scenario.growth.epsCagr, epsSigma / Math.sqrt(horizon));
+        const sampledPe = normalSample(scenario.valuation.exitPe, peSigma);
+```
+
+**Change:** replace those two lines with:
+
+```js
+// Growth disappointment and multiple compression coincide, so the two
+// shocks are correlated (rho = 0.4) via a shared standard normal.
+const GROWTH_PE_CORR = 0.4;
+const zGrowth = normalSample(0, 1);
+const zPe = GROWTH_PE_CORR * zGrowth + Math.sqrt(1 - GROWTH_PE_CORR ** 2) * normalSample(0, 1);
+const sampledCagr = scenario.growth.epsCagr + (zGrowth * epsSigma) / Math.sqrt(horizon);
+const sampledPe = scenario.valuation.exitPe + zPe * peSigma;
+```
+
+**Step 2 (test) — File:** `/Users/lz/dev/fund/tests/js/pages/analysis/monte_carlo.worker.test.js`
+**Find:**
+
+```text
+    it('returns an error for scenarios missing growth/valuation blocks (PORT view)', () => {
+```
+
+**Change:** insert immediately before that line:
+
+```js
+it('correlates growth and exit-PE shocks with rho = 0.4', () => {
+    global.self.crypto.getRandomValues.mockImplementation((array) => {
+        array[0] = 2147483648; // secureRandom() === 0.5 exactly
+        return array;
+    });
+
+    const payload = {
+        scenarios: [
+            {
+                prob: 1,
+                growth: { epsCagr: 0.1, epsCagrSigma: 0.05 },
+                valuation: { exitPe: 15, exitPeSigma: 2 },
+            },
+        ],
+        volatility: 0.2,
+        horizon: 1,
+        paths: 50,
+        eps: 10,
+    };
+
+    global.self.onmessage({ data: { type: 'RUN_SIMULATION', payload } });
+
+    const result = mockPostMessage.mock.calls[0][0].result;
+    // z1 = sqrt(-2 ln 0.5)·cos(pi) = -1.177410; z2 = z1·(0.4 + sqrt(0.84)) = -1.550078
+    // sampledCagr = 0.1 + z1·0.05 = 0.0411295; sampledPe = 15 + z2·2 = 11.8998438
+    expect(result.mean).toBeCloseTo(123.8928, 3);
+});
+```
+
+**Step 3 (doc) — File:** `/Users/lz/dev/fund/docs/fermat-pascal-kelly-system.md`
+**Find:**
+
+```text
+2. Perturb EPS CAGR and exit PE around scenario means.
+```
+
+**Change:** replace with:
+
+```text
+2. Perturb EPS CAGR and exit PE around scenario means with correlated shocks (ρ = 0.4): growth disappointment and multiple compression coincide.
+```
+
+**Verify:**
+`npx jest tests/js/pages/analysis/monte_carlo.worker.test.js && npm exec -- markdownlint-cli2 "docs/fermat-pascal-kelly-system.md"`
+
+**Guardrail:** the existing test's alternating 0.2/0.8 mock stays valid — the
+new code consumes the same five `secureRandom()` calls per path as the old
+(pickScenario 1 + two normals × 2). If you change the call count, that test
+breaks.
+
+### WO-3 [trivial] — Design doc: scenario-authoring guidance (review item 9, C1–C3)
+
+**File:** `/Users/lz/dev/fund/docs/fermat-pascal-kelly-system.md`
+**Find:**
+
+```text
+- Each scenario carries a probability, fundamental trajectory (e.g., EPS CAGR), and exit valuation (terminal PE).
+```
+
+**Change:** append immediately after that line:
+
+```markdown
+- Include an explicit left-tail/catastrophe state (fraud, nationalization, −90%; even at 1–3% probability) — tail risk metrics are degenerate without one.
+- Scenario returns are total return: include reinvested dividends/distributions over the horizon, not just terminal EPS × exit PE.
+- Anchor exit PEs to the stock's historical multiple distribution or a fundamentals-implied terminal multiple, and record the anchor in the scenario notes.
+```
+
+**Verify:** `npm exec -- markdownlint-cli2 "docs/fermat-pascal-kelly-system.md"`
+
+### WO-4 [trivial] — Design doc: myopic-optimality note in §6.2 (review C5)
+
+**File:** `/Users/lz/dev/fund/docs/fermat-pascal-kelly-system.md`
+**Find:**
+
+```text
+- Adjust toward the new Kelly fraction subject to bounds (max change per period, position limits).
+```
+
+**Change:** append immediately after that line:
+
+```markdown
+- Under i.i.d. returns the myopic (period-by-period) Kelly strategy is already optimal for log utility (Mossin 1968); the dynamic layer's value is handling regime shifts through the Bayesian updates plus transaction-cost friction on rebalancing, not beating myopia under stationarity.
+```
+
+**Verify:** `npm exec -- markdownlint-cli2 "docs/fermat-pascal-kelly-system.md"`
+
+### WO-5 [trivial] — Design doc: market-implied layer caveats in §8 (review C6)
+
+**File:** `/Users/lz/dev/fund/docs/fermat-pascal-kelly-system.md`
+**Find:**
+
+```text
+- Use option prices (e.g., Breeden–Litzenberger) to estimate risk-neutral terminal price distribution.
+```
+
+**Change:** append immediately after that line:
+
+```markdown
+- Requires arbitrage-free smile interpolation (no butterfly arbitrage) before differentiating call prices twice in strike.
+```
+
+**Find:**
+
+```text
+- Adjust for risk premia using equity risk premium assumptions or heuristic tilts.
+```
+
+**Change:** append immediately after that line:
+
+```markdown
+- Rigorous conversion exists (Ross's Recovery Theorem, 2015) but is fragile outside its assumptions (Borovička–Hansen–Scheinkman 2016); heuristic tilts are acceptable when labeled as such. Compare tails, where subjective and implied distributions diverge most.
+```
+
+**Verify:** `npm exec -- markdownlint-cli2 "docs/fermat-pascal-kelly-system.md"`
+
+### Deferred — [skip], route to a design session instead of a mechanical pass
+
+- **Drawdown-constrained sizing (item 7, B2)** — needs a constraint-input UX
+  decision and depends on path simulation below; see Grossman & Zhou 1993.
+- **Monte Carlo path simulation (item 8b)** — annual-step regime model needed
+  before drawdown distributions can be produced; terminal-only paths can't.
+- **Joint multi-asset scenarios + portfolio constraints (item 10, C4)** —
+  shared macro states vs copula is an unsettled modeling choice (open
+  question #4 above).
+- **Calibration wiring to Brier scoring (item 11, C7)** — needs a resolution
+  criterion design for scenario probabilities before any code.
+- **Bayesian posterior over scenario parameters (B1 part 3)** — extends §4
+  from probabilities to parameters; schema design needed first.
 
 ## Open questions / what I could not verify
 
