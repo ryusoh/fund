@@ -1927,6 +1927,29 @@ function _renderMonteCarloMetrics(result, riskMetricsEl) {
     }
     riskMetricsEl.appendChild(createStatCard('VaR (95%)', formatCurrency(result.VaR_95)));
     riskMetricsEl.appendChild(createStatCard('CVaR (95%)', formatCurrency(result.CVaR_95)));
+    const mcConfig = state.configs.find((cfg) => cfg.symbol === state.activeSymbol);
+    const mcMetrics = mcConfig && mcConfig.metrics;
+    if (
+        mcMetrics &&
+        Array.isArray(result.paths) &&
+        result.paths.length > 0 &&
+        mcMetrics.price > 0 &&
+        mcMetrics.horizon > 0 &&
+        Number.isFinite(mcMetrics.riskFreeRate)
+    ) {
+        const n = result.paths.length;
+        const mcReturns = result.paths.map((v) => ({
+            prob: 1 / n,
+            ret: (v / mcMetrics.price) ** (1 / mcMetrics.horizon) - 1,
+        }));
+        const mcKelly = solveKellyFraction(mcReturns, mcMetrics.riskFreeRate);
+        riskMetricsEl.appendChild(createStatCard('MC Kelly', formatPercent(mcKelly)));
+        if (Number.isFinite(mcMetrics.fullKelly)) {
+            riskMetricsEl.appendChild(
+                createStatCard('Estimation Drag', formatPercent(mcMetrics.fullKelly - mcKelly))
+            );
+        }
+    }
 }
 
 function _renderMonteCarloHistogram(result, ctx, width, height) {
