@@ -275,6 +275,86 @@ describe('analysis lab data loading', () => {
         });
     });
 
+    describe('macroState aggregation', () => {
+        it('groups portfolio scenarios by macroState when all configs use it', async () => {
+            const { aggregateScenarios } = (await import('@pages/analysis/lab.js'))
+                .__analysisLabTesting;
+            const configs = [
+                {
+                    weight: 0.5,
+                    metrics: {
+                        outcomes: [
+                            { id: 'bull', prob: 0.5, multiple: 2, macroState: 'boom' },
+                            { id: 'bear', prob: 0.5, multiple: 0.5, macroState: 'bust' },
+                        ],
+                    },
+                },
+                {
+                    weight: 0.5,
+                    metrics: {
+                        outcomes: [
+                            { id: 'bull', prob: 0.6, multiple: 1.5, macroState: 'boom' },
+                            { id: 'bear', prob: 0.4, multiple: 0.8, macroState: 'bust' },
+                        ],
+                    },
+                },
+            ];
+            const scenarios = aggregateScenarios(configs, 1);
+            expect(scenarios.map((s) => s.id)).toEqual(['boom', 'bust']);
+            const boom = scenarios.find((s) => s.id === 'boom');
+            expect(boom.precomputedMultiple).toBeCloseTo(0.5 * 2 + 0.5 * 1.5, 6);
+            expect(boom.prob).toBeCloseTo(0.5 * 0.5 + 0.5 * 0.6, 6);
+        });
+
+        it('applies neutral carry for assets missing a macro state', async () => {
+            const { aggregateScenarios } = (await import('@pages/analysis/lab.js'))
+                .__analysisLabTesting;
+            const configs = [
+                {
+                    weight: 0.5,
+                    metrics: {
+                        outcomes: [
+                            { id: 'bull', prob: 0.5, multiple: 2, macroState: 'boom' },
+                            { id: 'bear', prob: 0.5, multiple: 0.5, macroState: 'bust' },
+                        ],
+                    },
+                },
+                {
+                    weight: 0.5,
+                    metrics: {
+                        outcomes: [{ id: 'bull', prob: 1, multiple: 1.5, macroState: 'boom' }],
+                    },
+                },
+            ];
+            const scenarios = aggregateScenarios(configs, 1);
+            const bust = scenarios.find((s) => s.id === 'bust');
+            // 0.5×0.5 from config A + 0.5×1.5 (mean carry) from config B
+            expect(bust.precomputedMultiple).toBeCloseTo(1.0, 6);
+        });
+
+        it('falls back to id grouping when any config lacks macroState', async () => {
+            const { aggregateScenarios } = (await import('@pages/analysis/lab.js'))
+                .__analysisLabTesting;
+            const configs = [
+                {
+                    weight: 0.5,
+                    metrics: {
+                        outcomes: [{ id: 'bull', prob: 1, multiple: 2, macroState: 'boom' }],
+                    },
+                },
+                {
+                    weight: 0.5,
+                    metrics: {
+                        outcomes: [{ id: 'bull', prob: 1, multiple: 1.5 }],
+                    },
+                },
+            ];
+            const scenarios = aggregateScenarios(configs, 1);
+            expect(scenarios.map((s) => s.id)).toEqual(['bull']);
+            expect(scenarios[0].precomputedMultiple).toBeCloseTo(1.75, 6);
+        });
+    });
+
     describe('fetchText', () => {
         it('fetches text successfully', async () => {
             // Arrange

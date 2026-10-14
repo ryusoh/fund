@@ -424,6 +424,7 @@ function normalizeScenario(scenario) {
             exitPeSigma: exitSigma,
         },
         notes: scenario.notes ?? null,
+        macroState: scenario.macroState ?? null,
         precomputedMultiple,
         precomputedCagr,
         precomputedEarningsCagr,
@@ -441,6 +442,7 @@ function computeBaseScenarioOutcome(scenario) {
         id: scenario.id || scenario.name || 'scenario',
         name: scenario.name || scenario.id || 'Scenario',
         prob: prob,
+        macroState: scenario.macroState ?? null,
     };
 }
 
@@ -2044,16 +2046,45 @@ function renderMonteCarloResults(result) {
     _renderMonteCarloFanChart(result, ctx, width, height);
 }
 function aggregateScenarios(configs, horizon) {
-    const scenarioMap = new Map();
-    configs.forEach((cfg) => {
-        const holdingWeight = Number(cfg.weight ?? 0);
-        if (!(holdingWeight > 0)) {
-            return;
-        }
+    const weightedConfigs = configs.filter((cfg) => Number(cfg.weight ?? 0) > 0);
+    const useMacroStates =
+        weightedConfigs.length > 0 &&
+        weightedConfigs.every((cfg) =>
+            (cfg.metrics?.outcomes || []).every((outcome) => outcome.macroState)
+        );
+
+    const groupKey = (outcome) =>
+        useMacroStates ? outcome.macroState : outcome.id || outcome.name || 'scenario';
+
+    const allKeys = [];
+    weightedConfigs.forEach((cfg) => {
         cfg.metrics.outcomes.forEach((outcome) => {
-            const id = outcome.id || outcome.name || 'scenario';
-            const entry = scenarioMap.get(id) || {
-                name: outcome.name || id,
+            const key = groupKey(outcome);
+            if (!allKeys.includes(key)) {
+                allKeys.push(key);
+            }
+        });
+    });
+
+    const scenarioMap = new Map();
+    weightedConfigs.forEach((cfg) => {
+        const holdingWeight = Number(cfg.weight ?? 0);
+        const outcomes = cfg.metrics.outcomes;
+        let probSum = 0;
+        let meanMultiple = 0;
+        outcomes.forEach((outcome) => {
+            probSum += outcome.prob || 0;
+            meanMultiple += (outcome.prob || 0) * outcome.multiple;
+        });
+        if (probSum > 0) {
+            meanMultiple /= probSum;
+        }
+        const seenKeys = new Set();
+        outcomes.forEach((outcome) => {
+            const key = groupKey(outcome);
+            seenKeys.add(key);
+            const entry = scenarioMap.get(key) || {
+                name: useMacroStates ? key : outcome.name || key,
                 weightedMultiple: 0,
                 weightedProb: 0,
                 weightedEarningsCagr: 0,
@@ -2065,8 +2096,20 @@ function aggregateScenarios(configs, horizon) {
                 entry.weightedEarningsCagr += holdingWeight * outcome.earningsCagr;
                 entry.earningsWeight += holdingWeight;
             }
-            scenarioMap.set(id, entry);
+            scenarioMap.set(key, entry);
         });
+        if (useMacroStates) {
+            // Neutral carry: an asset without a view on a macro state
+            // contributes its probability-weighted mean multiple to it.
+            allKeys.forEach((key) => {
+                if (!seenKeys.has(key)) {
+                    const entry = scenarioMap.get(key);
+                    if (entry) {
+                        entry.weightedMultiple += holdingWeight * meanMultiple;
+                    }
+                }
+            });
+        }
     });
 
     return Array.from(scenarioMap.entries()).map(([id, entry]) => {
