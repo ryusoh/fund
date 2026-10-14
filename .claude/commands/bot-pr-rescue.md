@@ -115,7 +115,7 @@ fails; use `refactor(data-service)` (fund#695). When `gh pr edit` fails with
 GraphQL scope errors (`read:org`), use
 `gh api -X PATCH repos/<owner>/<repo>/pulls/<N> -f title="..."` instead.
 
-## 6. Fix forward (the point of the exercise)
+## 6. Fix forward (the compounding loop)
 
 **Dependabot PRs are not Jules PRs — adapt the flow.** A group bump can fail
 the gate without any bad commit: a new tool version (e.g. prettier 3.9.9
@@ -127,18 +127,29 @@ precedent for both patterns). Do NOT squash dependabot's signed commit —
 push an additive commit to the `dependabot/...` branch instead (the
 Co-authored-by trailer and single-commit rules are Jules-only).
 
-A rescued PR means the harness let the bot produce dirty history. Patch the
-cause, not just the symptom (interactive agents may edit `.jules/` personas and
-gate scripts per AGENTS.md):
+A rescued PR means the harness allowed dirty history to be produced or pushed.
+Patch the root cause with **compounding mechanical fixes**, not ceremonial
+instruction:
 
-- `.jules/<routine>.md` — the recurring fix is **publish exactly one commit**
-  (verify the final tree, push once, amend/squash+force-push on revision) and
-  **stage by name, never `git add -A`** (keeps scratch like `verify_output.txt`
-  out). Cite the PR number as the failure example.
-- `scripts/agents/check_bot_pr_hygiene.py` — if the bot committed a scratch
-  file the stray-artifact patterns missed, widen `_is_stray_artifact` (check
-  `git ls-files` for false-positive collisions first) and add a test in
-  `tests/python/test_check_bot_pr_hygiene.py`.
+- **Anti-pattern — do NOT performatively cite PR numbers:** Do not append PR
+  citations (e.g. `(fund#XYZ failed...)`) to `.jules/*.md` personas just to
+  "do something". Citing past failures in LLM prompt files creates prompt bloat
+  and warning fatigue without improving agent compliance. Fixes must be
+  mechanical and structural.
+- **Level 1: Mechanical prevention (`.gitignore`):** If a stray artifact
+  (`*.log`, `*_output.txt`, `*.tmp`, `commit_message.txt`) was committed,
+  ensure it is ignored in `.gitignore`. When git ignores the pattern, even
+  clumsy staging (`git add .`) cannot stage the artifact, preventing the
+  failure at the source.
+- **Level 2: Gate & invariant lock (`check_bot_pr_hygiene.py`):** If a new
+  stray artifact pattern was missed, widen `_is_stray_artifact` and ensure
+  `test_all_stray_artifact_patterns_are_gitignored` in
+  `tests/python/test_check_bot_pr_hygiene.py` passes so the gate and
+  `.gitignore` never drift out of sync.
+- **Level 3: Persona instruction (structural, not ceremonial):** Only edit
+  `.jules/<routine>.md` if an operational rule or workflow step was genuinely
+  missing or incorrect — never add incident tombstones.
 
-Commit the fix with a body noting the persona-file edit; `make verify` green
-before committing.
+Run `python3 scripts/sync_commands.py` after editing any skill to keep
+`.claude/commands/` in sync. Run `make verify` green before committing. Note in
+the commit body when the edit touches a persona or skill file.

@@ -18,7 +18,9 @@ questions). This check fails the gate on any bot-authored commit in
    Also allowed: test reductions riding in the same commit as production-code
    deletions — dead-code removal deletes the dead code's tests (Janitor's
    lane; fund#686),
-4. commits stray bot artifacts (e.g. ``pr_body.txt``, scratch/temp files),
+4. commits stray bot artifacts (e.g. ``pr_body.txt`` / ``commit_message.txt``
+   draft files, scratch/temp files, ``*.log`` or ``*_output.txt`` /
+   ``*_out.json`` verification-run dumps),
 5. touches ``eslint-suppressions.json`` from a non-refactor lane or increases
    suppressions (complexity ratchet violation).
 
@@ -86,7 +88,14 @@ def _is_stray_artifact(path: str) -> bool:
     """Detect stray PR draft files, scratch logs, or temporary artifacts."""
     parts = path.split("/")
     name = parts[-1].lower()
-    if name in {"pr_body.txt", "pr_description.txt", "pr_title.txt", "commit_message.txt"}:
+    if name in {
+        "pr_body.txt",
+        "pr_description.txt",
+        "pr_title.txt",
+        "commit_message.txt",
+        "commit-message.txt",
+        "commit_msg.txt",
+    }:
         return True
     if name.endswith((".tmp", ".scratch", ".swp", ".log")):
         return True
@@ -97,6 +106,9 @@ def _is_stray_artifact(path: str) -> bool:
     if name.endswith(("_out.json", "_output.json")):
         return True
     if name.startswith(("temp_", "dummy_")):
+        return True
+    # Stray patch/diff files (e.g. net-tools PR #212 shipped a 158-line patch.diff)
+    if name in {"patch.diff", "diff.patch"} or name.endswith((".diff", ".patch")):
         return True
     # Root-level test/scratch scripts (fund#703 committed test_hover_coverage.js in root).
     if len(parts) == 1 and name.startswith("test_") and name.endswith((".js", ".ts", ".py", ".sh")):

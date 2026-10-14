@@ -46,6 +46,18 @@ pr_body.txt
 pr_description.txt
 pr_title.txt
 commit_message.txt
+commit-message.txt
+commit_msg.txt
+*.log
+*.tmp
+*.scratch
+*.swp
+output.txt
+*_output.txt
+*_out.json
+*_output.json
+patch.diff
+diff.patch
 .agents/state/
 scratch/
 

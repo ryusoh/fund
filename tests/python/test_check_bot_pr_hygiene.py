@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from scripts.agents.check_bot_pr_hygiene import find_violations, main
+from scripts.agents.check_bot_pr_hygiene import _is_stray_artifact, find_violations, main
 
 BOT_NAME = "google-labs-jules[bot]"
 BOT_EMAIL = "161369871+google-labs-jules[bot]@users.noreply.github.com"
@@ -298,6 +298,23 @@ def test_bot_root_test_scratch_flagged(repo: Path) -> None:
     assert any("stray artifact" in v and "test_hover_coverage.js" in v for v in violations)
 
 
+@pytest.mark.parametrize(
+    "path",
+    ["commit_message.txt", "commit-message.txt", "commit_msg.txt"],
+)
+def test_bot_commit_message_draft_flagged(repo: Path, path: str) -> None:
+    _write_and_commit(repo, path, "refactor(data-service): draft\n", "chore: probe artifact")
+    violations = find_violations(repo, "main")
+    assert any("stray artifact" in v and path in v for v in violations)
+
+
+@pytest.mark.parametrize("path", ["patch.diff", "scratch.patch", "temp.diff"])
+def test_bot_stray_diff_patch_flagged(repo: Path, path: str) -> None:
+    _write_and_commit(repo, path, "diff --git a/foo b/foo\n", "chore: probe artifact")
+    violations = find_violations(repo, "main")
+    assert any("stray artifact" in v and path in v for v in violations)
+
+
 def test_bot_suppressions_addition_flagged(repo: Path) -> None:
     _write_and_commit(
         repo,
@@ -446,3 +463,35 @@ def test_main_returns_2_when_no_main_ref(tmp_path: Path) -> None:
     _git(tmp_path, "add", "README.md")
     _commit(tmp_path, "init", bot=False)
     assert main(["--repo", str(tmp_path)]) == 2
+
+
+def test_all_stray_artifact_patterns_are_gitignored() -> None:
+    """Ensure every artifact pattern rejected by check_bot_pr_hygiene is covered by .gitignore.
+
+    This prevents drift between the hygiene gate and git's staging layer, ensuring
+    agents mechanically cannot stage forbidden scratch or verification files.
+    """
+    repo_root = Path(__file__).resolve().parent.parent.parent
+    sample_artifacts = [
+        "pr_body.txt",
+        "pr_description.txt",
+        "pr_title.txt",
+        "commit_message.txt",
+        "commit-message.txt",
+        "commit_msg.txt",
+        "precommit.log",
+        "verify.log",
+        "temp_notes.tmp",
+        "scratch.scratch",
+        "test.swp",
+        "output.txt",
+        "verify_output.txt",
+        "eslint_out.json",
+        "test_output.json",
+        "patch.diff",
+        "diff.patch",
+    ]
+    for path in sample_artifacts:
+        assert _is_stray_artifact(path), f"{path} should be detected as stray"
+        res = subprocess.run(["git", "check-ignore", "-q", path], cwd=repo_root)
+        assert res.returncode == 0, f"{path} is a stray artifact but not covered by .gitignore"
