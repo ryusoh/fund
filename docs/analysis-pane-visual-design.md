@@ -92,7 +92,7 @@ page?
 
 - Static shell `PANE_MARKUP` (68-123): context strip + `.analysis-stage` + 9
   `data-analysis-section` blocks. `showAnalysisSection` toggles `is-hidden`
-  (2086-2095).
+  (2310-2319).
 - Renderers build DOM with `createElement`/`textContent` (XSS-safe): summary
   stats (793-836), scenario cards (837-877), value bands (878-910), Kelly curve
   and metric badges (911-1250), belief state (1252-1352), evidence timeline
@@ -188,8 +188,8 @@ page?
   devicePixelRatio handling; the main chart canvas does DPR scaling and a
   0-size bail (`js/transactions/chart.js:75-89`). No re-render on resize.
 - **G7 — MC canvas overlays two unrelated encodings** (full-height red
-  histogram + green fan chart on one 600×200 canvas, lab.js:1604-1694) with no
-  axes; the only label is 10px text (1675-1683).
+  histogram + green fan chart on one 600×200 canvas, lab.js:1820-1906) with no
+  axes; the only label is 10px text (1893-1899).
 - **G8 — Contrast exposure on colored status text.** Computed ratios in §5:
   `--red-color` on the darkest glass = 4.19:1 (below WCAG AA 4.5:1 for the
   ~10.9px stale badge); over the brightest pane-sized region of the actual
@@ -199,14 +199,14 @@ page?
   unstyled MC errors) — see states audit.
 - **G10 — No function label or as-of date in the pane.** The active function
   exists only in the scrollback; the context strip shows symbols only
-  (lab.js:68-70, 1401-1435). Snapshot lines elsewhere carry date labels
+  (lab.js:68-70, 1617-1652). Snapshot lines elsewhere carry date labels
   (e.g. `Composition (2026-10-01)`, snapshots.js:987).
 - **G11 — No tabular-nums anywhere in the pane** — numeric columns
   (`dd` right-aligned, badges, stats) jump width on update; the terminal
   crosshair sets `font-variant-numeric: tabular-nums`
   (`css/terminal/terminal.css:152,175`).
-- **G12 — Class/CSS mismatches.** `.action-meta` (lab.js:1378),
-  `.timeline-count-badge` (1197-1214), and the `.lab-container` wrapper (2063)
+- **G12 — Class/CSS mismatches.** `.action-meta` (lab.js:1594),
+  `.timeline-count-badge` (1413-1431), and the `.lab-container` wrapper (2287)
   have no rules in analysis.css (they carry inline styles or nothing).
 - **G13 — Mixed units.** The pane sizes text in `rem` (0.68-0.85rem ≈
   10.9-13.6px against the default 16px root — terminal CSS never sets root
@@ -250,76 +250,80 @@ page?
   e.g. `KELLY · 2026-10-12` from `config.meta.asOf` (already parsed at
   lab.js:354-363). This closes G10 with data the config already carries.
 - The strip stays read-only; switching is via command only
-  (lab.js:1399-1400 comment already encodes this).
+  (lab.js:1615-1616 comment already encodes this).
 
 ### Per-function views
 
 **Overview (DES analog — restore the designed landing screen, G1).**
 Summary stat row (existing 5 stats) → scenario mini-rows (name, prob, multiple,
 price CAGR — the 4 highest-signal fields, not all 6 chips) → value-band `<dl>`.
-PORT context is the default landing (already, lab.js:2055-2058). Snapshot:
+PORT context is the default landing (already, lab.js:2280). Snapshot:
 `Analysis (PORT) — expected CAGR +X.X%, edge +Y.Y% vs SP500, scaled Kelly Z%.`
 
 **Scenarios.** Flat rows ordered by probability desc: bold caps name, then
 right-aligned tabular numbers (Prob / Multiple / Price CAGR / Earnings CAGR) in
-one aligned grid instead of six wrapping inline `<p>` chips (lab.js:711-716).
+one aligned grid instead of six wrapping inline `<p>` chips (lab.js:866-872).
 Thesis-derived descriptor names stay (lab.js:277-293). Snapshot:
 `Scenarios (ANET) — bull 55% 2.1x, base 35% 1.2x, bear 10% 0.6x.`
 
 **Value bands.** Keep the `<dl>` grid (analysis.css:200-216); emphasize only
 `Current Price vs Value` (the actionable row) in `--text-color` bold. Snapshot:
 `Value (ANET) — terminal $X, entry for 10% CAGR $Y (Z% below/above target).`
-(fields already computed, lab.js:732-745).
+(fields already computed, lab.js:888-903).
 
 **Kelly.** Canvas on top, badge row below (existing order). The canvas curve
 currently has **no axis labels at all** — add muted 10px y-axis min/max growth
-labels and rely on the existing marker labels (¼K/½K/Full K/2×K/Curr) for the
-x-axis. The recommended action (scaled ½K) stays the highlighted badge —
-promote its highlight from inline style (lab.js:841-843) to a class. For PORT,
-the Covariance Dampener badge stays and should name its estimate source (merge
-doc resolved-open-question: `risk.estimateSource` is already computed,
-lab.js:1990). Snapshot: `Kelly (ANET) — full 22.1%, scaled ½K 11.0%, current
-weight 34.2%.` Canvas `aria-label` carries the same sentence.
+labels and rely on the existing marker labels (¼K/½K/Full K/zero-growth/Curr;
+the red marker is `0 Growth` on the exact curve, `2x K (0 Growth)` on the
+fallback — lab.js:1090-1097) for the x-axis. The recommended action (scaled ½K)
+stays the highlighted badge — promote its highlight from inline style
+(lab.js:997-999) to a class. The badge row also carries the `Rf` and
+`σ Scen/Input` consistency badges (lab.js:1007-1021, added with the exact
+discrete-Kelly sizing). For PORT, the Covariance Dampener badge stays and
+should name its estimate source (merge doc resolved-open-question:
+`risk.estimateSource` is already computed, lab.js:2214). Snapshot:
+`Kelly (ANET) — full 22.1%, scaled ½K 11.0%, current weight 34.2%.` Canvas
+`aria-label` carries the same sentence.
 
 **Monte Carlo.** Split the single canvas into two stacked canvases (G7):
 (1) terminal-price histogram with vertical VaR80/95 marker lines, (2) P5–P95
 fan envelope with the median path. Stat row above the canvases (Median, Mean,
-VaR/CVaR 80/95 — already DOM, lab.js:1569-1602). Add a pending state
+VaR/CVaR 80/95 — already DOM, lab.js:1785-1818). Add a pending state
 (`Running 20,000 paths…` in the metrics area) between command and
-`SIMULATION_COMPLETE` (currently nothing, lab.js:1529-1544). Pre-run placeholder
+`SIMULATION_COMPLETE` (currently nothing, lab.js:1746-1772). Pre-run placeholder
 gets the shared empty-state class (G9). Snapshot stays VaR/CVaR, add median:
 `MC (10,000 paths, ANET) — median $X, VaR(95%) $Y, CVaR(95%) $Z.`
 
 **Belief.** Hierarchy: the probability is the hero number (largest type on the
 screen, `--text-color` bold), with confidence and as-of as muted suffixes —
-today all one inline-bold string (lab.js:1056-1064). Three labeled groups keep
+today all one inline-bold string (lab.js:1272-1281). Three labeled groups keep
 their existing color semantics (for = default, against = gold, open questions =
 blue; analysis.css:279-289); group titles become classes (currently inline,
-lab.js:1088-1134). Snapshot: `Belief (ANET) — 68.0% (confidence 70%), as of
+lab.js:1304-1351). Snapshot: `Belief (ANET) — 68.0% (confidence 70%), as of
 2026-09-30.`
 
 **Evidence.** Keep the timeline. Add a text `SUPERSEDED` tag on superseded
 entries (G14) alongside the dashed/opacity treatment. Keep the header count
-badge (`N valid / M superseded`, lab.js:1189-1215) — promote to a class (G12).
-PORT exclusion message stays (lab.js:1143-1150). Snapshot: `Evidence (ANET) —
+badge (`N valid / M superseded`, lab.js:1413-1431) — promote to a class (G12).
+PORT exclusion message stays (lab.js:1359-1366). Snapshot: `Evidence (ANET) —
 12 valid / 3 superseded, latest 2026-10-01.` Fetch failure gets its own message
 distinct from "no entries" (G9).
 
 **Predictions.** Keep text-badge statuses (Pending/True/False + Brier + overdue
 count — all text, good). Two-line rows: claim line, then muted meta line
 (target date · probability · status) to end the claim-vs-chip crowding
-(lab.js:1326-1343). Stale badge moves off pure `--red-color` text at 0.68rem
+(lab.js:1542-1558). Stale badge moves off pure `--red-color` text at 0.68rem
 (G8/G13): same red but ≥0.72rem, or bold. Snapshot: `Predictions (ANET) —
 Brier 0.18 (N=6), 3 pending, 1 overdue.`
 
 **Journal.** Keep latest-entry emphasis; add `Entry N of M` context (the data
-is an array, lab.js:1352) and a class for `.action-meta` (G12). Snapshot:
+is an array, lab.js:1568) and a class for `.action-meta` (G12). Snapshot:
 `Journal (ANET) — latest: ADD 2026-08-14, review 2026-11-14 (5 entries).`
 
 **What-if sandbox.** Stays inside the belief section (lab.js:104-108). The gold
 tag already prints the command syntax (`analysis bull|bear|reset`) — the right
 no-hover affordance; keep. Dashed row separators move from inline
-(lab.js:1480) to a class.
+(lab.js:1696) to a class.
 
 ### Canvas treatment
 
@@ -332,7 +336,7 @@ no-hover affordance; keep. Dashed row separators move from inline
   blur (G6) while keeping the same CSS aspect (`width:100%; height:auto`,
   analysis.css:219-222). No resize listener: the canvas scales by CSS; redraws
   happen on section switch / ticker switch / currency change (existing
-  `renderActiveTicker`, lab.js:1437-1467).
+  `renderActiveTicker`, lab.js:1653-1686).
 - **ARIA:** `role="img"` + dynamic `aria-label` summarizing the headline
   numbers (the same string as the scrollback snapshot), per the
   `#runningAmountCanvas` precedent (`terminal/index.html:181-185`). All metrics
@@ -357,15 +361,15 @@ in the existing handler-test shape
 - One shared `.pane-empty` class (muted, 12px, no inline styles) for all
   empty/placeholder text — replaces the seven ad-hoc inline variants (G9).
 - Loading: `Loading analysis data…` in the stage (not just the summary block);
-  remove the hardcoded white/red (lab.js:2124-2141) in favor of
+  remove the hardcoded white/red (lab.js:2348-2366) in favor of
   `--text-muted`/`--red-color` classes.
 - Failure visibility: a ticker whose config fetch fails appears in the context
   strip with an `unavailable` marker (and a scrollback warning line), instead
-  of silently vanishing (lab.js:2039-2042). Evidence fetch failure renders
+  of silently vanishing (lab.js:2262-2266). Evidence fetch failure renders
   `Evidence log unavailable (fetch failed).`, distinct from the empty log.
 - The terminal readiness race does not apply to analysis data (own fetch path)
   but does apply to FX conversion — already gated on `whenTransactionDataReady()`
-  (lab.js:2151-2162; pattern from `docs/terminal-data-readiness.md`).
+  (lab.js:2370-2387; pattern from `docs/terminal-data-readiness.md`).
 
 ### Interaction
 
@@ -411,6 +415,9 @@ this session (2026-10-14): `terminal/index.html`, `css/terminal/analysis.css`,
 `js/transactions/terminal/stats/formatting.js`,
 `tests/js/transactions/terminal/handlers/analysis.test.js`. The 67-count of
 inline `style.` assignments and the unused-alias list are grep-verified.
+`lab.js` citations were re-verified after `5dd36b6e` (exact discrete-Kelly
+sizing, +231 lines) landed mid-session — all line numbers above refer to the
+post-commit file.
 
 ### Contrast computations (WCAG 2.1 SC 1.4.3: 4.5:1 normal text, 3:1 large; SC 1.4.11: 3:1 non-text)
 
@@ -475,14 +482,20 @@ final legibility is a human-review item.
 
 ## Open questions / what I couldn't verify
 
-- **All glass-surface legibility is a human-review item.** Contrast table above
-  is computed against modeled composites of the actual background photo; the
-  Chromium refraction lens, WebGL overlay, and canvas-2D overlay
+- **Glass-surface legibility remains a human-review item.** The contrast table
+  above is computed against modeled composites of the actual background photo;
+  the Chromium refraction lens, WebGL overlay, and canvas-2D overlay
   (`docs/liquid-glass.md:34-41`) shift the effective background in ways I
-  cannot see. Verify with
-  `make screenshot URL=/terminal/ ARGS='--type "analysis kelly"'` (the `--type`
-  mechanism runs a real command, `docs/liquid-glass.md:118-126`) and human
-  eyes.
+  cannot see. I did verify the render headlessly this session:
+  `make screenshot URL=/terminal/ ARGS='--keys "analysis kelly" --gl plain --wait 1800 --settle 2000 --probe "#analysisSection" --probe "#kellyCurveCanvas"'`
+  (probe output: pane visible 672×450, canvas visible 584×195). Two findings
+  from that run: (1) the flag is `--keys`, repeatable — the `--type` examples
+  in `docs/liquid-glass.md:118-126` are stale against `scripts/screenshot.mjs`;
+  (2) at 1440×900 the pane lands directly over the photo's bright face region,
+  so the worst case in the contrast table is the operative one, not a corner
+  case. `--gl plain` was required — the default SwiftShader backend wedged
+  `page.goto` on this machine (the workaround `scripts/screenshot.mjs`'s own
+  header documents for macOS).
 - **Whether the two-canvas MC split reads better than the overlay** — proposed
   on information-design grounds (two unrelated encodings share one coordinate
   system today), but the visual call is the owner's.
