@@ -248,7 +248,32 @@ function summarizePathRuns(terminalValues, yearlyPrices, maxDrawdowns, exceedCou
     });
     const sortedDd = [...maxDrawdowns].sort((a, b) => a - b);
 
+    // Terminal wealth stats with the same conventions as runSimulation:
+    // 5% tail (95% confidence) and 20% tail (80% confidence, per doc §3.2).
+    const cvarIndex95 = Math.max(1, Math.floor(paths * 0.05));
+    const cvarIndex80 = Math.max(1, Math.floor(paths * 0.2));
+    let sum = 0;
+    let cvarSum95 = 0;
+    let cvarSum80 = 0;
+    for (let i = 0; i < paths; i++) {
+        const val = terminalValues[i];
+        sum += val;
+        if (i < cvarIndex95) {
+            cvarSum95 += val;
+        }
+        if (i < cvarIndex80) {
+            cvarSum80 += val;
+        }
+    }
+
     return {
+        mean: sum / paths,
+        median: terminalValues[Math.floor(paths * 0.5)],
+        VaR_95: terminalValues[cvarIndex95],
+        CVaR_95: cvarSum95 / cvarIndex95,
+        VaR_80: terminalValues[cvarIndex80],
+        CVaR_80: cvarSum80 / cvarIndex80,
+        histogram: createHistogram(terminalValues, 50),
         terminalValues,
         annualFan,
         maxDrawdown: {
@@ -344,7 +369,8 @@ function createHistogram(data, bins) {
     const histogram = new Array(bins).fill(0);
 
     for (const val of data) {
-        const binIndex = Math.min(bins - 1, Math.floor((val - min) / binSize));
+        // Degenerate zero-range input (all values identical): bin 0 takes all mass.
+        const binIndex = range > 0 ? Math.min(bins - 1, Math.floor((val - min) / binSize)) : 0;
         histogram[binIndex]++;
     }
 

@@ -235,6 +235,32 @@ describe('Analysis Lab Revival (WO-7 & WO-9)', () => {
             expect(kellyMetrics.textContent).toContain('P(DD>30%)');
         });
 
+        it('renders MC Kelly from path terminal values when paths are absent', async () => {
+            const module = await setupLab();
+            const { renderMonteCarloResults, state } = module.__analysisLabTesting;
+            state.configs = [
+                {
+                    symbol: 'ANET',
+                    metrics: { price: 100, horizon: 1, riskFreeRate: 0, fullKelly: 2.5 },
+                },
+            ];
+            state.activeSymbol = 'ANET';
+
+            renderMonteCarloResults({
+                mean: 105,
+                median: 104,
+                VaR_95: 80,
+                CVaR_95: 75,
+                histogram: { min: 80, max: 130, binSize: 1, counts: [1, 2, 1] },
+                terminalValues: [90, 120],
+            });
+
+            const riskMetrics = document.getElementById('riskMetrics');
+            expect(riskMetrics.textContent).toContain('MC Kelly');
+            expect(riskMetrics.textContent).toContain('+250.00%');
+            expect(riskMetrics.textContent).toContain('Estimation Drag');
+        });
+
         it('renders drawdown stats and the DD-capped fraction from path results', async () => {
             const module = await setupLab();
             const { renderMonteCarloResults, state } = module.__analysisLabTesting;

@@ -143,6 +143,16 @@ describe('monte_carlo.worker', () => {
             { f: 1, prob: 1 },
             { f: 2, prob: 1 },
         ]);
+        // Terminal wealth stats: all paths identical, so every stat equals
+        // the shared terminal price (same conventions as runSimulation).
+        expect(result.mean).toBeCloseTo(133.2963, 3);
+        expect(result.median).toBeCloseTo(133.2963, 3);
+        expect(result.VaR_95).toBeCloseTo(133.2963, 3);
+        expect(result.CVaR_95).toBeCloseTo(133.2963, 3);
+        expect(result.VaR_80).toBeCloseTo(133.2963, 3);
+        expect(result.CVaR_80).toBeCloseTo(133.2963, 3);
+        expect(result.histogram.counts.length).toBe(50);
+        expect(result.histogram.counts.reduce((a, b) => a + b, 0)).toBe(10);
     });
 
     it('returns an error for scenarios missing growth/valuation blocks (PORT view)', () => {

@@ -1910,6 +1910,37 @@ export function runMonteCarloSimulation(paths = 10000) {
     });
 }
 
+// Path results carry sorted terminalValues instead of paths; either source
+// gives the same annualized return draws for the Kelly solve.
+function _renderMcKellyCards(result, mcMetrics, riskMetricsEl, createStatCard) {
+    const mcDraws =
+        Array.isArray(result.paths) && result.paths.length > 0
+            ? result.paths
+            : result.terminalValues;
+    if (
+        !mcMetrics ||
+        !Array.isArray(mcDraws) ||
+        mcDraws.length === 0 ||
+        !(mcMetrics.price > 0) ||
+        !(mcMetrics.horizon > 0) ||
+        !Number.isFinite(mcMetrics.riskFreeRate)
+    ) {
+        return;
+    }
+    const n = mcDraws.length;
+    const mcReturns = mcDraws.map((v) => ({
+        prob: 1 / n,
+        ret: (v / mcMetrics.price) ** (1 / mcMetrics.horizon) - 1,
+    }));
+    const mcKelly = solveKellyFraction(mcReturns, mcMetrics.riskFreeRate);
+    riskMetricsEl.appendChild(createStatCard('MC Kelly', formatPercent(mcKelly)));
+    if (Number.isFinite(mcMetrics.fullKelly)) {
+        riskMetricsEl.appendChild(
+            createStatCard('Estimation Drag', formatPercent(mcMetrics.fullKelly - mcKelly))
+        );
+    }
+}
+
 function _renderMonteCarloMetrics(result, riskMetricsEl) {
     riskMetricsEl.replaceChildren();
 
@@ -1945,27 +1976,7 @@ function _renderMonteCarloMetrics(result, riskMetricsEl) {
     riskMetricsEl.appendChild(createStatCard('CVaR (95%)', formatCurrency(result.CVaR_95)));
     const mcConfig = state.configs.find((cfg) => cfg.symbol === state.activeSymbol);
     const mcMetrics = mcConfig && mcConfig.metrics;
-    if (
-        mcMetrics &&
-        Array.isArray(result.paths) &&
-        result.paths.length > 0 &&
-        mcMetrics.price > 0 &&
-        mcMetrics.horizon > 0 &&
-        Number.isFinite(mcMetrics.riskFreeRate)
-    ) {
-        const n = result.paths.length;
-        const mcReturns = result.paths.map((v) => ({
-            prob: 1 / n,
-            ret: (v / mcMetrics.price) ** (1 / mcMetrics.horizon) - 1,
-        }));
-        const mcKelly = solveKellyFraction(mcReturns, mcMetrics.riskFreeRate);
-        riskMetricsEl.appendChild(createStatCard('MC Kelly', formatPercent(mcKelly)));
-        if (Number.isFinite(mcMetrics.fullKelly)) {
-            riskMetricsEl.appendChild(
-                createStatCard('Estimation Drag', formatPercent(mcMetrics.fullKelly - mcKelly))
-            );
-        }
-    }
+    _renderMcKellyCards(result, mcMetrics, riskMetricsEl, createStatCard);
     if (result.maxDrawdown && Number.isFinite(result.maxDrawdown.p95)) {
         riskMetricsEl.appendChild(
             createStatCard('Max DD (p95)', formatPercent(result.maxDrawdown.p95))
