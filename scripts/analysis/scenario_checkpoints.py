@@ -21,7 +21,8 @@ ANALYSIS_DIR = Path(__file__).resolve().parents[2] / "data" / "analysis"
 def load_config(ticker: str, analysis_dir: Path | None = None) -> dict[str, Any]:
     directory = analysis_dir or ANALYSIS_DIR
     with open(directory / f"{ticker.upper()}.json") as f:
-        return json.load(f)
+        config: dict[str, Any] = json.load(f)
+    return config
 
 
 def build_checkpoints(config: dict[str, Any], as_of: date) -> list[dict[str, Any]]:
