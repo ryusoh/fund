@@ -215,6 +215,8 @@ describe('Analysis Lab Revival (WO-7 & WO-9)', () => {
                     scaledGrowthRetention: 0.76,
                     kellyAtHalfEdge: 1.14,
                     impliedEdgeBelief: 0.54,
+                    maxDrawdown: 0.3,
+                    drawdownRiskAtScaled: 0.343,
                 },
             };
 
@@ -230,6 +232,7 @@ describe('Analysis Lab Revival (WO-7 & WO-9)', () => {
             expect(kellyMetrics.textContent).toContain('Scaled Growth');
             expect(kellyMetrics.textContent).toContain('Half-Edge K');
             expect(kellyMetrics.textContent).toContain('Implied Edge');
+            expect(kellyMetrics.textContent).toContain('P(DD>30%)');
         });
 
         it('skips the zero-growth marker when growth never falls back to the risk-free rate', async () => {

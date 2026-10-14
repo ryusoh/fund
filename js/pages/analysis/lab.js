@@ -781,6 +781,16 @@ function computeKellyExtras(kellyReturns, riskFreeRate, fullKelly, scaledKelly, 
     return { scaledGrowthRetention, kellyAtHalfEdge, impliedEdgeBelief };
 }
 
+// Thorp's fractional-Kelly drawdown relation: betting c·f*, the probability
+// of ever falling to fraction x of peak wealth is approximately x^(2/c - 1).
+function computeDrawdownRisk(fullKelly, scaledKelly, maxDrawdown) {
+    if (!(fullKelly > 0) || !(scaledKelly > 0)) {
+        return null;
+    }
+    const c = scaledKelly / fullKelly;
+    return (1 - maxDrawdown) ** (2 / c - 1);
+}
+
 function computeMetrics(config) {
     const preferences = getPreferences(config);
     const market = config.market || {};
@@ -824,6 +834,11 @@ function computeMetrics(config) {
         scaledKelly,
         resolveCurrentWeight(config)
     );
+    const maxDrawdownRaw = Number(preferences.maxDrawdown);
+    const maxDrawdown = Number.isFinite(maxDrawdownRaw) ? maxDrawdownRaw : 0.3;
+    const drawdownToleranceRaw = Number(preferences.drawdownTolerance);
+    const drawdownTolerance = Number.isFinite(drawdownToleranceRaw) ? drawdownToleranceRaw : 0.05;
+    const drawdownRiskAtScaled = computeDrawdownRisk(fullKelly, scaledKelly, maxDrawdown);
     const expectedTerminalPrice = expectedMultiple * price;
     const entryPriceForTarget =
         targetCagr > -1 && price > 0 ? expectedTerminalPrice / (1 + targetCagr) ** horizon : 0;
@@ -844,6 +859,9 @@ function computeMetrics(config) {
         scaledGrowthRetention: kellyExtras.scaledGrowthRetention,
         kellyAtHalfEdge: kellyExtras.kellyAtHalfEdge,
         impliedEdgeBelief: kellyExtras.impliedEdgeBelief,
+        maxDrawdown,
+        drawdownTolerance,
+        drawdownRiskAtScaled,
         expectedTerminalPrice,
         entryPriceForTarget,
         price,
@@ -1103,6 +1121,14 @@ function updateKellyMetricsBadges(
     if (Number.isFinite(metrics.impliedEdgeBelief)) {
         targetEl.appendChild(
             createBadge('Implied Edge', `${(metrics.impliedEdgeBelief * 100).toFixed(0)}% of model`)
+        );
+    }
+    if (Number.isFinite(metrics.drawdownRiskAtScaled)) {
+        targetEl.appendChild(
+            createBadge(
+                `P(DD>${Math.round(metrics.maxDrawdown * 100)}%)`,
+                `~${formatPercent(metrics.drawdownRiskAtScaled)}`
+            )
         );
     }
     if (config.symbol === 'PORT' && metrics.covarianceRatio) {
@@ -2101,6 +2127,14 @@ function _normalizeModelPreferences(preferences, legacyManual) {
     preferences.riskFreeRate = _normalizeNumber(
         preferences.riskFreeRate ?? legacyManual.riskFreeRate,
         DEFAULT_RISK_FREE_RATE
+    );
+    preferences.maxDrawdown = _normalizeNumber(
+        preferences.maxDrawdown ?? legacyManual.maxDrawdown,
+        0.3
+    );
+    preferences.drawdownTolerance = _normalizeNumber(
+        preferences.drawdownTolerance ?? legacyManual.drawdownTolerance,
+        0.05
     );
 
     const benchmarkSource =

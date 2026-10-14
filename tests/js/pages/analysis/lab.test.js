@@ -247,6 +247,16 @@ describe('analysis lab data loading', () => {
             expect(metrics.impliedEdgeBelief).toBeNull();
         });
 
+        it('estimates drawdown risk at the scaled fraction (Thorp approximation)', async () => {
+            const { computeMetrics } = (await import('@pages/analysis/lab.js'))
+                .__analysisLabTesting;
+            const metrics = computeMetrics(kellyConfig());
+            // c = 0.5, maxDrawdown default 0.3 -> 0.7^(2/0.5 - 1) = 0.7^3
+            expect(metrics.maxDrawdown).toBeCloseTo(0.3, 10);
+            expect(metrics.drawdownTolerance).toBeCloseTo(0.05, 10);
+            expect(metrics.drawdownRiskAtScaled).toBeCloseTo(0.343, 3);
+        });
+
         it('normalizes riskFreeRate with a 4% default and preserves explicit values', async () => {
             const { normalizeConfig } = (await import('@pages/analysis/lab.js'))
                 .__analysisLabTesting;
