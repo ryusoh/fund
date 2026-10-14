@@ -2,6 +2,11 @@
 
 ## System-Level Design (Draft)
 
+Extension designs (path simulation, drawdown-constrained sizing, joint macro
+scenarios, calibration wiring, parameter posteriors):
+`docs/research/kelly-tier-b-design.md`. Review/rationale:
+`docs/research/kelly-system-review.md`.
+
 ---
 
 ## 0. Objectives & Scope

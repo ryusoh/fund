@@ -630,19 +630,27 @@ breaks.
 
 **Verify:** `npm exec -- markdownlint-cli2 "docs/fermat-pascal-kelly-system.md"`
 
-### Deferred — [skip], route to a design session instead of a mechanical pass
+### Deferred — designed, awaiting implementation
 
-- **Drawdown-constrained sizing (item 7, B2)** — needs a constraint-input UX
-  decision and depends on path simulation below; see Grossman & Zhou 1993.
-- **Monte Carlo path simulation (item 8b)** — annual-step regime model needed
-  before drawdown distributions can be produced; terminal-only paths can't.
-- **Joint multi-asset scenarios + portfolio constraints (item 10, C4)** —
-  shared macro states vs copula is an unsettled modeling choice (open
-  question #4 above).
-- **Calibration wiring to Brier scoring (item 11, C7)** — needs a resolution
-  criterion design for scenario probabilities before any code.
-- **Bayesian posterior over scenario parameters (B1 part 3)** — extends §4
-  from probabilities to parameters; schema design needed first.
+All five items now have concrete designs in
+`docs/research/kelly-tier-b-design.md` (2026-10-14), with verified schema/code
+anchors and test plans; sequencing table in its final section:
+
+- **Monte Carlo path simulation (item 8b)** → Design 1 (Brownian-bridge annual
+  paths pinned to the existing terminal draws; foundation for Design 2).
+- **Drawdown-constrained sizing (item 7, B2)** → Design 2 (closed-form Thorp
+  badge now + simulated DD cap on the path worker; decided: displayed cap, not
+  silent override).
+- **Joint multi-asset scenarios + portfolio constraints (item 10, C4)** →
+  Design 3 (shared `macroState` scenario tags; decided: shared-state route —
+  note the sync_configs.py normalizer strips unknown scenario keys and must be
+  extended first).
+- **Calibration wiring to Brier scoring (item 11, C7)** → Design 4 (annual EPS
+  checkpoint predictions, human-confirmed resolution, no auto-writes to
+  `data/`).
+- **Bayesian posterior over scenario parameters (B1 part 3)** → Design 5
+  (conjugate normal–normal updates from evidence + MC-Kelly badge exposing the
+  estimation-error drag).
 
 ## Open questions / what I could not verify
 
