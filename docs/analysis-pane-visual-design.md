@@ -161,10 +161,10 @@ page?
 - Announcements ride on `#terminalOutput`'s `aria-live="polite"`
   (`terminal/index.html:154-158`) via the snapshot lines — a sound model (see
   proposal).
-- Context symbols carry name+weight only in a `title` tooltip (lab.js:1433) —
+- Context symbols carry name+weight only in a `title` tooltip (lab.js:1649) —
   hover-dependent.
 - The only interactive elements inside the pane are real anchors (industry
-  thesis link lab.js:1078-1085; evidence source links 1243-1251) and they pick
+  thesis link lab.js:1287-1301; evidence source links 1460-1469) and they pick
   up the pane's `:focus-visible` rule (analysis.css:38-42).
 
 ### Gaps (numbered, referenced from the proposal)
@@ -174,7 +174,7 @@ page?
   implemented overview contains only `#summaryStats` (lab.js:72-74).
 - **G2 — Generic snapshot line** for all function views (analysis.js:49-69).
 - **G3 — Inline styles vs classes.** 67 `style.` assignments in lab.js,
-  including hardcoded `'white'`/`'red'` (2124-2141); merge-doc WO3's
+  including hardcoded `'white'`/`'red'` (2348-2366); merge-doc WO3's
   "replace inline `var(--…)` markup with classes" only partially landed.
   Corollary: the alias vars `--accent`, `--border-thin`, `--text-dim`,
   `--accent-*`, `--border-glow`, `--font-display`, `--font-mono`
