@@ -4,6 +4,13 @@ on:
     schedule:
         # Run at 21:15 UTC on weekdays (~1h15 after NYSE close) after other data jobs finish.
         - cron: '15 21 * * 1-5'
+        # Safety net at 05:12 UTC Tue-Sat (~00:12 ET, past Yahoo's 20:00-23:30
+        # ET daily-bar rollover window): rescues the day when the main run was
+        # congestion-delayed into the window or failed for any other reason.
+        # The precheck step skips this run when tonight's data is already
+        # committed — the pipeline is not byte-idempotent, so a redundant run
+        # must never execute.
+        - cron: '12 5 * * 2-6'
     workflow_dispatch:
 
 permissions:
@@ -23,12 +30,37 @@ jobs:
                   token: ${{ secrets.GITHUB_TOKEN }}
                   fetch-depth: 0
 
+            # The safety-net cron must be a true no-op when the main run
+            # already committed: a redundant full run is NOT idempotent,
+            # because update_fund_data.py is Alpaca-first overnight and
+            # yfinance-first at the 17:15 ET slot, and the two providers'
+            # closes differ by cents — the rerun would commit a provider
+            # flip-flop and dispatch Pages every night (verified locally
+            # 2026-10-14). A matching bot data commit within the last 12h
+            # means tonight's data already landed (validate gates commits,
+            # so a landed commit implies valid data); the previous night's
+            # safety-net commit is ~24h old and falls outside the window.
+            - name: Skip if tonight's data is already committed
+              id: precheck
+              run: |
+                  # Only the safety-net cron may skip — the main cron and
+                  # manual dispatches always run the full pipeline.
+                  if [ "${{ github.event.schedule }}" = '12 5 * * 2-6' ] && \
+                     git log --since="12 hours ago" --grep="TWRRとファンドデータを自動更新" -1 --format=%H | grep -q .; then
+                    echo 'Data commit found within the last 12 hours; skipping redundant run.'
+                    echo 'skip=true' >> "$GITHUB_OUTPUT"
+                  else
+                    echo 'skip=false' >> "$GITHUB_OUTPUT"
+                  fi
+
             - name: Set up Python
+              if: steps.precheck.outputs.skip != 'true'
               uses: actions/setup-python@v7
               with:
                   python-version: ${{ env.PYTHON_VERSION }}
 
             - name: Install dependencies
+              if: steps.precheck.outputs.skip != 'true'
               run: |
                   python -m pip install --upgrade pip
                   pip install -r requirements.txt
@@ -36,6 +68,7 @@ jobs:
                   pip install plotly kaleido pandas-datareader
 
             - name: Update fund price data
+              if: steps.precheck.outputs.skip != 'true'
               env:
                   POLYGON_KEY: ${{ secrets.POLYGON_KEY }}
                   ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
@@ -44,10 +77,12 @@ jobs:
                   python scripts/data/update_fund_data.py
 
             - name: Update historical portfolio data
+              if: steps.precheck.outputs.skip != 'true'
               run: |
                   python scripts/pnl/update_daily_pnl.py
 
             - name: Run TWRR pipeline
+              if: steps.precheck.outputs.skip != 'true'
               env:
                   SCRAPER_API_KEY: ${{ secrets.SCRAPER_API_KEY }}
                   POLYGON_KEY: ${{ secrets.POLYGON_KEY }}
@@ -60,10 +95,12 @@ jobs:
             # invariants (e.g. a held ticker's price history wiped by a flaky
             # fetch — ANET, 2026-09-02) must fail the run, not be committed.
             - name: Validate generated data
+              if: steps.precheck.outputs.skip != 'true'
               run: |
                   make twrr-validate
 
             - name: Commit outputs if changed
+              if: steps.precheck.outputs.skip != 'true'
               id: autocommit
               run: |
                   git config user.name "github-actions[bot]"
@@ -93,7 +130,7 @@ jobs:
             # Bot pushes use GITHUB_TOKEN + [skip ci], so they never trigger the
             # push-based Pages deploy — dispatch it explicitly.
             - name: Trigger Pages deploy
-              if: steps.autocommit.outputs.pushed == 'true'
+              if: steps.precheck.outputs.skip != 'true' && steps.autocommit.outputs.pushed == 'true'
               env:
                   GH_TOKEN: ${{ github.token }}
               run: gh workflow run pages.yml --ref main

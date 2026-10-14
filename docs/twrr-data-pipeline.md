@@ -145,6 +145,18 @@ run — so nothing is committed — when:
   the upstream snapshot was stale (mode 3, second variant),
 - the historical tail and the real-time balance differ by > 10% (seam drift).
 
+The workflow also has a **safety-net cron at 05:12 UTC Tue–Sat** (~00:12 ET,
+past Yahoo's rollover window) that rescues the day when the main run failed or
+was congestion-delayed into the window. The pipeline is **not idempotent** —
+verified 2026-10-14: a same-evening rerun rewrote `fund_data.json` (Alpaca is
+the overnight-first provider and its closes differ from yfinance's by cents),
+re-adjusted historical prices (2023 annual return moved 37.41% → 37.39%), and
+stamped fresh `generated_at` metadata — so a redundant run would commit a
+provider flip-flop and dispatch Pages every night. A precheck step therefore
+skips the whole job when a bot data commit already exists within the last 12
+hours; the skip applies only to the safety-net cron expression, never to the
+main cron or manual dispatches.
+
 Regression tests: `tests/python/test_step_validate.py` (includes a smoke test
 running the gate against the real repo data) and
 `tests/python/test_step03_fetch_prices.py` (all-NaN batch handling).
