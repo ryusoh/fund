@@ -130,12 +130,14 @@ def test_stale_tail_is_refetched_and_merged():
     with (
         patch.object(step03, 'attempt_fallbacks', return_value={'VT': fresh}) as mock_fallbacks,
         patch.object(step03, 'fetch_polygon_daily_closes', return_value={}),
+        patch.object(step03, 'fetch_alpaca_daily_closes', return_value={}),
     ):
         updated, stale = step03.refresh_stale_tails(
             frame.copy(), ['VT', 'ANET'], STALE_INDEX, STALE_INDEX[0], STALE_INDEX[-1]
         )
 
-    assert stale == ['VT', 'ANET']
+    # The return is the post-backstop laggards: VT was rescued, ANET was not.
+    assert stale == ['ANET']
     mock_fallbacks.assert_called_once()
     assert updated['VT'].loc['2026-09-22'] == 101.0
     # ANET was not in the refetch result and stays stale.
@@ -149,6 +151,7 @@ def test_stale_tail_refetch_without_improvement_keeps_original():
     with (
         patch.object(step03, 'attempt_fallbacks', return_value={'VT': still_stale}),
         patch.object(step03, 'fetch_polygon_daily_closes', return_value={}),
+        patch.object(step03, 'fetch_alpaca_daily_closes', return_value={}),
     ):
         updated, stale = step03.refresh_stale_tails(
             frame.copy(), ['VT'], STALE_INDEX, STALE_INDEX[0], STALE_INDEX[-1]
@@ -166,6 +169,7 @@ def test_stale_tail_refetch_reports_unrefreshed_tickers(capsys):
     with (
         patch.object(step03, 'attempt_fallbacks', return_value={}),
         patch.object(step03, 'fetch_polygon_daily_closes', return_value={}),
+        patch.object(step03, 'fetch_alpaca_daily_closes', return_value={}),
     ):
         step03.refresh_stale_tails(
             frame.copy(), ['VT', 'ANET'], STALE_INDEX, STALE_INDEX[0], STALE_INDEX[-1]
@@ -192,13 +196,17 @@ def test_polygon_backstop_merges_when_yfinance_refetch_fails():
             'fetch_polygon_daily_closes',
             return_value={'VT': polygon_fresh, 'ANET': polygon_fresh},
         ) as mock_polygon,
+        patch.object(step03, 'fetch_alpaca_daily_closes', return_value={}) as mock_alpaca,
     ):
         updated, stale = step03.refresh_stale_tails(
             frame.copy(), ['VT', 'ANET'], STALE_INDEX, STALE_INDEX[0], STALE_INDEX[-1]
         )
 
-    assert stale == ['VT', 'ANET']
+    # Both tails were rescued by the Polygon layer, so nothing is still stale
+    # and the Alpaca layer is never reached.
+    assert stale == []
     mock_polygon.assert_called_once()
+    mock_alpaca.assert_not_called()
     # Only the dates actually requested: weekdays between the stale tail and
     # the benchmark tail.
     requested_dates = mock_polygon.call_args[0][1]
@@ -284,6 +292,132 @@ def test_fetch_polygon_daily_closes_api_failure_returns_empty(caplog):
 
     assert retrieved == {}
     assert 'Polygon grouped daily failed for 2026-10-08' in caplog.text
+
+
+# --- Alpaca stale-tail backstop ---
+# 2026-10-13: a congestion-delayed run landed at 20:15 ET, inside Yahoo's
+# daily-bar rollover window; all four Yahoo retries exhausted by 21:04 ET
+# (bars settle ~22:00) and the Polygon free plan refused same-day grouped
+# daily ("today's data before end of day"), so the gate's flat-line check
+# failed the run. Alpaca serves the completed session's daily bar from the
+# 16:00 ET close on, decoupling the tail from Yahoo's clock.
+
+
+def _alpaca_bar(session_date, close):
+    return {'t': f'{session_date}T04:00:00Z', 'c': close}
+
+
+def _alpaca_response(bars_by_symbol, next_page_token=None):
+    resp = MagicMock()
+    resp.json.return_value = {'bars': bars_by_symbol, 'next_page_token': next_page_token}
+    return resp
+
+
+ALPACA_ENV = {'ALPACA_API_KEY': 'alpaca-key', 'ALPACA_API_SECRET': 'alpaca-secret'}
+
+
+def test_alpaca_backstop_merges_when_yahoo_and_polygon_fail():
+    frame = _stale_tail_frame()
+    alpaca_fresh = pd.Series(float('nan'), index=STALE_INDEX)
+    alpaca_fresh.loc['2026-09-21':'2026-09-22'] = [160.11, 160.70]
+    with (
+        patch.object(step03, 'attempt_fallbacks', return_value={}),
+        patch.object(step03, 'fetch_polygon_daily_closes', return_value={}),
+        patch.object(
+            step03,
+            'fetch_alpaca_daily_closes',
+            return_value={'VT': alpaca_fresh, 'ANET': alpaca_fresh},
+        ) as mock_alpaca,
+    ):
+        updated, stale = step03.refresh_stale_tails(
+            frame.copy(), ['VT', 'ANET'], STALE_INDEX, STALE_INDEX[0], STALE_INDEX[-1]
+        )
+
+    assert stale == []
+    mock_alpaca.assert_called_once()
+    # Only the dates actually missing: weekdays between the stale tail and
+    # the benchmark tail.
+    requested_dates = mock_alpaca.call_args[0][1]
+    assert requested_dates == [pd.Timestamp('2026-09-21'), pd.Timestamp('2026-09-22')]
+    assert updated['VT'].loc['2026-09-22'] == 160.70
+    assert updated['ANET'].loc['2026-09-22'] == 160.70
+
+
+def test_fetch_alpaca_daily_closes_maps_and_filters():
+    index = pd.date_range('2026-10-06', '2026-10-08', freq='D')
+    resp = _alpaca_response(
+        {
+            'VT': [
+                _alpaca_bar('2026-10-08', 160.70),
+                _alpaca_bar('2026-10-07', 159.90),  # not a requested date
+            ],
+            'BRK.B': [_alpaca_bar('2026-10-08', 490.12)],  # Alpaca spelling of our BRKB
+            'UNWANTED': [_alpaca_bar('2026-10-08', 12.34)],
+            'ZERO': [_alpaca_bar('2026-10-08', 0)],
+        }
+    )
+    with (
+        patch.dict('os.environ', ALPACA_ENV, clear=True),
+        patch.object(step03.requests, 'get', return_value=resp) as mock_get,
+    ):
+        retrieved = step03.fetch_alpaca_daily_closes(
+            ['VT', 'BRKB', 'ANET'], [pd.Timestamp('2026-10-08')], index
+        )
+
+    assert set(retrieved) == {'VT', 'BRKB'}
+    assert retrieved['VT'].dropna().to_dict() == {pd.Timestamp('2026-10-08'): 160.70}
+    assert retrieved['BRKB'].loc['2026-10-08'] == 490.12
+    # Credentials travel in headers, never in the request params.
+    _, kwargs = mock_get.call_args
+    assert kwargs['headers']['APCA-API-KEY-ID'] == 'alpaca-key'
+    assert kwargs['headers']['APCA-API-SECRET-KEY'] == 'alpaca-secret'
+    assert 'alpaca-key' not in str(kwargs['params'])
+    assert 'alpaca-secret' not in str(kwargs['params'])
+
+
+def test_fetch_alpaca_daily_closes_paginates():
+    index = pd.date_range('2026-10-07', '2026-10-08', freq='D')
+    page1 = _alpaca_response({'VT': [_alpaca_bar('2026-10-07', 160.11)]}, next_page_token='p2')
+    page2 = _alpaca_response({'VT': [_alpaca_bar('2026-10-08', 160.70)]})
+    with (
+        patch.dict('os.environ', ALPACA_ENV, clear=True),
+        patch.object(step03.requests, 'get', side_effect=[page1, page2]) as mock_get,
+    ):
+        retrieved = step03.fetch_alpaca_daily_closes(
+            ['VT'], [pd.Timestamp('2026-10-07'), pd.Timestamp('2026-10-08')], index
+        )
+
+    assert mock_get.call_count == 2
+    assert retrieved['VT'].dropna().to_dict() == {
+        pd.Timestamp('2026-10-07'): 160.11,
+        pd.Timestamp('2026-10-08'): 160.70,
+    }
+
+
+def test_fetch_alpaca_daily_closes_without_credentials_skips():
+    with patch.dict('os.environ', {}, clear=True):
+        assert (
+            step03.fetch_alpaca_daily_closes(['VT'], [pd.Timestamp('2026-10-08')], DATE_INDEX) == {}
+        )
+
+
+def test_fetch_alpaca_daily_closes_api_failure_returns_empty(caplog):
+    with (
+        patch.dict('os.environ', ALPACA_ENV, clear=True),
+        patch.object(
+            step03.requests, 'get', side_effect=RuntimeError('boom alpaca-key alpaca-secret')
+        ),
+        caplog.at_level(logging.WARNING),
+    ):
+        retrieved = step03.fetch_alpaca_daily_closes(
+            ['VT'], [pd.Timestamp('2026-10-08')], DATE_INDEX
+        )
+
+    assert retrieved == {}
+    assert 'Alpaca stale-tail backstop unavailable' in caplog.text
+    # Credentials must be scrubbed from the logged error.
+    assert 'alpaca-key' not in caplog.text
+    assert 'alpaca-secret' not in caplog.text
 
 
 def test_long_stopped_ticker_is_not_refetched():
@@ -378,7 +512,7 @@ def _fleet_frame(equity_tail, bench_last='2026-09-22', n_equities=8):
     return _stale_tail_frame(held_last=equity_tail, bench_last=bench_last, tickers=tickers)
 
 
-def _run_main(fetch_results, now_et):
+def _run_main(fetch_results, now_et, alpaca_result=None):
     transactions = pd.DataFrame(
         {
             'trade_date': [pd.Timestamp('2020-06-25')] * 8,
@@ -390,6 +524,7 @@ def _run_main(fetch_results, now_et):
         patch.object(step03, 'fetch_yfinance_prices', side_effect=fetch_results) as mock_fetch,
         patch.object(step03, 'attempt_fallbacks', return_value={}),
         patch.object(step03, 'fetch_polygon_daily_closes', return_value={}),
+        patch.object(step03, 'fetch_alpaca_daily_closes', return_value=alpaca_result or {}),
         patch.object(step03, 'load_overrides', return_value=pd.DataFrame()),
         patch.object(step03, 'write_raw_json_prices'),
         patch.object(step03, 'write_prices'),
@@ -441,6 +576,22 @@ def test_no_retry_when_fleet_is_fresh():
     now = datetime(2026, 9, 22, 21, 0, tzinfo=ZoneInfo('US/Eastern'))
 
     mock_fetch, mock_time = _run_main([fresh], now)
+
+    assert mock_fetch.call_count == 1
+    mock_time.sleep.assert_not_called()
+
+
+def test_no_retry_when_backstop_rescues_fleet():
+    # refresh_stale_tails returns the post-backstop laggards, so a fleet
+    # rescued by Alpaca inside the rollover window must not keep polling
+    # Yahoo for another 45 minutes.
+    fresh_tail = pd.Series(float('nan'), index=STALE_INDEX)
+    fresh_tail.loc['2026-09-22'] = 101.0
+    alpaca_result = {f'T{i}': fresh_tail.copy() for i in range(8)}
+    stale = (_fleet_frame('2026-09-18'), [f'T{i}' for i in range(8)], [])
+    now = datetime(2026, 9, 22, 21, 0, tzinfo=ZoneInfo('US/Eastern'))
+
+    mock_fetch, mock_time = _run_main([stale], now, alpaca_result=alpaca_result)
 
     assert mock_fetch.call_count == 1
     mock_time.sleep.assert_not_called()

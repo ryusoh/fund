@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import sys
 import time
 from datetime import datetime, timedelta, timezone
@@ -14,10 +15,14 @@ from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 from zoneinfo import ZoneInfo
 
 import pandas as pd
+import requests
 from polygon import RESTClient
 
 sys.path.append(str(Path(__file__).parent))
 from utils import append_changelog_entry, load_delisted_tickers
+
+sys.path.append(str(Path(__file__).resolve().parents[2]))
+from scripts.utils.security_utils import scrub_secrets
 
 try:
     import atexit
@@ -322,8 +327,6 @@ def fetch_polygon_daily_closes(
     no-opped for every one). Requires POLYGON_KEY; without it, returns {} and
     the stale-tail log line still reports the laggards.
     """
-    import os
-
     if not dates:
         return {}
     api_key = os.environ.get('POLYGON_KEY')
@@ -370,6 +373,98 @@ def fetch_polygon_daily_closes(
     return retrieved
 
 
+ALPACA_BARS_URL = 'https://data.alpaca.markets/v2/stocks/bars'
+
+
+def fetch_alpaca_daily_closes(
+    tickers: List[str], dates: List[pd.Timestamp], date_index: pd.DatetimeIndex
+) -> Dict[str, pd.Series]:
+    """Daily closes from Alpaca's market-data bars endpoint for the given dates.
+
+    Alpaca serves the just-completed session's regular daily bar from the
+    16:00 ET close on, so it is immune to both of the other sources' evening
+    gaps: Yahoo's 20:00-23:30 ET daily-bar rollover window and the Polygon
+    free plan's refusal to serve same-day grouped daily before its end of day
+    (2026-10-13 incident: a congestion-delayed run at 20:15 ET exhausted all
+    four Yahoo rollover retries by 21:04 ET, Polygon 401'd on the same-day
+    date, and the gate flat-line check failed the run). Mutual funds and
+    indices are not Alpaca securities and simply come back absent, so this
+    only ever rescues US-listed equities/ETFs. Requires ALPACA_API_KEY and
+    ALPACA_API_SECRET; without them, returns {} and the stale-tail log line
+    still reports the laggards.
+    """
+    if not dates:
+        return {}
+    api_key = os.environ.get('ALPACA_API_KEY')
+    api_secret = os.environ.get('ALPACA_API_SECRET')
+    if not api_key or not api_secret:
+        print('ALPACA_API_KEY/ALPACA_API_SECRET not set; skipping Alpaca stale-tail backstop')
+        return {}
+    # Alpaca spells class shares with a dot where Yahoo uses a dash (BRK.B vs
+    # our BRKB); map every requested symbol back to the normalized ticker.
+    request_symbols: Dict[str, str] = {}
+    for raw in tickers:
+        normalized = raw.upper()
+        symbol = YFINANCE_ALIASES.get(normalized, normalized).replace('-', '.').replace('_', '.')
+        request_symbols[symbol.upper()] = normalized
+    wanted_dates = {day.strftime('%Y-%m-%d') for day in dates}
+    headers = {
+        'APCA-API-KEY-ID': api_key,
+        'APCA-API-SECRET-KEY': api_secret,
+        'Accept': 'application/json',
+    }
+    params: Dict[str, str] = {
+        'symbols': ','.join(sorted(request_symbols)),
+        'timeframe': '1Day',
+        'start': min(dates).strftime('%Y-%m-%d'),
+        # A day past the last wanted date covers the end boundary whether it
+        # is interpreted as inclusive or exclusive.
+        'end': (max(dates) + pd.Timedelta(days=1)).strftime('%Y-%m-%d'),
+        'adjustment': 'all',
+        'limit': '10000',
+    }
+    closes: Dict[str, Dict[pd.Timestamp, float]] = {}
+    page_token: Optional[str] = None
+    try:
+        while True:
+            if page_token:
+                params['page_token'] = page_token
+            resp = requests.get(ALPACA_BARS_URL, params=params, headers=headers, timeout=30)
+            resp.raise_for_status()
+            payload = resp.json()
+            for symbol, bars in (payload.get('bars') or {}).items():
+                ticker = request_symbols.get(str(symbol).upper())
+                if ticker is None:
+                    continue
+                for bar in bars or []:
+                    # Daily bars are stamped at session midnight, so the date
+                    # portion of the RFC-3339 timestamp is the session date.
+                    session = str(bar.get('t', ''))[:10]
+                    close = bar.get('c')
+                    if session not in wanted_dates:
+                        continue
+                    if not isinstance(close, (int, float)) or close <= 0:
+                        continue
+                    closes.setdefault(ticker, {})[pd.Timestamp(session)] = float(close)
+            page_token = payload.get('next_page_token')
+            if not page_token:
+                break
+    except Exception as exc:
+        error_msg = scrub_secrets(str(exc), [api_key, api_secret])
+        logging.warning(f'Alpaca stale-tail backstop unavailable: {error_msg}')
+        return {}
+    retrieved = {}
+    for ticker, points in closes.items():
+        series = pd.Series(points).sort_index()
+        series.name = ticker
+        retrieved[ticker] = series.reindex(date_index)
+    print(
+        f'Alpaca stale-tail backstop retrieved {len(retrieved)} of {len(tickers)} tickers '
+        f'across {len(dates)} date(s)'
+    )
+    return retrieved
+
+
 def refresh_stale_tails(
     price_df: pd.DataFrame,
     tickers: List[str],
@@ -387,10 +482,16 @@ def refresh_stale_tails(
     days. Only recently-active tails are refetched — a series that stopped
     weeks ago is a halted/acquired ticker, not a fetch lag.
 
-    Two refetch layers: yfinance single-ticker + stooq (attempt_fallbacks),
-    then a Polygon grouped-daily backstop (fetch_polygon_daily_closes) for
-    whatever is still stale — Polygon's completed-session bars are unaffected
-    by Yahoo's evening rollover window.
+    Three refetch layers: yfinance single-ticker + stooq (attempt_fallbacks),
+    then a Polygon grouped-daily backstop (fetch_polygon_daily_closes), then
+    an Alpaca daily-bars backstop (fetch_alpaca_daily_closes) for whatever is
+    still stale. Alpaca decouples the tail from Yahoo's clock: it serves the
+    completed session's bar from the 16:00 ET close on, covering both Yahoo's
+    evening rollover window and the Polygon free plan's same-day gate.
+
+    Returns the tickers still stale after every layer, which is what the
+    rollover retry decision needs: a fleet rescued by a backstop must not keep
+    polling Yahoo through the window.
     """
     bench_last = None
     for bench in BENCHMARK_TICKERS:
@@ -426,7 +527,7 @@ def refresh_stale_tails(
         # rollover window (the just-completed session's bar vanishes while the
         # forming overnight bar takes over), which is exactly when delayed
         # runs land — the yfinance refetch then no-ops for the whole fleet.
-        # Backstop with Polygon grouped daily bars, which are immune to it.
+        # Backstop with other providers' completed-session bars.
         earliest_tail = min(
             last for t in still_stale if (last := _last_valid_date(price_df[t])) is not None
         )
@@ -440,6 +541,17 @@ def refresh_stale_tails(
             refreshed.extend(polygon_refreshed)
             still_stale = sorted(set(stale) - set(refreshed))
     if still_stale:
+        # The Polygon free plan refuses same-day grouped daily until its end
+        # of day (2026-10-13: NOT_AUTHORIZED at 20:17-21:04 ET), so inside
+        # Yahoo's rollover window Polygon alone could not rescue the tail.
+        # Alpaca serves the completed session's daily bar from 16:00 ET on.
+        alpaca_retrieved = fetch_alpaca_daily_closes(still_stale, missing_days, date_index)
+        alpaca_refreshed = _merge_fresher(price_df, alpaca_retrieved)
+        if alpaca_refreshed:
+            print(f'Alpaca backstop updated: {sorted(alpaca_refreshed)}')
+            refreshed.extend(alpaca_refreshed)
+            still_stale = sorted(set(stale) - set(refreshed))
+    if still_stale:
         # 2026-10-06 incident: the refetch returned stale-or-empty data for
         # all 39 laggards with no log line — the flat-fill was only caught
         # downstream by step_validate. Make a no-op refetch visible here.
@@ -448,7 +560,7 @@ def refresh_stale_tails(
             f'tickers; their tails still predate the benchmark tail '
             f'({bench_last.date()}): {still_stale}'
         )
-    return price_df, stale
+    return price_df, still_stale
 
 
 def load_overrides(date_index: pd.DatetimeIndex) -> pd.DataFrame:

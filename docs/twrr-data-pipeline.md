@@ -56,7 +56,17 @@ Drift between the two shows up as a jump at the seam.
    backstops still-stale tails with Polygon grouped daily bars (one call per
    missing date covers all US tickers) as a fail-open extra layer — needs
    `POLYGON_KEY` in the "Run TWRR pipeline" step env of
-   `twrr-refresh.yaml`, but nothing depends on it succeeding.
+   `twrr-refresh.yaml`, but nothing depends on it succeeding; (3)
+   `fetch_alpaca_daily_closes` backstops whatever is still stale with Alpaca
+   daily bars — added 2026-10-14 after a congestion-delayed run (20:15 ET)
+   exhausted all four Yahoo retries by 21:04 ET and the Polygon free plan
+   refused same-day grouped daily ("today's data before end of day"),
+   failing the gate. Alpaca serves the completed session's regular daily bar
+   from the 16:00 ET close on, so it decouples the tail from Yahoo's clock;
+   it needs `ALPACA_API_KEY`/`ALPACA_API_SECRET` in the same step env and
+   only covers US-listed equities/ETFs (mutual funds and indices come back
+   absent). `refresh_stale_tails` returns the post-backstop laggards, so a
+   rescued fleet does not keep polling Yahoo through the window.
 4. **`delisted_tickers.csv` ∩ holdings** — a held ticker wrongly on the list
    is skipped by step03 → $0 forever.
 5. **Fractional-share dust** — checkpoints carry tiny negative residues

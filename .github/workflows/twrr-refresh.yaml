@@ -51,6 +51,8 @@ jobs:
               env:
                   SCRAPER_API_KEY: ${{ secrets.SCRAPER_API_KEY }}
                   POLYGON_KEY: ${{ secrets.POLYGON_KEY }}
+                  ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+                  ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
               run: |
                   make twrr-refresh
 
