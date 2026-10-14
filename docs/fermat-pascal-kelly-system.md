@@ -181,6 +181,7 @@ Repeat (e.g., 10k paths) to build an empirical distribution.
 ### 6.2 Strategy Rules
 
 - Adjust toward the new Kelly fraction subject to bounds (max change per period, position limits).
+- Under i.i.d. returns the myopic (period-by-period) Kelly strategy is already optimal for log utility (Mossin 1968); the dynamic layer's value is handling regime shifts through the Bayesian updates plus transaction-cost friction on rebalancing, not beating myopia under stationarity.
 
 ### 6.3 Path Simulation
 
