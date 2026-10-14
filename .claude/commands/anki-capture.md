@@ -84,9 +84,13 @@ python3 ~/dev/networking/tools/research/anki_density_gate.py \
 #    card, re-read the source lines its citation points to and score a
 #    4-point rubric: accuracy (claim matches source), citation match (those
 #    lines actually support it), completeness (no load-bearing omission),
-#    format (contract below). Rewrite any failing card, then re-run gates
-#    2-3. (~1 hallucination per 21 LLM-authored cards is measured in the
-#    literature; this pass catches them before human review.)
+#    format (contract below). Claims must trace to the persisted doc, not to
+#    session memory: a number a subagent reported that never landed in the
+#    findings doc is a citation-match fail (2026-10-14: `$44.3M` warrant
+#    amortization and an HBM bandwidth figure were dropped for this). Rewrite
+#    any failing card, then re-run gates 2-3. (~1 hallucination per 21
+#    LLM-authored cards is measured in the literature; this pass catches them
+#    before human review.)
 
 # 4. Human review: show the user the JSONL diff before importing.
 
@@ -162,6 +166,14 @@ enforces:
   `anki_deck_acronyms.py` scoped to the 金融 deck: exempt = expanded
   before in the deck, or ≥ 25 notes). `AI`, `GPU`, `HBM` and ~1,500
   others are exempt; rebuild the cache occasionally as the deck grows.
+  **Pre-check candidate acronyms against the cache before authoring**
+  (2026-10-14: `PB`, `ASC`, `MRA`, `CFIUS` were not exempt and cost a
+  validation round): load the JSON and test membership, or just avoid
+  non-exempt tokens (`每秒 21 拍字节` instead of `21 PB/s`).
+- **The English-annotation counter is substring-based, not term-based.**
+  Any parenthetical containing an English word counts toward the cap of 2,
+  even a mostly-Chinese one (`（…Bedrock 集成目标 2027 年首季）` counted).
+  Keep English tokens out of parentheses unless it is a deliberate gloss.
 - **Core concept names must carry an English anchor, but hyphenated terms are
   front-banned.** The front allows acronyms and single-token names only —
   `(WLBI)`, `(backlog)` pass; `(burn-in)` is rejected as multi-word (the

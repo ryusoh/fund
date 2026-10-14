@@ -62,3 +62,23 @@ Treat it as coarse grounding, not proof.
   `form_type: N/A` (adapter now maps `document_type`); XBRL statement values
   returned empty (period-column suffix parsing, fixed 2026-10-12); `verify`
   spans were raw BM25 order (now numeric-anchored, see above).
+
+## Known gaps (confirmed in the 2026-10-13 CBRS deep-research run)
+
+- **`verify` silently defaults to the newest filing** when `--doc` is omitted.
+  Claims sourced from an older filing then FAIL at 0%, and PASSes can anchor on
+  non-number-bearing boilerplate spans. Always pass `--doc fil_<accession>`;
+  check that matched spans actually contain the claim's numbers.
+- **`sections` CLI prints only the first 25 of N sections** (hard-coded
+  `sections[:25]`, `scripts/analysis/filings_adapter.py:648`) though the header
+  reports the true count. Page via the underlying `get_document_sections_tree`
+  API for longer filings.
+- **Large HTML prospectuses (S-1/424B4) have no processor**: `sections` and
+  `verify` on an ~8.5MB S-1 raise `ValueError: no usable processor found`
+  (reproduced 3/3). Workaround: direct text extraction of the cached `.htm`
+  under `~/.cache/filings/portfolio/<T>/filings/fil_<accession>/` (strip tags,
+  regex the number with context) — verbatim quotes from that file are an
+  acceptable confirm-pass substitute.
+- `ingest` pulls only the **latest filing per form** — an original S-1 is not
+  fetched once a refiled S-1 exists; the 8-K exhibit 99.1 (earnings release) is
+  not downloaded either (body only).

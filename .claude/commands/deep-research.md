@@ -16,6 +16,16 @@ Anthropic production multi-agent research architecture patterns.
 
 For the given research question `$ARGUMENTS`:
 
+0. **Resolve the subject before fan-out (2026-10-13 lesson):** a bare uppercase token is
+   a **stock ticker first** — this repo is a fund. If the token collides with a well-known
+   non-ticker acronym (2026-10-13: `CBRS` = Cerebras Systems the stock, not Citizens
+   Broadband Radio Service the spectrum band), disambiguate by **thematic adjacency**:
+   check `data/analysis/`, `docs/thesis/`, and `docs/thesis/industry/` for which reading
+   touches an existing holding or industry doc. A reading with zero adjacency to anything
+   in the portfolio is almost certainly a misread — a ~15×-token fan-out on the wrong
+   subject was the cost. If two readings both have real adjacency, ask the user one
+   question before launching subagents; never fan out on an unresolved ambiguity.
+
 1. **Parallel subagent fan-out:** Launch specialized read-only subagents:
     - **Filings subagent:** Queries SEC filings via `venv/bin/python -m scripts.analysis.filings_adapter`
       (`sections`, `read`, `verify` — the direct script path fails with `ModuleNotFoundError`;

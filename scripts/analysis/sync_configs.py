@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import atexit
 import json
 import logging
@@ -538,6 +539,12 @@ def ensure_structure(symbol: str, config: dict) -> dict:
 
 
 def main() -> None:
+    # parse_known_args (not parse_args): direct main() callers in tests run
+    # under pytest's argv, which must not abort the sync.
+    argparse.ArgumentParser(
+        description="Normalize data/analysis/*.json configs, refresh market blocks, "
+        "and delete configs outside holdings ∪ watchlist."
+    ).parse_known_args()
     if not FUND_FILE.exists():
         raise SystemExit(f"Missing fund data file: {FUND_FILE}")
     if not HOLDINGS_FILE.exists():
