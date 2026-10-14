@@ -94,11 +94,11 @@ page?
   `data-analysis-section` blocks. `showAnalysisSection` toggles `is-hidden`
   (2086-2095).
 - Renderers build DOM with `createElement`/`textContent` (XSS-safe): summary
-  stats (643-679), scenario cards (681-720), value bands (722-753), Kelly curve
-  and metric badges (755-1034), belief state (1036-1135), evidence timeline
-  (1137-1255), predictions (1270-1344), decision journal (1346-1397), context
-  strip (1401-1435), sandbox rows (1471-1495), MC metrics and canvases
-  (1569-1694).
+  stats (793-836), scenario cards (837-877), value bands (878-910), Kelly curve
+  and metric badges (911-1250), belief state (1252-1352), evidence timeline
+  (1353-1485), predictions (1486-1561), decision journal (1562-1616), context
+  strip (1617-1652), sandbox rows (1687-1711), MC metrics and canvases
+  (1785-1906).
 - Two canvases, both fixed `width="600" height="200"` with **no role/aria
   attributes** (lines 90, 98) — contrast `#runningAmountCanvas`
   `role="img" aria-label` (`terminal/index.html:181-185`).
@@ -106,8 +106,8 @@ page?
   (`PANE_CHART_COLORS`, lab.js:45-54) — drift risk if `css/terminal/base.css`
   tokens ever change.
 - Currency-aware formatting via the shared path with latest-FX conversion
-  (lab.js:161-183) and re-render on `currencyChangedGlobal` gated on data
-  readiness (lab.js:2151-2162).
+  (lab.js:165-183) and re-render on `currencyChangedGlobal` gated on data
+  readiness (lab.js:2370-2387).
 
 ### Scrollback snapshots (`js/transactions/terminal/handlers/analysis.js`)
 
@@ -125,22 +125,22 @@ page?
 ### Loading / error / empty states
 
 - Loading: `Loading...` with **hardcoded white** inline style, only in the
-  summary-stats area (lab.js:2124-2129). `initAnalysisPane` awaits
-  `buildConfigs()` before the handler switches sections (lab.js:2131;
+  summary-stats area (lab.js:2348-2354). `initAnalysisPane` awaits
+  `buildConfigs()` before the handler switches sections (lab.js:2355;
   analysis.js:129-147), so the window is short but real on first open.
 - Error: `Error: <msg>` with **hardcoded red** inline style, only in summary
-  stats (lab.js:2137-2141). The historical `alert()` is gone (merge doc item 1
+  stats (lab.js:2360-2366). The historical `alert()` is gone (merge doc item 1
   landed).
 - Per-ticker config fetch failure is **silently dropped** — `logger.warn` +
-  null-filter (lab.js:2039-2042); the ticker simply vanishes from the context
+  null-filter (lab.js:2262-2266); the ticker simply vanishes from the context
   strip with no user-visible signal.
 - Evidence fetch failure is conflated with "no data": any fetch/parse failure
-  renders `No logged evidence entries on disk yet.` (lab.js:1153-1169).
+  renders `No logged evidence entries on disk yet.` (lab.js:1368-1386).
 - MC pre-run placeholder `Run simulation to see metrics.` is an unstyled
-  `<p>` (lab.js:1462-1466); worker failure text is a bare text node
-  (1545-1553). No pending indicator while the worker runs.
-- Empty states exist for belief (1043-1049), predictions (1316-1323), journal
-  (1361-1368), summary (649-655), context strip (1407-1412) — each with its own
+  `<p>` (lab.js:1678-1682); worker failure text is a bare text node
+  (1761-1769). No pending indicator while the worker runs.
+- Empty states exist for belief (1258-1267), predictions (1532-1540), journal
+  (1577-1585), summary (799-805), context strip (1622-1628) — each with its own
   inline styles. The chart pane's dedicated empty-state element convention
   (`#runningAmountEmpty`, `terminal/index.html:186`, toggled by renderers, e.g.
   `js/transactions/chart/renderers/composition.js:140-145`) has no analysis-pane
