@@ -1093,6 +1093,14 @@ function updateKellyMetricsBadges(
 
     targetEl.appendChild(createBadge('Full Kelly', formatPercent(fullKelly)));
     targetEl.appendChild(createBadge('Scaled (½K)', formatPercent(scaledKelly), true));
+    const maxWeight = Number(config.position?.constraints?.maxWeight);
+    if (Number.isFinite(maxWeight) && maxWeight > 0 && Number.isFinite(scaledKelly)) {
+        const recommended = Math.min(scaledKelly, maxWeight);
+        const capped = scaledKelly > maxWeight;
+        targetEl.appendChild(
+            createBadge('Recommended', `${formatPercent(recommended)}${capped ? ' (capped)' : ''}`)
+        );
+    }
     targetEl.appendChild(createBadge('Current Weight', formatPercent(currentWeight)));
     if (Number.isFinite(metrics.riskFreeRate)) {
         targetEl.appendChild(createBadge('Rf', formatPercent(metrics.riskFreeRate)));

@@ -261,6 +261,29 @@ describe('Analysis Lab Revival (WO-7 & WO-9)', () => {
             expect(riskMetrics.textContent).toContain('Estimation Drag');
         });
 
+        it('caps the recommended position at constraints.maxWeight', async () => {
+            const { renderKellyCurve } = (await setupLab()).__analysisLabTesting;
+            const config = {
+                symbol: 'ANET',
+                weight: 0.05,
+                position: { currentWeight: 0.05, constraints: { minWeight: 0, maxWeight: 0.3 } },
+                metrics: {
+                    edge: 0.08,
+                    volatility: 0.4,
+                    fullKelly: 0.5,
+                    scaledKelly: 0.5,
+                    kellyScale: 1,
+                    benchmark: 0.065,
+                },
+            };
+
+            renderKellyCurve(config);
+
+            const kellyMetrics = document.getElementById('kellyMetrics');
+            expect(kellyMetrics.textContent).toContain('Recommended');
+            expect(kellyMetrics.textContent).toContain('(capped)');
+        });
+
         it('skips the zero-growth marker when growth never falls back to the risk-free rate', async () => {
             const { renderKellyCurve } = (await setupLab()).__analysisLabTesting;
 
