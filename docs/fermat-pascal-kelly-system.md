@@ -30,6 +30,9 @@ Build a reusable analysis engine that:
 
 - Use a discrete scenario set (typically Bull / Base / Bear; extensible to more states).
 - Each scenario carries a probability, fundamental trajectory (e.g., EPS CAGR), and exit valuation (terminal PE).
+- Include an explicit left-tail/catastrophe state (fraud, nationalization, −90%; even at 1–3% probability) — tail risk metrics are degenerate without one.
+- Scenario returns are total return: include reinvested dividends/distributions over the horizon, not just terminal EPS × exit PE.
+- Anchor exit PEs to the stock's historical multiple distribution or a fundamentals-implied terminal multiple, and record the anchor in the scenario notes.
 
 ### 1.2 Investment Horizon & Terminal Value
 
