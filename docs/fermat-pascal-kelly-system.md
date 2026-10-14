@@ -121,7 +121,7 @@ For each scenario compute:
 ### 3.3 Downside Ratios
 
 - **Sortino ratio:** (expected return − threshold) ÷ downside deviation.
-- **Omega ratio:** P(return > threshold) / P(return &le; threshold).
+- **Omega ratio:** probability-weighted gains above the threshold ÷ probability-weighted losses below it, E[(R−τ)⁺] ÷ E[(τ−R)⁺] (Keating &amp; Shadwick 2002) — integrals of the return distribution, not a ratio of probabilities.
 
 ---
 
