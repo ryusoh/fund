@@ -487,6 +487,7 @@ def ensure_structure(symbol: str, config: dict) -> dict:
                 'id': scenario_id,
                 'name': name,
                 'prob': prob,
+                'macroState': scenario.get('macroState'),
                 'growth': {
                     'epsCagr': eps_cagr,
                     'epsCagrSigma': eps_cagr_sigma,
