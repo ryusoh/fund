@@ -3,7 +3,7 @@
     "name": "Cerebras Systems",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-10-14T02:41:20.150571+00:00",
+        "asOf": "2026-10-14T02:51:17.977043+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -36,7 +36,7 @@
         "beta": null,
         "marketCap": 35417239552.0,
         "currency": "USD",
-        "marketDataUpdatedAt": "2026-10-14T02:41:19.404342+00:00",
+        "marketDataUpdatedAt": "2026-10-14T02:51:17.014100+00:00",
         "pegRatio": null,
         "enterpriseValue": 28982759424.0,
         "ebitda": -484790016.0,

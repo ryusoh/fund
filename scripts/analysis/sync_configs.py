@@ -541,10 +541,19 @@ def ensure_structure(symbol: str, config: dict) -> dict:
 def main() -> None:
     # parse_known_args (not parse_args): direct main() callers in tests run
     # under pytest's argv, which must not abort the sync.
-    argparse.ArgumentParser(
+    parser = argparse.ArgumentParser(
         description="Normalize data/analysis/*.json configs, refresh market blocks, "
         "and delete configs outside holdings ∪ watchlist."
-    ).parse_known_args()
+    )
+    parser.add_argument(
+        "--ticker",
+        help="Scope the market-data refresh and file rewrite to a single tracked "
+        "ticker; other configs are read (for index/timeline rebuilds) but never "
+        "modified. Use after a single-ticker thesis update to avoid dirtying "
+        "unrelated configs with incidental market refreshes.",
+    )
+    args = parser.parse_known_args()[0]
+    scoped = args.ticker.upper() if args.ticker else None
     if not FUND_FILE.exists():
         raise SystemExit(f"Missing fund data file: {FUND_FILE}")
     if not HOLDINGS_FILE.exists():
@@ -555,6 +564,9 @@ def main() -> None:
     holding_symbols = sorted(holdings.keys())
     watchlist_symbols = load_watchlist(WATCHLIST_FILE)
     tracked_symbols = sorted(set(holding_symbols) | set(watchlist_symbols))
+
+    if scoped and scoped not in tracked_symbols:
+        raise SystemExit(f"--ticker {scoped} is not in holdings ∪ watchlist {tracked_symbols}")
 
     for path in ANALYSIS_DIR.glob('*.json'):
         if path.name in ('index.json', 'watchlist.json'):
@@ -567,6 +579,12 @@ def main() -> None:
 
     for symbol in tracked_symbols:
         config_path = ANALYSIS_DIR / f"{symbol}.json"
+        if scoped and symbol != scoped:
+            # Scoped mode: read-only for other tickers — no default-config
+            # creation, no market refresh, no rewrite.
+            if config_path.exists():
+                configs_cache[symbol] = ensure_structure(symbol, load_json(config_path))
+            continue
         if not config_path.exists():
             default_config = {
                 'symbol': symbol,

@@ -23,10 +23,12 @@ When new source material arrives (e.g., an interview transcript or trade publica
   `data/analysis/watchlist.json` (no-position tickers, `{"tickers": ["AEHR"]}`).
   `sync_configs.py` **deletes** any `data/analysis/<TICKER>.json` outside that
   union — a watchlist ticker must be registered in `watchlist.json` first.
-- Running `sync_configs.py` also refreshes the `market` block of **every**
-  tracked ticker from yfinance, dirtying configs you didn't touch. Commit those
-  separately as `chore(data)` or leave them for the nightly `analysis-sync.yml`
-  bot (it regenerates and auto-commits the same files).
+- An unscoped `sync_configs.py` run also refreshes the `market` block of **every**
+  tracked ticker from yfinance, dirtying configs you didn't touch. For a
+  single-ticker thesis update, run `sync_configs.py --ticker <T>`: other configs
+  are read for the index/timeline rebuild but never modified. Leave full
+  refreshes to the nightly `analysis-sync.yml` bot; if one happens anyway,
+  commit the incidental refreshes separately as `chore(data)`.
 - `data/analysis/theme_timeline.json` is generated, gitignored, and has no
   committed consumer yet — don't commit it.
 
