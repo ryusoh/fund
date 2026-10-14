@@ -210,10 +210,12 @@ Repeat (e.g., 10k paths) to build an empirical distribution.
 ### 8.1 Extract Risk-Neutral Distribution
 
 - Use option prices (e.g., Breeden–Litzenberger) to estimate risk-neutral terminal price distribution.
+- Requires arbitrage-free smile interpolation (no butterfly arbitrage) before differentiating call prices twice in strike.
 
 ### 8.2 Convert to “Real-World”
 
 - Adjust for risk premia using equity risk premium assumptions or heuristic tilts.
+- Rigorous conversion exists (Ross's Recovery Theorem, 2015) but is fragile outside its assumptions (Borovička–Hansen–Scheinkman 2016); heuristic tilts are acceptable when labeled as such. Compare tails, where subjective and implied distributions diverge most.
 
 ### 8.3 Compare vs Subjective Distribution
 
