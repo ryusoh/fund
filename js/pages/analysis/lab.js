@@ -1867,7 +1867,7 @@ export function runMonteCarloSimulation(paths = 10000) {
     return new Promise((resolve) => {
         worker.onmessage = function (e) {
             const { type, result } = e.data;
-            if (type !== 'SIMULATION_COMPLETE') {
+            if (type !== 'SIMULATION_COMPLETE' && type !== 'PATH_SIMULATION_COMPLETE') {
                 return;
             }
             if (result && result.error) {
@@ -1890,8 +1890,11 @@ export function runMonteCarloSimulation(paths = 10000) {
             }
             resolve(null);
         };
+        const fullKelly = config.metrics.fullKelly;
+        const fGrid =
+            fullKelly > 0 ? [0, 0.25, 0.5, 0.75, 1, 1.5, 2].map((m) => m * fullKelly) : [0, 0.5, 1];
         worker.postMessage({
-            type: 'RUN_SIMULATION',
+            type: 'RUN_PATH_SIMULATION',
             payload: {
                 price: config.metrics.price,
                 eps: config.metrics.eps,
@@ -1899,6 +1902,9 @@ export function runMonteCarloSimulation(paths = 10000) {
                 volatility: config.metrics.volatility,
                 horizon: config.metrics.horizon,
                 paths,
+                riskFreeRate: config.metrics.riskFreeRate,
+                fGrid,
+                maxDrawdown: config.metrics.maxDrawdown,
             },
         });
     });
@@ -1959,6 +1965,23 @@ function _renderMonteCarloMetrics(result, riskMetricsEl) {
                 createStatCard('Estimation Drag', formatPercent(mcMetrics.fullKelly - mcKelly))
             );
         }
+    }
+    if (result.maxDrawdown && Number.isFinite(result.maxDrawdown.p95)) {
+        riskMetricsEl.appendChild(
+            createStatCard('Max DD (p95)', formatPercent(result.maxDrawdown.p95))
+        );
+    }
+    if (
+        Array.isArray(result.exceedance) &&
+        result.exceedance.length > 0 &&
+        mcMetrics &&
+        Number.isFinite(mcMetrics.drawdownTolerance)
+    ) {
+        const acceptable = result.exceedance.filter(
+            (entry) => entry.prob <= mcMetrics.drawdownTolerance
+        );
+        const ddCapped = acceptable.length > 0 ? acceptable[acceptable.length - 1].f : 0;
+        riskMetricsEl.appendChild(createStatCard('DD-Capped K', formatPercent(ddCapped)));
     }
 }
 
@@ -2051,7 +2074,12 @@ function renderMonteCarloResults(result) {
     const { width, height } = monteCarloCanvas;
 
     _renderMonteCarloHistogram(result, ctx, width, height);
-    _renderMonteCarloFanChart(result, ctx, width, height);
+    _renderMonteCarloFanChart(
+        result.annualFan ? { ...result, fanChart: result.annualFan } : result,
+        ctx,
+        width,
+        height
+    );
 }
 function aggregateScenarios(configs, horizon) {
     const weightedConfigs = configs.filter((cfg) => Number(cfg.weight ?? 0) > 0);

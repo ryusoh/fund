@@ -87,7 +87,7 @@ describe('analysis lab pane controller', () => {
         expect(state.monteCarloWorker).not.toBeNull();
         expect(state.monteCarloWorker.url).toContain('monte_carlo.worker.js');
         expect(state.monteCarloWorker.postMessage).toHaveBeenCalledWith({
-            type: 'RUN_SIMULATION',
+            type: 'RUN_PATH_SIMULATION',
             payload: expect.objectContaining({ paths: 5000, price: 100, eps: 5 }),
         });
 
