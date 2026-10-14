@@ -229,3 +229,54 @@ export function filterValidEvidence(evidenceList, asOf) {
         return true;
     });
 }
+
+/**
+ * Apply conjugate normal-normal updates to scenario parameters from evidence
+ * items carrying {metric: 'epsCagr'|'exitPe', observed, noise, appliesTo?}.
+ * Returns new scenario objects; inputs are not mutated. Evidence items
+ * without a metric field leave parameters untouched (backward compatible).
+ *
+ * @param {Array<Object>} scenarios - normalized scenario objects
+ * @param {Array<Object>} evidenceList - parsed evidence.jsonl entries
+ * @param {number} [fallbackSigma] - prior std when the scenario lacks one
+ * @returns {Array<Object>}
+ */
+export function applyParameterPosteriors(scenarios, evidenceList, fallbackSigma = 0.15) {
+    if (!Array.isArray(scenarios)) {
+        return [];
+    }
+    const updates = (Array.isArray(evidenceList) ? evidenceList : []).filter(
+        (item) =>
+            item &&
+            (item.metric === 'epsCagr' || item.metric === 'exitPe') &&
+            Number.isFinite(Number(item.observed)) &&
+            Number(item.noise) > 0
+    );
+    return scenarios.map((scenario) => {
+        const next = {
+            ...scenario,
+            growth: { ...scenario.growth },
+            valuation: { ...scenario.valuation },
+        };
+        for (const item of updates) {
+            if (item.appliesTo && item.appliesTo !== next.id) {
+                continue;
+            }
+            const block = item.metric === 'epsCagr' ? next.growth : next.valuation;
+            const key = item.metric;
+            const sigmaKey = item.metric === 'epsCagr' ? 'epsCagrSigma' : 'exitPeSigma';
+            const priorMean = Number(block[key]);
+            if (!Number.isFinite(priorMean)) {
+                continue;
+            }
+            const sigmaRaw = Number(block[sigmaKey]);
+            const priorSigma = sigmaRaw > 0 ? sigmaRaw : fallbackSigma;
+            const priorVar = priorSigma ** 2;
+            const noiseVar = Number(item.noise) ** 2;
+            const postVar = 1 / (1 / priorVar + 1 / noiseVar);
+            block[key] = postVar * (priorMean / priorVar + Number(item.observed) / noiseVar);
+            block[sigmaKey] = Math.sqrt(postVar);
+        }
+        return next;
+    });
+}

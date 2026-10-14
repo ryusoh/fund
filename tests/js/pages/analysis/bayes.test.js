@@ -1,4 +1,8 @@
-import { BayesianEngine, filterValidEvidence } from '../../../../js/pages/analysis/bayes.js';
+import {
+    BayesianEngine,
+    applyParameterPosteriors,
+    filterValidEvidence,
+} from '../../../../js/pages/analysis/bayes.js';
 
 describe('BayesianEngine', () => {
     it('initializes with correct priors', () => {
@@ -275,6 +279,39 @@ describe('BayesianEngine', () => {
         it('handles missing or non-array inputs gracefully', () => {
             expect(filterValidEvidence(null)).toEqual([]);
             expect(filterValidEvidence([])).toEqual([]);
+        });
+    });
+
+    describe('applyParameterPosteriors', () => {
+        it('applies a conjugate normal-normal update to epsCagr', () => {
+            const scenarios = [
+                { id: 'base', prob: 1, growth: { epsCagr: 0.15, epsCagrSigma: 0.05 } },
+            ];
+            const evidence = [{ metric: 'epsCagr', observed: 0.31, noise: 0.04 }];
+            const result = applyParameterPosteriors(scenarios, evidence);
+            // postVar = 1/(1/0.0025 + 1/0.0016) = 0.0009756
+            expect(result[0].growth.epsCagr).toBeCloseTo(0.2476, 3);
+            expect(result[0].growth.epsCagrSigma).toBeCloseTo(0.0312, 3);
+            expect(scenarios[0].growth.epsCagr).toBe(0.15); // input not mutated
+        });
+
+        it('respects appliesTo and uses the fallback sigma when none is set', () => {
+            const scenarios = [
+                { id: 'base', prob: 0.5, growth: { epsCagr: 0.1 } },
+                { id: 'bull', prob: 0.5, growth: { epsCagr: 0.25 } },
+            ];
+            const evidence = [{ metric: 'epsCagr', observed: 0.3, noise: 0.05, appliesTo: 'base' }];
+            const result = applyParameterPosteriors(scenarios, evidence, 0.15);
+            expect(result[1].growth.epsCagr).toBe(0.25); // untouched
+            // postVar = 1/(1/0.0225 + 1/0.0025) = 0.00225
+            expect(result[0].growth.epsCagr).toBeCloseTo(0.28, 3);
+        });
+
+        it('ignores evidence without metric fields', () => {
+            const scenarios = [{ id: 'base', prob: 1, growth: { epsCagr: 0.1 } }];
+            const evidence = [{ claim: 'vibes', direction: 'bullish', strength: 0.9 }];
+            const result = applyParameterPosteriors(scenarios, evidence);
+            expect(result[0].growth.epsCagr).toBe(0.1);
         });
     });
 });
