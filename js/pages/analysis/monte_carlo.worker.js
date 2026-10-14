@@ -56,8 +56,14 @@ function runSimulation(config) {
         const epsSigma = scenario.growth.epsCagrSigma || volatility * 0.5; // Assumption if missing
         const peSigma = scenario.valuation.exitPeSigma || volatility * 0.5;
 
-        const sampledCagr = normalSample(scenario.growth.epsCagr, epsSigma / Math.sqrt(horizon));
-        const sampledPe = normalSample(scenario.valuation.exitPe, peSigma);
+        // Growth disappointment and multiple compression coincide, so the two
+        // shocks are correlated (rho = 0.4) via a shared standard normal.
+        const GROWTH_PE_CORR = 0.4;
+        const zGrowth = normalSample(0, 1);
+        const zPe =
+            GROWTH_PE_CORR * zGrowth + Math.sqrt(1 - GROWTH_PE_CORR ** 2) * normalSample(0, 1);
+        const sampledCagr = scenario.growth.epsCagr + (zGrowth * epsSigma) / Math.sqrt(horizon);
+        const sampledPe = scenario.valuation.exitPe + zPe * peSigma;
 
         const terminalEps = config.eps * Math.pow(1 + sampledCagr, horizon);
         const terminalPrice = terminalEps * Math.max(1, sampledPe); // PE can't be negative usually

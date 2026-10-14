@@ -156,7 +156,7 @@ For each scenario compute:
 ### 5.2 Simulation Steps
 
 1. Draw a scenario according to its probability.
-2. Perturb EPS CAGR and exit PE around scenario means.
+2. Perturb EPS CAGR and exit PE around scenario means with correlated shocks (ρ = 0.4): growth disappointment and multiple compression coincide.
 3. Compute terminal outcomes for the path.
 
 Repeat (e.g., 10k paths) to build an empirical distribution.

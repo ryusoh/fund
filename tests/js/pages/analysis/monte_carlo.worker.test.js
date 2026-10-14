@@ -70,6 +70,34 @@ describe('monte_carlo.worker', () => {
         expect(typeof arg.result.histogram.binSize).toBe('number');
     });
 
+    it('correlates growth and exit-PE shocks with rho = 0.4', () => {
+        global.self.crypto.getRandomValues.mockImplementation((array) => {
+            array[0] = 2147483648; // secureRandom() === 0.5 exactly
+            return array;
+        });
+
+        const payload = {
+            scenarios: [
+                {
+                    prob: 1,
+                    growth: { epsCagr: 0.1, epsCagrSigma: 0.05 },
+                    valuation: { exitPe: 15, exitPeSigma: 2 },
+                },
+            ],
+            volatility: 0.2,
+            horizon: 1,
+            paths: 50,
+            eps: 10,
+        };
+
+        global.self.onmessage({ data: { type: 'RUN_SIMULATION', payload } });
+
+        const result = mockPostMessage.mock.calls[0][0].result;
+        // z1 = sqrt(-2 ln 0.5)·cos(pi) = -1.177410; z2 = z1·(0.4 + sqrt(0.84)) = -1.550078
+        // sampledCagr = 0.1 + z1·0.05 = 0.0411295; sampledPe = 15 + z2·2 = 11.8998438
+        expect(result.mean).toBeCloseTo(123.8928, 3);
+    });
+
     it('returns an error for scenarios missing growth/valuation blocks (PORT view)', () => {
         const payload = {
             scenarios: [{ prob: 1.0, precomputedCagr: 0.1 }],
