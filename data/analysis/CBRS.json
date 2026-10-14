@@ -3,7 +3,7 @@
     "name": "Cerebras Systems",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-10-13T23:39:11.563586+00:00",
+        "asOf": "2026-10-14T02:41:20.150571+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -36,15 +36,15 @@
         "beta": null,
         "marketCap": 35417239552.0,
         "currency": "USD",
-        "marketDataUpdatedAt": "2026-10-13T23:39:11.014655+00:00",
+        "marketDataUpdatedAt": "2026-10-14T02:41:19.404342+00:00",
         "pegRatio": null,
         "enterpriseValue": 28982759424.0,
         "ebitda": -484790016.0,
         "dividendYield": 0.0,
         "fiftyDayAverage": 198.2702,
         "twoHundredDayAverage": 209.1138,
-        "averageVolume": 7285384.0,
-        "averageDailyVolume10Day": 11367270.0,
+        "averageVolume": 7286623.0,
+        "averageDailyVolume10Day": 11375200.0,
         "fiftyTwoWeekHigh": 386.34,
         "fiftyTwoWeekLow": 142.07,
         "evToEbitda": -59.7842
@@ -132,7 +132,8 @@
             "Revenue $510.0M FY2025 (+76%); Q2 2026 $180.1M (+74% YoY); FY2026 core revenue guide raised to $880-890M; CFO plans to 'more than triple revenue in 2027' [S-1; 10-Q; Q2'26 release].",
             "Core (non-GAAP) net loss only $(6.9)M in Q2 2026 / $(9.4)M H1 — near breakeven ex-IPO SBC and warrant amortization [10-Q s_0002_c17/19].",
             "Liquidity: $7.4B cash+restricted + $1.2B securities + undrawn $850M revolver at 2026-06-30 [10-Q; confirm pass 80%].",
-            "Supply-chain wedge: 'We do not use HBM memory, CoWoS packaging or 3nm fabrication technology, all of which are currently supply limited' [Q2'26 release, verbatim]."
+            "Supply-chain wedge: 'We do not use HBM memory, CoWoS packaging or 3nm fabrication technology, all of which are currently supply limited' [Q2'26 release, verbatim].",
+            "Demand-side scaling evidence: core cloud revenue +287% YoY (Q2'26); >600MW data-center capacity live or under contract for delivery by end-2027; manufacturing capacity scaling >10x in 2026 via new Flex/Sanmina/Rocket EMS lines; TSMC wafer supply secured [Q2'26 earnings release, primary]."
         ],
         "evidence_against": [
             "Concentration: Q2 2026 Customer A 34% / B 32% / C 10% (A = MBZUAI by AR cross-reference; B matches OpenAI MRA revenue magnitude); two customers = 76% of receivables [10-Q s_0001_c06/07].",
@@ -140,18 +141,19 @@
             "SemiAnalysis report (early Oct 2026): OpenAI's future 'Ultrafast' mode to run on Nvidia GPUs, not Cerebras — attacks the RPO anchor; ~20% drawdown wk of 2026-09-28 [SECONDARY, unverified at source].",
             "Warrant amortization is contra-revenue through October 2031 ($44.3M in Q2 2026); GAAP margins optically suppressed for years [10-Q].",
             "Material weaknesses in ICFR; disclosure controls 'not effective' at 2026-06-30 [10-Q s_0006_c03].",
-            "Stock $146.62 (2026-10-12) is 21% below the $185 IPO price; 52wk range $145.75-385.00; lockup on ~171M shares expires ~2026-11-09 [quote vendors, SECONDARY; 424B4].",
+            "Lockup overhang is staggered, not done: early releases of 6.7% of each holder's Eligible Securities on Aug 19 / Sep 2 / Sep 16 (elapsed) and 8.9% on Sep 30 / Oct 14 / Oct 28 (two windows still ahead as of 2026-10-14); up to ~171.1M shares total early-releasable incl. ~15M directors/officers; full expiry ~Nov 9 — '利空出尽' claims are premature [S-1 lock-up section, verbatim-confirmed; 424B4 via sec-api].",
             "Insider selling: 46 Forms 4 in first 4 months post-IPO, zero open-market buys, ~1.29M shares sold $161-250 [EDGAR Forms 4/144].",
             "~$2.25B of data-center leases signed Q2+Q3 2026 not yet commenced — fixed-cost model mismatch vs consumption-priced inference [10-Q s_0001_c19/20]."
         ],
         "open_questions": [
-            "Does the SemiAnalysis Nvidia-for-Ultrafast claim survive reading the original report? Is it a prefill/decode nuance or a real OpenAI decode shift?",
+            "GPT-6.1 Sol Ultrafast on Nvidia — which hypothesis? (a) swapped out: OpenAI found Nvidia better on cost/stability/real-workload TCO after production use; (b) sold out: Cerebras lacked capacity to serve all Ultrafast demand, market mispriced a supply problem as a technology failure; (c) heterogeneous: prefill/decode and latency/cost tiers permanently split across architectures. Read the original SemiAnalysis report to discriminate.",
             "Is Customer B (32% of Q2 2026 revenue) OpenAI? Filing does not equate them.",
             "Does CS-3/CS-4 clustering use Ethernet at scale, and whose fabric? (ANET cross-thesis hook.)",
-            "Lockup mechanics: exact releasable share count (~171.1M) and timing vs the Q3 2026 earnings date.",
+            "MRA delivery schedule: article claims 250MW by YE2026 / 500MW cumulative YE2027 / 750MW YE2028 — not found in 10-Q or April S-1 text; verify against the 424B4 or MRA exhibit before treating as contract terms.",
             "RPO survivability: how much of the $25.4B is exposed to OpenAI tranche-termination rights?",
+            "Utilization chain: deployment → utilization → cloud revenue → gross margin — which step is the current binding constraint? Q3 print should show whether the 600MW+ contracted capacity is converting.",
             "G42 post-IPO equity stake and the G42-to-Class-N non-voting mapping (UNVERIFIED).",
-            "Q3 2026 print (~mid-Nov): core revenue vs the $214-216M guide, first print into lockup expiry."
+            "Q3 2026 print (~mid-Nov): core revenue vs the $214-216M guide; first print after the Oct 14/28 lockup windows."
         ],
         "as_of": "2026-10-14T00:00:00Z"
     },
@@ -187,6 +189,16 @@
             "notes": "Requires the OpenAI 750MW ramp plus AWS contribution to land on schedule; RPO schedule has only ~22% recognizable in the first 24 months."
         },
         {
+            "id": "cbrs-ye2026-250mw-delivery",
+            "claim": "FY2026 10-K or Q4 2026 earnings materials confirm ~250MW of OpenAI Committed Capacity delivered in 2026 (the article-claimed first annual tranche)",
+            "target_date": "2027-03-31",
+            "probability": 0.55,
+            "resolved": false,
+            "outcome": null,
+            "resolved_date": null,
+            "notes": "The per-year schedule (250/500/750MW by YE2026/27/28) comes from a third-party article and was NOT found in the 10-Q or April S-1 — this prediction tests both the schedule's existence and execution. Capacity statements (600MW+ contracted, 10x manufacturing) support feasibility; deployment is the risk."
+        },
+        {
             "id": "cbrs-aws-10pct-customer",
             "claim": "AWS reaches >= 10% of revenue (a lettered customer) in a 10-Q or 10-K by FY2027 reporting",
             "target_date": "2028-03-31",
@@ -214,6 +226,22 @@
                 "SemiAnalysis thesis confirmed or tranche miss; RPO impairment and sharp de-rating": 0.35
             },
             "review_date": "2026-11-15"
+        },
+        {
+            "date": "2026-10-14",
+            "action": "WATCH",
+            "shares_changed": 0,
+            "situation": "Reviewed a third-party CBRS research piece on the GPT-6.1 Ultrafast hardware swap. Confirm pass: lockup early-release calendar (6.7% x3 Aug/Sep; 8.9% x3 Sep 30/Oct 14/Oct 28) verified verbatim against the S-1 — the 'post-Sep-30 all-clear' narrative is wrong, two windows remain; Q2'26 release verifies core cloud +287% YoY, 600MW+ contracted, >10x manufacturing expansion (Flex/Sanmina/Rocket), TSMC supply secured. Article's per-year MRA delivery schedule (250/500/750MW) NOT found in filings — logged as unverified and converted into prediction cbrs-ye2026-250mw-delivery. Price ~$149 remains >2x the $50-70 entry zone; no probability change justified by a secondary essay whose factual core we already held.",
+            "alternatives_rejected": [
+                "Move scenario probabilities on the article's framing (rejected: the three-hypothesis structure sharpens the question but adds no primary fact beyond what was already in the belief state; probabilities move on the SemiAnalysis original or the Q3 print, not on commentary).",
+                "Log the 250/500/750MW schedule as contract fact (rejected: not in the 10-Q or S-1; promote only after 424B4/MRA-exhibit verification)."
+            ],
+            "expected_outcomes": {
+                "sold out / capacity-constrained reading wins; delivery milestones confirm in FY2026 10-K": 0.3,
+                "swapped out confirmed by SemiAnalysis original or FY2026 disclosures": 0.35,
+                "heterogeneous split persists; ambiguity unresolved through Q3 print": 0.35
+            },
+            "review_date": "2026-10-29"
         }
     ]
 }

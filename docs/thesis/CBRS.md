@@ -89,7 +89,7 @@
 
 ### 3.1 Core value drivers (next 5 years)
 
-- OpenAI MRA execution: 750MW delivery tranches 2026–2028; the 1.25GW option (to 2.0GW total) by 2030.
+- OpenAI MRA execution: 750MW committed 2026–2028 deployed in tranches (a third-party article claims 250MW by YE2026 / 500MW cumulative YE2027 / 750MW YE2028 — **not found in the 10-Q or April S-1; unverified**); the 1.25GW option (to 2.0GW total) by 2030.
 - AWS ramp: first hyperscaler deployment; Bedrock integration targeted Q1 2027; AWS "may represent a material percentage of revenue."
 - Decode disaggregation becoming standard (AMD partnership in production Q4 2026 is the template).
 - CS-4/CS-5/CS-6 roadmap: doubling token-generation speed YoY sustains the speed premium.
@@ -107,7 +107,7 @@
     - Fixed-cost leases (~$2.25B) vs consumption-priced contracts — model mismatch flagged in the 10-Q.
     - Warrant amortization suppresses GAAP revenue/margin through 2031; serial dilution embedded in the customer-acquisition model.
 - Market-structure risks:
-    - **Lockup expiry ~2026-11-09: up to ~171.1M shares releasable** (vs 103.2M Class A outstanding) — the largest near-term supply event, landing around the Q3 print.
+    - **Lockup is staggered, not a single expiry** (S-1 lock-up section, verbatim): early releases of 6.7% of each holder's Eligible Securities on Aug 19 / Sep 2 / Sep 16 (elapsed) and **8.9% on Sep 30 / Oct 14 / Oct 28**; up to ~171.1M shares total early-releasable (incl. ~15M directors/officers, vs 103.2M Class A outstanding); full expiry ~2026-11-09 (two days post-Q3 print). The "Sep 30 cleared the overhang" narrative is wrong — two windows remain as of 2026-10-14. Release ≠ sale, but the supply calendar is still running.
 - Explicit thesis-kill triggers (for the watchlist thesis itself):
     - Any filing disclosing an OpenAI MRA tranche miss, termination, or material renegotiation.
     - Q3 2026 core revenue below the $214M guide low end.
@@ -224,7 +224,8 @@
 ### 7.1 Key metrics to track
 
 - Q3 2026 print (~mid-Nov 2026): core revenue vs $214–216M guide; RPO balance QoQ; any OpenAI-tranche language.
-- Lockup expiry mechanics and insider Form 4 cadence around ~2026-11-09.
+- **The utilization chain: deployment → utilization → cloud revenue → gross margin** — contracted MW only matter if machines deploy on time, run at high utilization, convert to cloud revenue (core cloud +287% YoY in Q2), and hold core gross margin (41% Q2) as capacity scales.
+- Lockup early-release windows **Oct 14 and Oct 28** (8.9% of Eligible Securities each): watch volume vs price-decline absorption; then full expiry ~2026-11-09 and insider Form 4 cadence.
 - Customer-letter distribution each 10-Q (A/B/C/D shares; AR concentration).
 - AWS revenue emergence (Bedrock integration Q1 2027) and AMD partnership production ramp (Q4 2026).
 - Warrant amortization trajectory and core-vs-GAAP margin bridge each quarter.
@@ -248,6 +249,19 @@ Append-only log. Machine-readable records: `data/analysis/CBRS.evidence.jsonl`. 
 - Bear evidence file: `docs/thesis/CBRS/CBRS-bear-evidence.md`
 
 ### 8.2 High-level update entries (reverse chronological)
+
+#### 2026-10-14 – Third-party article review: Ultrafast hardware swap + lockup calendar
+
+- What happened:
+    - Reviewed a third-party research piece on GPT-6.1 Sol Ultrafast moving from Cerebras to Nvidia, the SemiAnalysis critique, and the lockup. Confirm pass against primary sources: (1) lockup early-release calendar **verified verbatim from the S-1** — 6.7% of Eligible Securities on Aug 19 / Sep 2 / Sep 16, 8.9% on Sep 30 / **Oct 14 / Oct 28**; the market's "Sep 30 all-clear" narrative is wrong, two windows remain; (2) Q2'26 earnings release **verified**: core cloud revenue +287% YoY, >600MW data-center capacity live/contracted for delivery by end-2027, manufacturing >10x in 2026 (Flex/Sanmina/Rocket EMS), TSMC wafer supply secured; (3) the article's per-year MRA delivery schedule (250/500/750MW by YE2026/27/28) **not found in the 10-Q or S-1** — held as unverified.
+- Impact on scenarios:
+    - Unchanged: Bull 0.25 / Base 0.40 / Bear 0.35. The article's three-hypothesis framing (swapped out / sold out / heterogeneous inference) sharpens the SemiAnalysis question but adds no primary fact that moves probabilities.
+- Impact on assumptions:
+    - None. Monitoring upgraded: the article's four-step chain (deployment → utilization → cloud revenue → gross margin) adopted into §7.1.
+- Action:
+    - WATCH (no position; price ~$149 still >2× the $50–70 entry zone). One new prediction registered: `cbrs-ye2026-250mw-delivery` (P=0.55, resolves on FY2026 10-K) — tests both the existence of the per-year tranche schedule and execution against it.
+- TODO:
+    - Verify the 250/500/750MW schedule against the 424B4 or MRA exhibit; read the original SemiAnalysis report; watch Oct 28 window absorption.
 
 #### 2026-10-14 – Initial thesis from deep-research run
 
@@ -280,11 +294,12 @@ Append-only log. Machine-readable records: `data/analysis/CBRS.evidence.jsonl`. 
 ## 9. Open Questions / Research To-Do
 
 - Unresolved uncertainties (mirrors `belief_state.open_questions`):
-    - SemiAnalysis Nvidia-for-Ultrafast claim — read the original report; prefill/decode nuance or real shift?
+    - GPT-6.1 Ultrafast on Nvidia — three hypotheses: **swapped out** (Nvidia won on production TCO), **sold out** (Cerebras lacked capacity; market mispriced a supply problem as technology failure), **heterogeneous** (prefill/decode and latency/cost tiers split permanently across architectures). Read the original SemiAnalysis report to discriminate.
     - Customer B (32% Q2 revenue) identity — OpenAI by magnitude, unconfirmed in filings.
     - CS-3/CS-4 cluster fabric: Ethernet at scale? Whose? (Feeds the ANET Ethernet-dominance open question at `docs/thesis/ANET.md:526`.)
-    - Lockup: exact releasable count (~171.1M) and timing vs the Q3 earnings date.
+    - MRA delivery schedule: verify the article-claimed 250/500/750MW per-year tranches against the 424B4 or MRA exhibit (absent from the 10-Q and April S-1).
     - RPO survivability under OpenAI tranche-termination rights.
+    - Utilization chain: which of deployment → utilization → cloud revenue → gross margin is the binding constraint? Q3 print should show whether the 600MW+ contracted capacity converts.
     - G42 post-IPO stake and Class N mapping (UNVERIFIED).
 - Planned research:
     - Post-print `/thesis-update CBRS` on Q3 2026 results (~mid-Nov 2026) with confirm pass against the 10-Q.

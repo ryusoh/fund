@@ -3,7 +3,7 @@
     "name": "Pinduoduo",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-10-13T23:39:14.445121+00:00",
+        "asOf": "2026-10-14T02:41:25.902403+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -38,7 +38,7 @@
         "currency": "USD",
         "fiftyTwoWeekHigh": 139.41,
         "fiftyTwoWeekLow": 71.94,
-        "marketDataUpdatedAt": "2026-10-13T23:39:13.886799+00:00",
+        "marketDataUpdatedAt": "2026-10-14T02:41:24.936838+00:00",
         "evToEbitda": 3.308,
         "eps": 8.89,
         "price": 81.96,
