@@ -2788,6 +2788,140 @@ export function getActiveAnalysisConfig() {
     return state.configs.find((cfg) => cfg.symbol === state.activeSymbol) || null;
 }
 
+function formatScenarioShort(outcome) {
+    const id = (outcome.id || outcome.name || 'scenario').toLowerCase();
+    return `${id} ${(outcome.prob * 100).toFixed(0)}% ${outcome.multiple.toFixed(1)}x`;
+}
+
+function buildOverviewSnapshot(symbol, metrics) {
+    const bench = metrics.benchmarkDescriptor?.name || 'Benchmark';
+    return (
+        `Analysis (${symbol}) — expected CAGR ${formatPercent(metrics.expectedCagr)}, ` +
+        `edge ${formatPercent(metrics.edge)} vs ${bench}, ` +
+        `scaled Kelly ${formatPercent(metrics.scaledKelly)}.`
+    );
+}
+
+function buildScenariosSnapshot(symbol, metrics) {
+    const top = [...(metrics.outcomes || [])]
+        .sort((a, b) => b.prob - a.prob)
+        .slice(0, 3)
+        .map(formatScenarioShort)
+        .join(', ');
+    return top ? `Scenarios (${symbol}) — ${top}.` : "Showing analysis 'scenarios'.";
+}
+
+function buildValueSnapshot(symbol, metrics) {
+    const targetPct = (metrics.targetCagr * 100).toFixed(0);
+    return (
+        `Value (${symbol}) — terminal ${formatCurrency(metrics.expectedTerminalPrice)}, ` +
+        `entry for ${targetPct}% CAGR ${formatCurrency(metrics.entryPriceForTarget)} ` +
+        `(${diffDescriptor(metrics.price, metrics.entryPriceForTarget)}).`
+    );
+}
+
+function buildKellySnapshot(config, symbol, metrics) {
+    return (
+        `Kelly (${symbol}) — full ${formatPercent(metrics.fullKelly)}, ` +
+        `scaled ½K ${formatPercent(metrics.scaledKelly)}, ` +
+        `current weight ${formatPercent(resolveCurrentWeight(config))}.`
+    );
+}
+
+function buildBeliefSnapshot(config, symbol) {
+    const belief = config.belief_state;
+    if (!belief) {
+        return "Showing analysis 'belief'.";
+    }
+    const asOf = belief.as_of ? belief.as_of.slice(0, 10) : 'n/a';
+    return (
+        `Belief (${symbol}) — ${(belief.probability * 100).toFixed(1)}% ` +
+        `(confidence ${(belief.confidence * 100).toFixed(0)}%), as of ${asOf}.`
+    );
+}
+
+function buildEvidenceSnapshot(symbol) {
+    const list = state.evidenceCache.get(symbol);
+    if (!list) {
+        return "Showing analysis 'evidence'.";
+    }
+    if (list.length === 0) {
+        return `Evidence (${symbol}) — no logged entries.`;
+    }
+    const today = new Date().toISOString().slice(0, 10);
+    let validCount = 0;
+    let supersededCount = 0;
+    let latest = '';
+    list.forEach((entry) => {
+        const validTo = entry.valid_to || entry.validTo;
+        if (validTo && validTo < today) {
+            supersededCount++;
+        } else {
+            validCount++;
+        }
+        if (entry.date && entry.date > latest) {
+            latest = entry.date;
+        }
+    });
+    const latestText = latest ? `, latest ${latest}` : '';
+    return `Evidence (${symbol}) — ${validCount} valid / ${supersededCount} superseded${latestText}.`;
+}
+
+function buildPredictionsSnapshot(config, symbol) {
+    const predictions = config.predictions || [];
+    const brier = BayesianEngine.computeBrierScore(predictions);
+    const pending = predictions.filter((p) => !p.resolved).length;
+    const overdue = computeStalePredictions(predictions).length;
+    const brierText = brier ? `Brier ${brier.brierScore} (N=${brier.count})` : 'Brier N/A';
+    return `Predictions (${symbol}) — ${brierText}, ${pending} pending, ${overdue} overdue.`;
+}
+
+function buildJournalSnapshot(config, symbol) {
+    const journal = config.decision_journal || [];
+    if (journal.length === 0) {
+        return `Journal (${symbol}) — no entries.`;
+    }
+    const latest = journal[journal.length - 1];
+    return (
+        `Journal (${symbol}) — latest: ${latest.action || 'ACTION'} ${latest.date}, ` +
+        `review ${latest.review_date || 'TBD'} (${journal.length} entries).`
+    );
+}
+
+// One function-specific scrollback line per view (the plot precedent) —
+// built here, not in the handler, because the evidence cache and belief
+// state live in this module. Falls back to the generic line whenever the
+// active config or the function's data is missing.
+export function buildAnalysisSnapshot(func) {
+    const config = state.configs.find((cfg) => cfg.symbol === state.activeSymbol);
+    if (!config || !config.metrics) {
+        return `Showing analysis '${func}'.`;
+    }
+    const symbol = config.symbol;
+    const metrics = config.metrics;
+
+    switch (func) {
+        case 'overview':
+            return buildOverviewSnapshot(symbol, metrics);
+        case 'scenarios':
+            return buildScenariosSnapshot(symbol, metrics);
+        case 'value':
+            return buildValueSnapshot(symbol, metrics);
+        case 'kelly':
+            return buildKellySnapshot(config, symbol, metrics);
+        case 'belief':
+            return buildBeliefSnapshot(config, symbol);
+        case 'evidence':
+            return buildEvidenceSnapshot(symbol);
+        case 'predictions':
+            return buildPredictionsSnapshot(config, symbol);
+        case 'journal':
+            return buildJournalSnapshot(config, symbol);
+        default:
+            return `Showing analysis '${func}'.`;
+    }
+}
+
 export async function initAnalysisPane(rootEl, { autoLoad = true } = {}) {
     buildPaneDom(rootEl);
     resolvePaneElements(rootEl);
@@ -2862,6 +2996,7 @@ export const __analysisLabTesting = {
     renderDecisionJournal,
     renderMonteCarloResults,
     renderContextStrip,
+    buildAnalysisSnapshot,
     syncPaneChartColors,
     PANE_CHART_COLORS,
 };

@@ -6,6 +6,7 @@ jest.mock('../../../../../js/pages/analysis/lab.js', () => ({
     getActiveAnalysisConfig: jest.fn(() => null),
     applyBayesSandbox: jest.fn(),
     runMonteCarloSimulation: jest.fn(),
+    buildAnalysisSnapshot: jest.fn(),
 }));
 
 const labModule = require('../../../../../js/pages/analysis/lab.js');
@@ -57,20 +58,20 @@ describe('handleAnalysisCommand', () => {
         expect(labModule.initAnalysisPane).toHaveBeenCalledTimes(1);
     });
 
-    it('switches to the kelly section and prints a metric snapshot', async () => {
-        labModule.getActiveAnalysisConfig.mockReturnValue({
-            symbol: 'ANET',
-            metrics: { price: 92.5, eps: 6.2, volatility: 0.28, horizon: 5 },
-        });
+    it('switches to the kelly section and prints the function-specific snapshot', async () => {
+        labModule.buildAnalysisSnapshot.mockReturnValue(
+            'Kelly (ANET) — full +22.10%, scaled ½K +11.00%, current weight +34.20%.'
+        );
         await handleAnalysisCommand(['kelly'], { appendMessage });
         expect(labModule.showAnalysisSection).toHaveBeenCalledWith('kelly');
+        expect(labModule.buildAnalysisSnapshot).toHaveBeenCalledWith('kelly');
         expect(appendMessage).toHaveBeenCalledWith(
-            "Showing analysis 'kelly' — ANET, price $92.50, EPS $6.20, vol 28.0%, 5y horizon."
+            'Kelly (ANET) — full +22.10%, scaled ½K +11.00%, current weight +34.20%.'
         );
     });
 
     it('maps scenarios and value to their own sections', async () => {
-        labModule.getActiveAnalysisConfig.mockReturnValue({ symbol: 'PORT', metrics: null });
+        labModule.buildAnalysisSnapshot.mockImplementation((func) => `Showing analysis '${func}'.`);
         await handleAnalysisCommand(['scenarios'], { appendMessage });
         expect(labModule.showAnalysisSection).toHaveBeenCalledWith('scenarios');
         expect(appendMessage).toHaveBeenCalledWith("Showing analysis 'scenarios'.");
@@ -81,6 +82,7 @@ describe('handleAnalysisCommand', () => {
     });
 
     it('shows other function sections without metric details', async () => {
+        labModule.buildAnalysisSnapshot.mockImplementation((func) => `Showing analysis '${func}'.`);
         for (const sub of ['belief', 'evidence', 'predictions', 'journal']) {
             await handleAnalysisCommand([sub], { appendMessage });
             expect(labModule.showAnalysisSection).toHaveBeenCalledWith(sub);
@@ -88,17 +90,23 @@ describe('handleAnalysisCommand', () => {
         expect(appendMessage).toHaveBeenCalledWith("Showing analysis 'journal'.");
     });
 
-    it('formats large prices with thousands separators', async () => {
-        labModule.getActiveAnalysisConfig.mockReturnValue({
-            symbol: 'ANET',
-            metrics: { price: 12345.6, eps: 6.2, volatility: 0.28, horizon: 5 },
+    it('includes the symbol and median in the Monte Carlo snapshot', async () => {
+        labModule.getActiveAnalysisConfig.mockReturnValue({ symbol: 'ANET' });
+        labModule.runMonteCarloSimulation.mockResolvedValue({
+            median: 145.5,
+            VaR_95: 61.02,
+            CVaR_95: 48.11,
         });
-        await handleAnalysisCommand(['kelly'], { appendMessage });
-        expect(appendMessage).toHaveBeenCalledWith(expect.stringContaining('price $12,345.60'));
+        await handleAnalysisCommand(['mc'], { appendMessage });
+        expect(appendMessage).toHaveBeenCalledWith(
+            'MC (10,000 paths, ANET) — median $145.50, VaR(95%) $61.02, CVaR(95%) $48.11.'
+        );
     });
 
     it('runs Monte Carlo with the default path count', async () => {
+        labModule.getActiveAnalysisConfig.mockReturnValue({ symbol: 'ANET' });
         labModule.runMonteCarloSimulation.mockResolvedValue({
+            median: 145.5,
             VaR_95: 61.02,
             CVaR_95: 48.11,
         });
@@ -106,18 +114,19 @@ describe('handleAnalysisCommand', () => {
         expect(labModule.showAnalysisSection).toHaveBeenCalledWith('mc');
         expect(labModule.runMonteCarloSimulation).toHaveBeenCalledWith(10000);
         expect(appendMessage).toHaveBeenCalledWith(
-            'MC (10,000 paths) — VaR (95%): $61.02, CVaR (95%): $48.11.'
+            'MC (10,000 paths, ANET) — median $145.50, VaR(95%) $61.02, CVaR(95%) $48.11.'
         );
     });
 
     it('runs Monte Carlo with a custom path count', async () => {
+        labModule.getActiveAnalysisConfig.mockReturnValue({ symbol: 'ANET' });
         labModule.runMonteCarloSimulation.mockResolvedValue({
             VaR_95: 61.02,
             CVaR_95: 48.11,
         });
         await handleAnalysisCommand(['mc', '500'], { appendMessage });
         expect(labModule.runMonteCarloSimulation).toHaveBeenCalledWith(500);
-        expect(appendMessage).toHaveBeenCalledWith(expect.stringContaining('MC (500 paths)'));
+        expect(appendMessage).toHaveBeenCalledWith(expect.stringContaining('MC (500 paths, ANET)'));
     });
 
     it('falls back to the default path count on invalid input', async () => {
@@ -159,9 +168,16 @@ describe('handleAnalysisCommand', () => {
 
     it('selects a security context from a lowercase ticker token', async () => {
         labModule.setActiveAnalysisSymbol.mockReturnValue(true);
+        labModule.getActiveAnalysisConfig.mockReturnValue({
+            symbol: 'ANET',
+            name: 'Arista Networks',
+            weight: 0.342,
+        });
         await handleAnalysisCommand(['anet'], { appendMessage });
         expect(labModule.setActiveAnalysisSymbol).toHaveBeenCalledWith('ANET');
-        expect(appendMessage).toHaveBeenCalledWith('Analysis context: ANET.');
+        expect(appendMessage).toHaveBeenCalledWith(
+            'Analysis context: ANET (Arista Networks · 34.2%).'
+        );
     });
 
     it('reports unknown symbols and subcommands', async () => {

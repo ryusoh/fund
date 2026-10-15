@@ -46,28 +46,6 @@ function formatUsd(value) {
     );
 }
 
-function buildSnapshotLine(lab, func) {
-    const config = lab.getActiveAnalysisConfig();
-    if (!config || !config.metrics) {
-        return `Showing analysis '${func}'.`;
-    }
-    const metrics = config.metrics;
-    const bits = [config.symbol];
-    if (Number.isFinite(metrics.price)) {
-        bits.push(`price ${formatUsd(metrics.price)}`);
-    }
-    if (Number.isFinite(metrics.eps)) {
-        bits.push(`EPS ${formatUsd(metrics.eps)}`);
-    }
-    if (Number.isFinite(metrics.volatility)) {
-        bits.push(`vol ${(metrics.volatility * 100).toFixed(1)}%`);
-    }
-    if (Number.isFinite(metrics.horizon)) {
-        bits.push(`${metrics.horizon}y horizon`);
-    }
-    return `Showing analysis '${func}' — ${bits.join(', ')}.`;
-}
-
 async function openAnalysisPane(lab) {
     const section = document.getElementById('analysisSection');
     if (!section) {
@@ -99,10 +77,13 @@ async function handleMonteCarlo(lab, args, appendMessage) {
         appendMessage('Monte Carlo simulation failed; see the analysis pane for details.');
         return;
     }
+    const active = lab.getActiveAnalysisConfig();
+    const symbol = active ? active.symbol : '';
+    const symbolBit = symbol ? `, ${symbol}` : '';
+    const medianBit = Number.isFinite(result.median) ? `median ${formatUsd(result.median)}, ` : '';
     appendMessage(
-        `MC (${paths.toLocaleString('en-US')} paths) — VaR (95%): ${formatUsd(
-            result.VaR_95
-        )}, CVaR (95%): ${formatUsd(result.CVaR_95)}.`
+        `MC (${paths.toLocaleString('en-US')} paths${symbolBit}) — ${medianBit}` +
+            `VaR(95%) ${formatUsd(result.VaR_95)}, CVaR(95%) ${formatUsd(result.CVaR_95)}.`
     );
 }
 
@@ -143,7 +124,7 @@ export async function handleAnalysisCommand(args, { appendMessage }) {
     const sub = args[0];
     if (SECTION_BY_SUBCOMMAND[sub]) {
         lab.showAnalysisSection(SECTION_BY_SUBCOMMAND[sub]);
-        appendMessage(buildSnapshotLine(lab, sub));
+        appendMessage(lab.buildAnalysisSnapshot(sub));
         return;
     }
     if (sub === 'mc') {
@@ -158,7 +139,13 @@ export async function handleAnalysisCommand(args, { appendMessage }) {
     // Anything else is a ticker token (args arrive lowercased from commands.js).
     const symbol = sub.toUpperCase();
     if (lab.setActiveAnalysisSymbol(symbol)) {
-        appendMessage(`Analysis context: ${symbol}.`);
+        const active = lab.getActiveAnalysisConfig();
+        const name = active && active.name ? active.name : symbol;
+        const weight =
+            active && Number.isFinite(active.weight)
+                ? `${(active.weight * 100).toFixed(1)}%`
+                : 'n/a';
+        appendMessage(`Analysis context: ${symbol} (${name} · ${weight}).`);
         return;
     }
     appendMessage(

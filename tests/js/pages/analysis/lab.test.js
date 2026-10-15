@@ -52,6 +52,55 @@ describe('analysis lab data loading', () => {
         expect(PANE_CHART_COLORS.greenFill).toBe('rgba(52, 168, 83, 0.15)');
     });
 
+    it('builds function-specific snapshot lines with generic fallbacks', async () => {
+        const { module } = await setupPane(false);
+        const { buildAnalysisSnapshot, state } = module.__analysisLabTesting;
+
+        state.configs = [
+            {
+                symbol: 'ANET',
+                name: 'Arista Networks',
+                metrics: {
+                    expectedCagr: 0.152,
+                    edge: 0.092,
+                    scaledKelly: 0.11,
+                    fullKelly: 0.221,
+                    benchmarkDescriptor: { name: 'SP500' },
+                    outcomes: [
+                        { id: 'bull', name: 'Bull', prob: 0.55, multiple: 2.1, priceCagr: 0.2 },
+                        { id: 'base', name: 'Base', prob: 0.35, multiple: 1.2, priceCagr: 0.05 },
+                        { id: 'bear', name: 'Bear', prob: 0.1, multiple: 0.6, priceCagr: -0.08 },
+                    ],
+                    targetCagr: 0.1,
+                    expectedTerminalPrice: 200,
+                    entryPriceForTarget: 124.2,
+                    price: 92.5,
+                },
+            },
+        ];
+        state.activeSymbol = 'ANET';
+
+        expect(buildAnalysisSnapshot('overview')).toContain(
+            'Analysis (ANET) — expected CAGR +15.20%'
+        );
+        expect(buildAnalysisSnapshot('overview')).toContain('vs SP500');
+        expect(buildAnalysisSnapshot('scenarios')).toBe(
+            'Scenarios (ANET) — bull 55% 2.1x, base 35% 1.2x, bear 10% 0.6x.'
+        );
+        expect(buildAnalysisSnapshot('kelly')).toBe(
+            'Kelly (ANET) — full +22.10%, scaled ½K +11.00%, current weight +0.00%.'
+        );
+        expect(buildAnalysisSnapshot('value')).toContain('Value (ANET) — terminal $200.00');
+        expect(buildAnalysisSnapshot('value')).toContain('25.5% below target');
+
+        // Evidence with nothing cached falls back to the generic line.
+        expect(buildAnalysisSnapshot('evidence')).toBe("Showing analysis 'evidence'.");
+
+        // Missing active config falls back for every function.
+        state.activeSymbol = 'MISSING';
+        expect(buildAnalysisSnapshot('kelly')).toBe("Showing analysis 'kelly'.");
+    });
+
     it('adds a cache-busting query param and disables caching for data fetches', async () => {
         const cacheBustValue = '1731900000000';
         jest.spyOn(Date, 'now').mockReturnValue(Number(cacheBustValue));
