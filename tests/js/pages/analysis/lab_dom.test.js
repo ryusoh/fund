@@ -123,6 +123,29 @@ describe('analysis lab pane controller', () => {
         expect(state.monteCarloWorker).toBeNull();
     });
 
+    it('shows a pending state while the simulation worker runs', () => {
+        const fan = document.getElementById('monteCarloFanCanvas');
+        expect(fan).not.toBeNull();
+        expect(fan.getAttribute('role')).toBe('img');
+
+        // The mock worker never posts back — the pending line must stay.
+        lab.runMonteCarloSimulation(5000);
+        const status = document.querySelector('#riskMetrics .mc-status');
+        expect(status).not.toBeNull();
+        expect(status.textContent).toContain('Running 5,000 paths');
+
+        // A completion message replaces the pending line.
+        state.monteCarloWorker.onmessage({
+            data: {
+                type: 'SIMULATION_COMPLETE',
+                result: { mean: 120, VaR_95: 10, CVaR_95: 15, histogram: { counts: [5, 15, 30] } },
+            },
+        });
+        expect(document.querySelector('#riskMetrics .mc-status')).toBeNull();
+        expect(document.getElementById('riskMetrics').textContent).toContain('Mean Terminal Price');
+        expect(fan.getAttribute('aria-label')).toContain('fan envelope');
+    });
+
     it('marks the pane scroll regions as keyboard-focusable', () => {
         expect(document.querySelector('.analysis-stage').getAttribute('tabindex')).toBe('0');
         expect(document.getElementById('evidenceTimeline').getAttribute('tabindex')).toBe('0');

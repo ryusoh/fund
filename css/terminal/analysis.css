@@ -330,6 +330,14 @@
     color: var(--blue-color);
 }
 
+/* MC pending state — gold status line while the worker runs */
+.analysis-pane .mc-status {
+    margin: 0;
+    padding: 0 10px;
+    color: var(--primary-color);
+    font-size: 0.8rem;
+}
+
 /* Belief state — the probability is the hero number */
 .analysis-pane .belief-prob {
     font-size: 1.35rem;

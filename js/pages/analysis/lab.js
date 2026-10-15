@@ -17,6 +17,7 @@ let scenarioResultsEl = null;
 let valueBandsEl = null;
 let bayesOutput = null;
 let monteCarloCanvas = null;
+let monteCarloFanCanvas = null;
 let riskMetricsEl = null;
 let kellyCurveCanvas = null;
 let kellyMetricsEl = null;
@@ -113,6 +114,13 @@ const PANE_MARKUP = `
                         height="400"
                         role="img"
                         aria-label="Monte Carlo results"
+                    ></canvas>
+                    <canvas
+                        id="monteCarloFanCanvas"
+                        width="1200"
+                        height="400"
+                        role="img"
+                        aria-label="Monte Carlo fan envelope"
                     ></canvas>
                 </div>
             </section>
@@ -1884,12 +1892,15 @@ function renderActiveTicker() {
     renderBayesOutput();
 
     // Reset Risk UI
-    if (monteCarloCanvas) {
-        const ctx = monteCarloCanvas.getContext('2d');
-        if (ctx && typeof ctx.clearRect === 'function') {
-            ctx.clearRect(0, 0, monteCarloCanvas.width, monteCarloCanvas.height);
+    [monteCarloCanvas, monteCarloFanCanvas].forEach((canvas) => {
+        if (!canvas) {
+            return;
         }
-    }
+        const ctx = canvas.getContext('2d');
+        if (ctx && typeof ctx.clearRect === 'function') {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+    });
     if (riskMetricsEl) {
         const p = document.createElement('p');
         p.className = 'pane-empty';
@@ -1986,6 +1997,12 @@ export function runMonteCarloSimulation(paths = 10000) {
         const fullKelly = config.metrics.fullKelly;
         const fGrid =
             fullKelly > 0 ? [0, 0.25, 0.5, 0.75, 1, 1.5, 2].map((m) => m * fullKelly) : [0, 0.5, 1];
+        if (riskMetricsEl) {
+            const pending = document.createElement('p');
+            pending.className = 'mc-status';
+            pending.textContent = `Running ${paths.toLocaleString('en-US')} paths…`;
+            riskMetricsEl.replaceChildren(pending);
+        }
         worker.postMessage({
             type: 'RUN_PATH_SIMULATION',
             payload: {
@@ -2111,6 +2128,51 @@ function _renderMonteCarloHistogram(result, ctx, width, height) {
     }
 }
 
+// VaR marker lines on the terminal-price histogram. Path results carry
+// sorted terminalValues, which gives the x-axis scale; without them the
+// markers are skipped silently.
+function _renderHistogramVaRMarkers(result, ctx, width, height) {
+    const values = result.terminalValues;
+    if (!Array.isArray(values) || values.length === 0 || typeof ctx.beginPath !== 'function') {
+        return;
+    }
+    const min = values[0];
+    const max = values[values.length - 1];
+    const range = max - min;
+    if (!(range > 0)) {
+        return;
+    }
+    [
+        { value: result.VaR_80, color: PANE_CHART_COLORS.blue, label: 'VaR80' },
+        { value: result.VaR_95, color: PANE_CHART_COLORS.red, label: 'VaR95' },
+    ].forEach((marker) => {
+        if (!Number.isFinite(marker.value)) {
+            return;
+        }
+        const x = ((marker.value - min) / range) * width;
+        if (typeof ctx.save === 'function') {
+            ctx.save();
+        }
+        ctx.strokeStyle = marker.color;
+        ctx.lineWidth = 3;
+        if (typeof ctx.setLineDash === 'function') {
+            ctx.setLineDash([6, 6]);
+        }
+        ctx.beginPath();
+        ctx.moveTo(x, 20);
+        ctx.lineTo(x, height - 20);
+        ctx.stroke();
+        if (typeof ctx.restore === 'function') {
+            ctx.restore();
+        }
+        if (typeof ctx.fillText === 'function') {
+            ctx.fillStyle = PANE_CHART_COLORS.muted;
+            ctx.font = '20px "JetBrains Mono", monospace';
+            ctx.fillText(marker.label, x + 10, 40);
+        }
+    });
+}
+
 function _renderMonteCarloFanChart(result, ctx, width, height) {
     if (result.fanChart && result.fanChart.length > 1 && typeof ctx.beginPath === 'function') {
         const fan = result.fanChart;
@@ -2173,23 +2235,32 @@ function _renderMonteCarloFanChart(result, ctx, width, height) {
 function renderMonteCarloResults(result) {
     _renderMonteCarloMetrics(result, riskMetricsEl);
 
+    // Histogram (+ VaR markers) and fan envelope are separate canvases so
+    // each encoding gets its own coordinate system (G7).
     const ctx = monteCarloCanvas.getContext('2d');
     const { width, height } = monteCarloCanvas;
-
     _renderMonteCarloHistogram(result, ctx, width, height);
-    _renderMonteCarloFanChart(
-        result.annualFan ? { ...result, fanChart: result.annualFan } : result,
-        ctx,
-        width,
-        height
-    );
-
+    _renderHistogramVaRMarkers(result, ctx, width, height);
     monteCarloCanvas.setAttribute(
         'aria-label',
         `Terminal price histogram — median ${formatCurrency(result.median)}, ` +
             `VaR(95%) ${formatCurrency(result.VaR_95)}, ` +
             `${result.runCount || 10000} paths.`
     );
+
+    if (monteCarloFanCanvas) {
+        const fanCtx = monteCarloFanCanvas.getContext('2d');
+        _renderMonteCarloFanChart(
+            result.annualFan ? { ...result, fanChart: result.annualFan } : result,
+            fanCtx,
+            monteCarloFanCanvas.width,
+            monteCarloFanCanvas.height
+        );
+        monteCarloFanCanvas.setAttribute(
+            'aria-label',
+            `P5–P95 fan envelope — ${result.runCount || 10000} paths.`
+        );
+    }
 }
 function aggregateScenarios(configs, horizon) {
     const weightedConfigs = configs.filter((cfg) => Number(cfg.weight ?? 0) > 0);
@@ -2640,6 +2711,7 @@ function resolvePaneElements(rootEl) {
     valueBandsEl = rootEl.querySelector('#valueBands');
     bayesOutput = rootEl.querySelector('#bayesOutput');
     monteCarloCanvas = rootEl.querySelector('#monteCarloCanvas');
+    monteCarloFanCanvas = rootEl.querySelector('#monteCarloFanCanvas');
     riskMetricsEl = rootEl.querySelector('#riskMetrics');
     kellyCurveCanvas = rootEl.querySelector('#kellyCurveCanvas');
     kellyMetricsEl = rootEl.querySelector('#kellyMetrics');
