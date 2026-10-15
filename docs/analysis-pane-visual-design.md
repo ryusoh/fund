@@ -515,3 +515,369 @@ final legibility is a human-review item.
   check (and a jest assertion on the backing-store attributes).
 - No code was written for this doc; every proposal item is phrased to be
   implementable + testable, but none has been run.
+
+## Implementation work orders
+
+Mechanical execution list for the proposal above. Anchors re-verified against
+the working tree at authoring time (2026-10-15, post `133c740e`). Each order is
+committed separately; run the preamble checks plus the order's Verify commands
+before committing. Design decisions made while writing the orders (recorded
+here so the doc stays the single source of truth):
+
+- **Snapshot builder moves into the lab.** The handler keeps thin delegation;
+  `lab.js` exports `buildAnalysisSnapshot(func)` with full access to
+  `state.configs` / `state.evidenceCache`, so per-view lines need no new data
+  plumbing. `analysis.js` keeps only the async MC line (it owns the result).
+- **Class naming convention:** `pane-empty` (+ `pane-empty--error`),
+  `belief-prob` / `belief-meta` / `belief-group-title(--against|--questions)`,
+  `prediction-title-row` / `prediction-title` / `prediction-badge-row` /
+  `prediction-badge`, `journal-title` / `action-meta` / `journal-situation` /
+  `journal-alternatives`, `sandbox-row`, `concentration-badge--highlight`,
+  `timeline-count-badge` (rules move from inline styles into the stylesheet),
+  `timeline-superseded-tag`, `context-meta`, `overview-scenario-row` (+
+  `-name` / `-vals`), `mc-status`. All colors/fonts resolve to the terminal
+  tokens via the pane root.
+- **Out of mechanical scope** (human/visual call, per the open questions):
+  rem→px unit harmonization (G13), glass-surface legibility, the retina sharp
+  check for the 2× canvas, and overall density tuning. The MC canvas split
+  (WO9) is implemented but flagged `[visual]`.
+
+Preamble (run for every order, must stay green):
+
+```
+npx eslint js/pages/analysis/lab.js js/transactions/terminal/handlers/analysis.js tests/js/pages/analysis tests/js/transactions/terminal/handlers/analysis.test.js
+npx stylelint css/terminal/analysis.css
+npx jest tests/js/pages/analysis tests/js/transactions/terminal/handlers/analysis.test.js
+```
+
+Diff-coverage gate: every order that adds executable JS lines ships its jest
+assertions in the same commit.
+
+### WO1 — Shared pane-empty state classes (G9)
+
+**Files:** `js/pages/analysis/lab.js`, `css/terminal/analysis.css`
+
+- **Find** (lab.js, `initAnalysisPane`, ~2591-2609):
+  `loadingDiv.style.color = 'white';` and `errDiv.style.color = 'red';`
+  **Change:** drop both inline styles; loading div gets
+  `className = 'pane-empty'` and text `Loading analysis data…`; error div gets
+  `className = 'pane-empty pane-empty--error'`. Placement stays
+  `summaryStatsEl` (stage-wide clearing would fight the static markup; the
+  class unification delivers the design intent).
+- **Find** (lab.js, `renderActiveTicker` reset, ~1800-1804): the
+  `'Run simulation to see metrics.'` placeholder `<p>`.
+  **Change:** give it `className = 'pane-empty'`.
+- **Find** (lab.js, `runMonteCarloSimulation`, ~1873-1891): two
+  `riskMetricsEl.replaceChildren(document.createTextNode(...))` error paths.
+  **Change:** wrap each message in a `<p class="pane-empty pane-empty--error">`.
+- **Find** (lab.js, `renderEvidenceTimeline`, ~1496-1498): bare `catch` setting
+  `evidenceList = []`. **Change:** track fetch failure in a local
+  `fetchFailed` flag; on failure render
+  `Evidence log unavailable (fetch failed).` in a
+  `<p class="pane-empty pane-empty--error">` and return (distinct from the
+  existing "No logged evidence entries on disk yet." empty state, which keeps
+  its own `pane-empty` class).
+- **Find** (analysis.css, after `.analysis-pane .context-empty`): no
+  `.pane-empty` rule exists. **Change:** add
+  `.analysis-pane .pane-empty { margin: 0; padding: 0 10px; color: var(--muted-text); font-size: 0.8rem; }`
+  and `.analysis-pane .pane-empty--error { color: var(--red-color); }`.
+- **Verify:** preamble + `npx jest tests/js/pages/analysis/lab_dom_render.test.js`
+  (add an assertion: init failure renders `.pane-empty--error`; evidence fetch
+  failure renders the distinct message — mock `fetchText` rejection).
+
+### WO2 — Keyboard-scrollable regions (G5)
+
+**Files:** `js/pages/analysis/lab.js`, `tests/js/pages/analysis/lab_dom.test.js`
+
+- **Find** (PANE_MARKUP, lab.js ~70): `<div class="analysis-stage">`
+  **Change:** `<div class="analysis-stage" tabindex="0">`.
+- **Find** (PANE_MARKUP, ~113):
+  `<div id="evidenceTimeline" class="timeline-container"></div>`
+  **Change:** add `tabindex="0"`.
+- **Verify:** preamble + new assertion in `lab_dom.test.js` that both elements
+  carry `tabindex="0"` after `initAnalysisPane`.
+
+### WO3 — Canvas 2× backing store + ARIA + axis labels (G4, G6)
+
+**Files:** `js/pages/analysis/lab.js`, `css/terminal/analysis.css`,
+`tests/js/pages/analysis/lab_dom.test.js`
+
+- **Find** (PANE_MARKUP ~90):
+  `<canvas id="kellyCurveCanvas" width="600" height="200"></canvas>`
+  **Change:**
+  `<canvas id="kellyCurveCanvas" width="1200" height="400" role="img" aria-label="Kelly curve"></canvas>`.
+- **Find** (PANE_MARKUP ~98): `<canvas id="monteCarloCanvas" width="600" height="200"></canvas>`
+  **Change:** same treatment (`width="1200" height="400" role="img" aria-label="Monte Carlo results"`).
+- **Find** (`drawKellyMarker` / `drawKellyCurvePath` / `_renderMonteCarloHistogram` /
+  `_renderMonteCarloFanChart`): all geometry is 1× (`padLeft = 45`,
+  `'10px "JetBrains Mono", monospace'`, `lineWidth = 1.5/2`, `arc(x, y, 3.5, …)`,
+  fan pads `40/20/20/25`).
+  **Change:** double every pad, font size, line width, and radius so the CSS
+  downscale (`width:100%; height:auto`, analysis.css:219-222) renders the same
+  visual size at 2× backing. Add muted y-axis min/max growth labels
+  (`params.minG` / `params.minG + params.rangeG`, `formatPercent`) at the left
+  edge of the Kelly plot — 20px font (renders 10px), `--muted-text` color.
+- **Find** (`renderKellyCurve`, end of function ~1364-1371): badge update is
+  the last statement. **Change:** after it, set
+  `kellyCurveCanvas.setAttribute('aria-label', …)` with the same sentence as
+  the kelly snapshot (WO11): `Kelly curve — full X%, scaled ½K Y%, current
+weight Z%.`
+- **Find** (`renderMonteCarloResults` ~2081-2094): sets no aria-label.
+  **Change:** set `monteCarloCanvas` aria-label to
+  `Terminal price histogram — median $X, VaR(95%) $Y, N paths.`
+- **Verify:** preamble + `lab_dom.test.js` assertions: both canvases expose
+  `width=1200`, `height=400`, `role="img"`, and a non-empty `aria-label`
+  after render. (Retina sharpness itself stays a human check — open question
+  above.)
+
+### WO4 — Context strip chrome: aria-current + function/as-of (G10)
+
+**Files:** `js/pages/analysis/lab.js`, `css/terminal/analysis.css`,
+`tests/js/pages/analysis/lab_dom_render.test.js`
+
+- **Find** (`appendContextSymbol` ~1766-1773): active symbol gets class only.
+  **Change:** when active, also `span.setAttribute('aria-current', 'true')`.
+- **Find** (`renderContextStrip` ~1761-1763): ends after appending symbols.
+  **Change:** append a `<span class="context-meta" id="contextMeta"></span>` to
+  `contextEl` on every render; add `updateContextMeta()` setting its
+  `textContent` to `FUNCTION · AS-OF` — function from `state.activeSection`
+  (`mc`→`MONTE CARLO`, others uppercased), as-of from the active config's
+  `meta.asOf` sliced to 10 chars, `· —` when missing. Call it from
+  `renderContextStrip` and `showAnalysisSection`.
+- **Find** (analysis.css, `.analysis-pane .context-empty` rule): **Change:**
+  add `.analysis-pane .context-meta { margin-left: auto; color: var(--muted-text); }`
+  (strip is a flex row; the meta pins right).
+- **Verify:** preamble + `lab_dom_render.test.js` assertions: active symbol has
+  `aria-current="true"`, inactive symbols do not; `#contextMeta` text contains
+  the function name and the as-of date.
+
+### WO5 — Overview landing screen: scenario mini-rows + value bands (G1)
+
+**Files:** `js/pages/analysis/lab.js`, `css/terminal/analysis.css`,
+`tests/js/pages/analysis/lab_dom_render.test.js`
+
+- **Find** (PANE_MARKUP overview section ~72-74): only `<div class="summary-stats" id="summaryStats"></div>`.
+  **Change:** after it add
+  `<div class="block-header"><h3>Scenarios</h3></div><div id="overviewScenarios"></div>`,
+  then `<div class="block-header"><h3>Value Bands</h3></div><dl id="overviewValueBands"></dl>`.
+- **Find** (`renderValueBands(config)` ~968-999): writes to module-global
+  `valueBandsEl`. **Change:** accept an optional target param
+  `(config, targetEl = valueBandsEl)`; use `targetEl` for `replaceChildren`
+  and the null guard.
+- **Find** (`renderActiveTicker` ~1780-1782): calls `renderSummary(config)`.
+  **Change:** after `renderSummary`, call the new
+  `renderOverviewScenarios(config)` (rows sorted by probability desc, each
+  `.overview-scenario-row` = bold caps `.overview-scenario-name` + a
+  `.overview-scenario-vals` span with `Prob / Multiple / Price CAGR` in
+  tabular numerals — the 4 highest-signal fields per the design) and
+  `renderValueBands(config, overviewValueBandsEl)`. Resolve the two new
+  elements in `resolvePaneElements` (module lets `overviewScenariosEl`,
+  `overviewValueBandsEl`).
+- **Find** (analysis.css, after the value-bands rules ~216): **Change:** add
+  `.overview-scenario-row { display: grid; grid-template-columns: 1fr auto auto auto; gap: 6px 18px; padding: 6px 0; border-bottom: 1px solid var(--border-color); align-items: baseline; }`,
+  `.overview-scenario-row:last-child { border-bottom: none; }`,
+  `.overview-scenario-name { font-weight: 700; text-transform: uppercase; font-size: 0.8rem; color: var(--text-color); }`,
+  `.overview-scenario-vals { display: contents; color: var(--muted-text); font-variant-numeric: tabular-nums; text-align: right; }`,
+  and `font-variant-numeric: tabular-nums` on `.stat-card p` and `.analysis-pane dd` (G11 for the numeric columns).
+- **Verify:** preamble + `lab_dom_render.test.js` assertions: overview section
+  contains scenario rows with the three value spans and a populated
+  `#overviewValueBands` with 4 `dt`/`dd` pairs.
+
+### WO6 — Belief / predictions / journal: inline styles → classes
+
+**Files:** `js/pages/analysis/lab.js`, `css/terminal/analysis.css`,
+`tests/js/pages/analysis/lab_dom_render.test.js`
+
+- **Belief (design: probability is the hero number).** **Find**
+  (`renderBeliefState` ~1382-1473): empty-state `<p>` with two inline styles;
+  header `left` span (`fontWeight 700`, `color var(--text-main)`), `asOf` span;
+  three group titles with inline `fontSize`/`color`.
+  **Change:** empty state → `<p class="pane-empty">`; header →
+  `<span class="belief-prob">68.0%</span>` + `<span class="belief-meta">confidence 70% · as of 2026-09-30</span>`;
+  group titles → `<div class="belief-group-title">` with
+  `--against` (gold) and `--questions` (blue) modifiers for the two colored
+  ones. Update the industry-thesis block (`fontSize`, `marginTop`, span color,
+  link color/textDecoration) to classes `belief-thesis` / `belief-thesis-label`
+  / `belief-thesis-link`.
+- **Predictions (design: two-line rows).** **Find** (`renderPredictions`
+  ~1618-1681): titleDiv/h4/badges built with ~10 inline style assignments;
+  empty `<p>` inline-styled; claim span embeds `(Target: …)` in the claim.
+  **Change:** title row → `.prediction-title-row` > `.prediction-title` +
+  `.prediction-badge-row` > `.prediction-badge` (Brier) and the existing
+  `.prediction-stale-badge`; empty state → `.pane-empty`; each row becomes
+  claim line + muted meta line: `.prediction-claim` = claim text,
+  `.prediction-meta` = `Target 2026-12-31 · 65% · ` status text (the status
+  chip keeps its `.prediction-status` class and text). Row keeps
+  `.prediction-item` but stacks the two lines (CSS: flex-direction column,
+  align-items flex-start).
+- **Journal (design: Entry N of M context).** **Find** (`renderDecisionJournal`
+  ~1691-1734): inline-styled h4, empty `<p>`, `sitDiv`, `altDiv`.
+  **Change:** h4 → `.journal-title`; empty → `.pane-empty`; `action-meta`
+  gains prefix `Entry N of M · ` from the journal array length/index; sitDiv →
+  `.journal-situation`; altDiv → `.journal-alternatives`. (`.action-meta` gets
+  its first CSS rule here — G12.)
+- **Find** (analysis.css): no rules for the new classes. **Change:** add
+  `.belief-prob { font-size: 1.35rem; font-weight: 700; color: var(--text-color); font-variant-numeric: tabular-nums; }`,
+  `.belief-meta { font-size: 0.72rem; color: var(--muted-text); }`,
+  `.belief-group-title { font-size: 0.75rem; color: var(--muted-text); margin-top: 6px; }`,
+  `.belief-group-title--against { color: var(--primary-color); }`,
+  `.belief-group-title--questions { color: var(--blue-color); }`,
+  `.belief-thesis { font-size: 0.75rem; margin-top: 4px; }`,
+  `.belief-thesis-label { color: var(--muted-text); }`,
+  `.belief-thesis-link { color: var(--text-color); text-decoration: underline; }`,
+  `.prediction-title-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }`,
+  `.prediction-title { margin: 0; font-size: 0.85rem; color: var(--muted-text); text-transform: uppercase; }`,
+  `.prediction-badge-row { display: flex; align-items: center; gap: 8px; }`,
+  `.prediction-badge { font-size: 0.75rem; color: var(--text-color); }`,
+  `.prediction-item { flex-direction: column; align-items: flex-start; gap: 2px; }`,
+  `.prediction-meta { font-size: 0.72rem; color: var(--muted-text); }`,
+  `.journal-title { margin: 0 0 6px 0; font-size: 0.85rem; color: var(--muted-text); text-transform: uppercase; }`,
+  `.action-meta { color: var(--muted-text); }`,
+  `.journal-situation { color: var(--text-color); margin: 4px 0; }`,
+  `.journal-alternatives { font-size: 0.75rem; color: var(--muted-text); }`,
+  and bump `.prediction-stale-badge` / `.prediction-status` from `0.68rem` to
+  `0.72rem` + `font-weight: 700` (G8 floor for colored status text).
+- **Verify:** preamble + `lab_dom_render.test.js` assertions: `.belief-prob`
+  renders the bare percentage; predictions rows carry `.prediction-claim` +
+  `.prediction-meta`; journal meta contains `Entry 2 of 2`.
+
+### WO7 — Evidence timeline: class-ify + SUPERSEDED text tag + failure copy
+
+**Files:** `js/pages/analysis/lab.js`, `css/terminal/analysis.css`,
+`tests/js/pages/analysis/lab_dom_render.test.js`
+
+- **Find** (`renderEvidenceTimeline` ~1481-1593): PORT message `<p>` inline
+  styled; header-count badge styled inline in both branches (~1534-1553);
+  superseded entries styled only via CSS opacity/dashed.
+  **Change:** PORT message → `.pane-empty`; count badge keeps its class, inline
+  styles deleted (rules move to CSS); superseded entries gain a
+  `<span class="timeline-superseded-tag">SUPERSEDED</span>` appended to
+  `metaDiv` (G14 — text distinction, not color-only).
+- **Find** (analysis.css, timeline block): **Change:** add
+  `.timeline-count-badge { font-size: 0.75rem; color: var(--muted-text); font-weight: 400; }`,
+  `.timeline-count-badge--block { margin-bottom: 6px; }`,
+  `.timeline-superseded-tag { font-size: 0.68rem; color: var(--muted-text); border: 1px dashed var(--border-color); border-radius: 2px; padding: 0 4px; text-transform: uppercase; }`.
+  Use the `--block` modifier on the fallback branch div.
+- **Verify:** preamble + `lab_dom_render.test.js` assertions: superseded entry
+  contains a `.timeline-superseded-tag` with text `SUPERSEDED`; header badge
+  has class `timeline-count-badge`.
+
+### WO8 — Sandbox rows / Kelly highlight / MC stat padding / alias cleanup
+
+**Files:** `js/pages/analysis/lab.js`, `css/terminal/analysis.css`
+
+- **Find** (`renderBayesOutput` ~1814-1830): row built with four inline styles.
+  **Change:** `row.className = 'sandbox-row'`; name/prob spans unstyled
+  (`.sandbox-row strong` inherits). CSS: `.sandbox-row { display: flex; justify-content: space-between; border-bottom: 1px dashed var(--border-color); padding: 4px 0; }`.
+- **Find** (`updateKellyMetricsBadges` ~1084-1092): highlight sets
+  `span.style.borderColor = 'var(--text-main)'`.
+  **Change:** `highlight` sets `span.classList.add('concentration-badge--highlight')`;
+  CSS: `.concentration-badge--highlight { border-color: var(--text-color); color: var(--text-color); }`.
+- **Find** (`_renderMonteCarloMetrics` ~1947-1950):
+  `card.style.padding = '10px';`.
+  **Change:** delete the line; CSS: `.analysis-pane .risk-sim .stat-card { padding: 10px; }`.
+- **Find** (analysis.css:9-25): alias vars. **Change:** delete every alias
+  except `--border-color` (used throughout the stylesheet itself) —
+  `--accent`, `--ink`, `--border-thin`, `--text-main`, `--text-muted`,
+  `--text-dim`, `--accent-primary`, `--accent-secondary`, `--accent-dim`,
+  `--accent-glow`, `--border-glow`, `--font-display`, `--font-mono` — and
+  rewrite the file-header comment (lines 1-7) to drop the stale
+  "aliases … resolve from this root" claim and the `--text-dim` mention in the
+  a11y checklist. Grep the repo for `var(--ink)` / `var(--text-main)` /
+  `var(--text-muted)` / `var(--accent` outside the pane first: by this order
+  all JS inline uses are gone (WO1/WO6/WO7), so deletion is safe; if any
+  survivor exists, keep that one alias and record it.
+- **Verify:** preamble. Existing DOM tests keep green (visuals unchanged).
+
+### WO9 — [visual] MC: pending state + two-canvas split + VaR markers (G7)
+
+**Files:** `js/pages/analysis/lab.js`, `css/terminal/analysis.css`,
+`tests/js/pages/analysis/lab_dom_render.test.js`
+
+- **Find** (PANE_MARKUP mc section ~94-100): single `#monteCarloCanvas`.
+  **Change:** after it add
+  `<canvas id="monteCarloFanCanvas" width="1200" height="400" role="img" aria-label="Monte Carlo fan envelope"></canvas>`;
+  resolve it in `resolvePaneElements` (`monteCarloFanCanvas`). CSS: gap already
+  10px via `.risk-sim { gap: 10px }`; no new rule needed.
+- **Find** (`runMonteCarloSimulation` ~1866-1911): no pending UI between
+  command and `SIMULATION_COMPLETE`. **Change:** before `worker.postMessage`,
+  render `<p class="mc-status">Running ${paths.toLocaleString('en-US')}
+paths…</p>` into `riskMetricsEl`; on success `_renderMonteCarloMetrics`
+  replaces it (existing `replaceChildren`); on error the error paths replace it
+  (WO1 classes). CSS: `.mc-status { margin: 0; padding: 0 10px; color: var(--primary-color); font-size: 0.8rem; }`.
+- **Find** (`renderMonteCarloResults` ~2081-2094): histogram and fan share one
+  canvas. **Change:** histogram (+ new VaR markers) draws on
+  `monteCarloCanvas`; fan draws on `monteCarloFanCanvas`. VaR markers: when
+  `result.terminalValues` is a non-empty array, compute
+  `x = (VaR - min) / (max - min) * width` for `VaR_80`/`VaR_95` and draw
+  dashed vertical lines (blue for 80, red for 95) with 20px muted labels
+  `VaR80`/`VaR95`; when terminal values are absent, skip markers silently.
+  Set `monteCarloFanCanvas` aria-label to
+  `P5–P95 fan envelope — ${result.runCount || paths} paths.`
+- **Verify:** preamble + `lab_dom_render.test.js` assertions: a fan canvas
+  element exists with `role="img"`; pending text renders after invoking the
+  run with a never-resolving worker mock. Flag in the final report:
+  **visual — human review required** (whether the split reads better is the
+  owner's call, per the open questions).
+
+### WO10 — Canvas palette from the CSS tokens
+
+**Files:** `js/pages/analysis/lab.js`, `tests/js/pages/analysis/lab.test.js`
+
+- **Find** (lab.js:43-54): `PANE_CHART_COLORS` hardcoded mirror of the tokens.
+  **Change:** keep the object as the fallback defaults, but add
+  `syncPaneChartColors()` called from `resolvePaneElements` that overwrites
+  each key from `getComputedStyle(paneRoot).getPropertyValue('--…')`
+  (`--text-color`, `--muted-text`, `--primary-color`, `--green-color`,
+  `--red-color`, `--blue-color`); skip empty computed values (jsdom) so
+  fallbacks hold; derive `greenFill` from the resolved green as
+  `rgba(r, g, b, 0.15)` (parse hex). Comment at the object notes it is
+  fallback-only.
+- **Verify:** preamble + `lab.test.js` case: with custom properties injected on
+  the pane root, `syncPaneChartColors()` (exported via `__analysisLabTesting`)
+  picks them up; with none, defaults remain.
+
+### WO11 — Function-specific scrollback snapshots (G2) + ticker-switch payload
+
+**Files:** `js/transactions/terminal/handlers/analysis.js`,
+`js/pages/analysis/lab.js`,
+`tests/js/transactions/terminal/handlers/analysis.test.js`,
+`tests/js/pages/analysis/lab.test.js`
+
+- **Find** (analysis.js `buildSnapshotLine` ~49-69): generic price/EPS/vol line.
+  **Change:** delete the function; in the `SECTION_BY_SUBCOMMAND` branch call
+  `appendMessage(lab.buildAnalysisSnapshot(sub))`.
+- **Find** (analysis.js ~158-168): `Analysis context: ${symbol}.`
+  **Change:** after a successful `setActiveAnalysisSymbol`, read
+  `lab.getActiveAnalysisConfig()` and print
+  `Analysis context: ${symbol} (${name} · ${(weight * 100).toFixed(1)}%).`
+  (name falls back to symbol when empty).
+- **Find** (analysis.js `handleMonteCarlo` ~102-106): VaR/CVaR line.
+  **Change:** include the symbol and median:
+  `MC (N paths, SYM) — median $X, VaR (95%): $Y, CVaR (95%): $Z.`
+  (`median` may be absent from mocked results — print it only when finite).
+- **Find** (lab.js, exports): no snapshot builder. **Change:** add
+  `export function buildAnalysisSnapshot(func)` returning per-view lines
+  (fallback `Showing analysis '<func>'.` when the active config or its metrics
+  are missing):
+    - overview: `Analysis (SYM) — expected CAGR +X.X%, edge +Y.Y% vs NAME, scaled Kelly Z%.`
+    - scenarios: top-3 by probability desc: `Scenarios (SYM) — bull 55% 2.1x, base 35% 1.2x, bear 10% 0.6x.`
+    - value: `Value (SYM) — terminal $X, entry for T% CAGR $Y (Z% below/above target).`
+    - kelly: `Kelly (SYM) — full X%, scaled ½K Y%, current weight Z%.`
+    - belief: `Belief (SYM) — P% (confidence C%), as of DATE.` (falls back to the
+      generic line when `belief_state` is missing)
+    - evidence: count over the cached list (`valid_to < today` ⇒ superseded):
+      `Evidence (SYM) — N valid / M superseded, latest DATE.` (`no logged
+entries` variant when empty; generic line when the cache has no entry)
+    - predictions: `Predictions (SYM) — Brier B (N=n), p pending, o overdue.`
+    - journal: `Journal (SYM) — latest: ACTION DATE, review REVIEW (M entries).`
+      Reuse `formatPercent` / `formatCurrency` / `computeStalePredictions` /
+      `BayesianEngine.computeBrierScore`; export the builder via
+      `__analysisLabTesting` too.
+- **Find** (handler tests ~60-89): pinned generic-line expectations.
+  **Change:** mock `buildAnalysisSnapshot` on the lab mock; assert delegation
+  with canned per-view strings; update the ticker-switch test to the
+  name · weight payload (mock `getActiveAnalysisConfig`); MC tests updated for
+  the median/symbol segment. Add `lab.test.js` coverage for the builder itself
+  (overview/scenarios/kelly/evidence-empty branches).
+- **Verify:** preamble.
