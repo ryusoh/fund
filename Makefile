@@ -17,7 +17,7 @@ else
 endif
 PIP := $(PY) -m pip
 
-.PHONY: help install-dev hooks precommit precommit-fix perms check-perms lint depcheck fmt fmt-check lint-fix markdownlint-fix type sec test test-js test-tz verify sync-check thinking-check bot-pr-check js-lint js-test vendor-fetch vendor-verify vendor-clean verify-calendar-build serve screenshot smoke fund fix check completion update-hooks twrr-refresh twrr-validate deploy-worker ci-parity mutate-js mutate-py mutate-ratchet-update images _fmt-black _fmt-prettier _lintfix-eslint _lintfix-stylelint _lintfix-markdown _lintfix-ruff _pytest
+.PHONY: help install-dev hooks precommit precommit-fix perms check-perms lint depcheck fmt fmt-check lint-fix markdownlint-fix type sec test test-js test-tz verify sync-check thinking-check bot-pr-check js-lint js-test vendor-fetch vendor-verify vendor-clean verify-calendar-build serve screenshot smoke analysis-layout-check fund fix check completion update-hooks twrr-refresh twrr-validate deploy-worker ci-parity mutate-js mutate-py mutate-ratchet-update images _fmt-black _fmt-prettier _lintfix-eslint _lintfix-stylelint _lintfix-markdown _lintfix-ruff _pytest
 
 PYTHON_BIN := $(PY)
 TWRR_STEPS := scripts/twrr/step01_load_transactions.py \
@@ -306,6 +306,13 @@ screenshot:
 # Requires the Chromium binary: run `make ensure-playwright` once.
 smoke:
 	node scripts/page_smoke.mjs
+
+# Deterministic analysis-pane viewport-fit gate: drives every function view
+# at the minimum desktop viewport (pane at its 320px worst case) and fails if
+# any active section overflows the .analysis-stage viewport. Requires the
+# Chromium binary: run `make ensure-playwright` once.
+analysis-layout-check:
+	node scripts/check_analysis_pane_layout.mjs
 
 # Install the Playwright Chromium binary required by `make screenshot` and by
 # any headless browser measurement (e.g. counting DOM nodes for perf work).
