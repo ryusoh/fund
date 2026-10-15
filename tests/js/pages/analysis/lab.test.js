@@ -31,6 +31,27 @@ describe('analysis lab data loading', () => {
         return { module, container };
     }
 
+    it('derives the canvas palette from pane CSS custom properties', async () => {
+        const module = await import('@pages/analysis/lab.js');
+        const container = document.createElement('div');
+        container.style.setProperty('--text-color', '#ffffff');
+        container.style.setProperty('--green-color', '#123456');
+        document.body.appendChild(container);
+        await module.initAnalysisPane(container, { autoLoad: false });
+
+        const { PANE_CHART_COLORS } = module.__analysisLabTesting;
+        expect(PANE_CHART_COLORS.line).toBe('#ffffff');
+        expect(PANE_CHART_COLORS.green).toBe('#123456');
+        expect(PANE_CHART_COLORS.greenFill).toBe('rgba(18, 52, 86, 0.15)');
+    });
+
+    it('keeps fallback palette values when no custom properties resolve', async () => {
+        const { module } = await setupPane(false);
+        const { PANE_CHART_COLORS } = module.__analysisLabTesting;
+        expect(PANE_CHART_COLORS.line).toBe('#c9d1d9');
+        expect(PANE_CHART_COLORS.greenFill).toBe('rgba(52, 168, 83, 0.15)');
+    });
+
     it('adds a cache-busting query param and disables caching for data fetches', async () => {
         const cacheBustValue = '1731900000000';
         jest.spyOn(Date, 'now').mockReturnValue(Number(cacheBustValue));

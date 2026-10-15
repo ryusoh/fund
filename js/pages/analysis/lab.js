@@ -1,4 +1,4 @@
-/* global Worker */
+/* global Worker, getComputedStyle */
 import { BayesianEngine, applyParameterPosteriors } from './bayes.js';
 import { logger } from '../../utils/logger.js';
 import {
@@ -44,7 +44,9 @@ const thesisTitleCache = new Map();
 const WORKER_URL = '../js/pages/analysis/monte_carlo.worker.js';
 
 // Canvas palette mirrors the terminal design tokens (css/terminal/base.css)
-// so the pane stays coherent with the rest of the terminal page.
+// so the pane stays coherent with the rest of the terminal page. These
+// values are fallbacks only — syncPaneChartColors() overwrites them from
+// the pane root's computed custom properties at init.
 const PANE_CHART_COLORS = {
     grid: 'rgba(109, 121, 155, 0.35)',
     line: '#c9d1d9',
@@ -55,6 +57,37 @@ const PANE_CHART_COLORS = {
     red: '#ea4335',
     blue: '#64b5f6',
 };
+
+const TOKEN_PROPERTIES = {
+    line: '--text-color',
+    muted: '--muted-text',
+    gold: '--primary-color',
+    green: '--green-color',
+    red: '--red-color',
+    blue: '--blue-color',
+};
+
+// Derive the canvas palette from the terminal tokens once at init instead
+// of maintaining a hardcoded mirror that drifts (WO10).
+function syncPaneChartColors() {
+    if (!paneRoot || typeof getComputedStyle !== 'function') {
+        return;
+    }
+    const computed = getComputedStyle(paneRoot);
+    Object.entries(TOKEN_PROPERTIES).forEach(([key, prop]) => {
+        const value = computed.getPropertyValue(prop).trim();
+        if (value) {
+            PANE_CHART_COLORS[key] = value;
+        }
+    });
+    const hexMatch = PANE_CHART_COLORS.green.match(/^#([0-9a-f]{6})$/i);
+    if (hexMatch) {
+        const r = parseInt(hexMatch[1].slice(0, 2), 16);
+        const g = parseInt(hexMatch[1].slice(2, 4), 16);
+        const b = parseInt(hexMatch[1].slice(4, 6), 16);
+        PANE_CHART_COLORS.greenFill = `rgba(${r}, ${g}, ${b}, 0.15)`;
+    }
+}
 
 const ANALYSIS_SECTIONS = [
     'overview',
@@ -2705,6 +2738,7 @@ function buildPaneDom(rootEl) {
 
 function resolvePaneElements(rootEl) {
     paneRoot = rootEl;
+    syncPaneChartColors();
     contextEl = rootEl.querySelector('#paneContext');
     summaryStatsEl = rootEl.querySelector('#summaryStats');
     scenarioResultsEl = rootEl.querySelector('#scenarioResults');
@@ -2828,4 +2862,6 @@ export const __analysisLabTesting = {
     renderDecisionJournal,
     renderMonteCarloResults,
     renderContextStrip,
+    syncPaneChartColors,
+    PANE_CHART_COLORS,
 };
