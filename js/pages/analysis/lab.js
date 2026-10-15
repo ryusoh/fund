@@ -1137,7 +1137,7 @@ function updateKellyMetricsBadges(
         const span = document.createElement('span');
         span.className = 'concentration-badge';
         if (highlight) {
-            span.style.borderColor = 'var(--text-main)';
+            span.classList.add('concentration-badge--highlight');
         }
         span.textContent = `${label}: ${val}`;
         return span;
@@ -1907,10 +1907,7 @@ function renderBayesOutput() {
     const priors = state.bayesEngine.priors;
     const elements = priors.map((p) => {
         const row = document.createElement('div');
-        row.style.display = 'flex';
-        row.style.justifyContent = 'space-between';
-        row.style.borderBottom = '1px dashed var(--ink)';
-        row.style.padding = '4px 0';
+        row.className = 'sandbox-row';
 
         const nameSpan = document.createElement('span');
         nameSpan.textContent = p.name;
@@ -2043,7 +2040,6 @@ function _renderMonteCarloMetrics(result, riskMetricsEl) {
     const createStatCard = (title, value) => {
         const card = document.createElement('div');
         card.className = 'stat-card';
-        card.style.padding = '10px';
 
         const h3 = document.createElement('h3');
         h3.textContent = title;

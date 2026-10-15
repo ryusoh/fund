@@ -3,26 +3,11 @@
    dividers, small-caps muted labels, gold reserved for the active state.
    One function code per screen — each section is small enough to stay
    fully inside the pane; the stage scrolls internally as a safety net.
-   Aliases the lab markup references inline (var(--accent), var(--ink),
-   var(--border-thin), var(--text-muted)) resolve from this root. */
+   All colors and fonts resolve to the terminal tokens
+   (css/terminal/base.css); the pane owns no parallel palette. */
 
 .analysis-pane {
-    --accent: var(--primary-color);
-    --ink: var(--text-color);
-    --border-thin: 1px solid var(--border-color);
-
-    --text-main: var(--text-color);
-    --text-muted: var(--muted-text);
-    --text-dim: rgba(139, 148, 158, 0.6);
-    --accent-primary: var(--primary-color);
-    --accent-secondary: var(--green-color);
-    --accent-dim: var(--hover-bg);
-    --accent-glow: rgba(240, 185, 11, 0.25);
     --border-color: rgba(109, 121, 155, 0.35);
-    --border-glow: rgba(255, 255, 255, 0.08);
-
-    --font-display: var(--font-family-mono);
-    --font-mono: var(--font-family-mono);
 
     color: var(--text-color);
     font-family: var(--font-family-mono);
@@ -279,6 +264,11 @@
     gap: 10px;
 }
 
+/* MC stat cards keep a small padding inside the risk-sim block */
+.analysis-pane .risk-sim .stat-card {
+    padding: 10px;
+}
+
 .analysis-pane .badge-row {
     display: flex;
     flex-direction: row;
@@ -294,6 +284,11 @@
     border: 1px solid var(--border-color);
     border-radius: 2px;
     padding: 2px 8px;
+}
+
+.analysis-pane .concentration-badge--highlight {
+    border-color: var(--text-color);
+    color: var(--text-color);
 }
 
 /* Belief state */
@@ -587,6 +582,13 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
+}
+
+.analysis-pane .sandbox-row {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px dashed var(--border-color);
+    padding: 4px 0;
 }
 
 .analysis-pane .sandbox-tag {
