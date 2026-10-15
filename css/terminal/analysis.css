@@ -420,6 +420,25 @@
     color: var(--muted-text);
 }
 
+.analysis-pane .timeline-count-badge {
+    font-size: 0.75rem;
+    color: var(--muted-text);
+    font-weight: 400;
+}
+
+.analysis-pane .timeline-count-badge--block {
+    margin-bottom: 6px;
+}
+
+.analysis-pane .timeline-superseded-tag {
+    font-size: 0.68rem;
+    color: var(--muted-text);
+    border: 1px dashed var(--border-color);
+    border-radius: 2px;
+    padding: 0 4px;
+    text-transform: uppercase;
+}
+
 .analysis-pane .timeline-claim {
     color: var(--text-color);
     line-height: 1.4;

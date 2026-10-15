@@ -277,6 +277,15 @@ describe('analysis lab pane rendering', () => {
         expect(entries.length).toBe(2);
         expect(entries[0].classList.contains('superseded')).toBe(false);
         expect(entries[1].classList.contains('superseded')).toBe(true);
+
+        // Superseded entries carry a text tag, not just a style (G14)
+        const tag = entries[1].querySelector('.timeline-superseded-tag');
+        expect(tag).not.toBeNull();
+        expect(tag.textContent).toBe('SUPERSEDED');
+        expect(entries[0].querySelector('.timeline-superseded-tag')).toBeNull();
+
+        // Header count badge is class-driven (G12)
+        expect(header.querySelector('.timeline-count-badge')).not.toBeNull();
     });
 
     it('renders a distinct error state when the evidence fetch fails', async () => {

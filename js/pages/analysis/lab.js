@@ -1536,8 +1536,7 @@ async function renderEvidenceTimeline(config) {
 
     if (!config || !config.symbol || config.symbol === 'PORT') {
         const p = document.createElement('p');
-        p.style.color = 'var(--text-muted)';
-        p.style.fontSize = '0.8rem';
+        p.className = 'pane-empty';
         p.textContent = 'Select an individual ticker to view chronological evidence log.';
         evidenceTimelineEl.appendChild(p);
         return;
@@ -1601,18 +1600,12 @@ async function renderEvidenceTimeline(config) {
         if (!countSpan) {
             countSpan = document.createElement('span');
             countSpan.className = 'timeline-count-badge';
-            countSpan.style.fontSize = '0.75rem';
-            countSpan.style.color = 'var(--text-muted)';
-            countSpan.style.fontWeight = 'normal';
             headerEl.appendChild(countSpan);
         }
         countSpan.textContent = `${validCount} valid / ${supersededCount} superseded`;
     } else {
         const countDiv = document.createElement('div');
-        countDiv.className = 'timeline-count-badge';
-        countDiv.style.fontSize = '0.75rem';
-        countDiv.style.color = 'var(--text-muted)';
-        countDiv.style.marginBottom = '6px';
+        countDiv.className = 'timeline-count-badge timeline-count-badge--block';
         countDiv.textContent = `${validCount} valid / ${supersededCount} superseded`;
         evidenceTimelineEl.appendChild(countDiv);
     }
@@ -1636,6 +1629,13 @@ async function renderEvidenceTimeline(config) {
         posteriorSpan.textContent = `Bull: ${bullP}%`;
 
         metaDiv.append(leftSpan, posteriorSpan);
+
+        if (isSuperseded) {
+            const tag = document.createElement('span');
+            tag.className = 'timeline-superseded-tag';
+            tag.textContent = 'SUPERSEDED';
+            metaDiv.appendChild(tag);
+        }
 
         const claimP = document.createElement('div');
         claimP.className = 'timeline-claim';
