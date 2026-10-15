@@ -170,6 +170,7 @@
     margin: 0;
     color: var(--text-color);
     white-space: nowrap;
+    font-variant-numeric: tabular-nums;
 }
 
 /* Scenario rows — flat list, hairline separators, metrics flow inline */
@@ -230,6 +231,35 @@
     color: var(--text-color);
     text-align: right;
     margin: 0;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Overview landing — compact scenario rows (name, prob, multiple, price CAGR) */
+.analysis-pane .overview-scenario-row {
+    display: grid;
+    grid-template-columns: 1fr auto auto auto;
+    gap: 6px 18px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border-color);
+    align-items: baseline;
+}
+
+.analysis-pane .overview-scenario-row:last-child {
+    border-bottom: none;
+}
+
+.analysis-pane .overview-scenario-name {
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    color: var(--text-color);
+}
+
+.analysis-pane .overview-scenario-vals {
+    display: contents;
+    color: var(--muted-text);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
 }
 
 /* Kelly / Monte Carlo — canvas scales to the pane width */

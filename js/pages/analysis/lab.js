@@ -24,6 +24,8 @@ let beliefStateCardEl = null;
 let evidenceTimelineEl = null;
 let predictionsCardEl = null;
 let decisionJournalCardEl = null;
+let overviewScenariosEl = null;
+let overviewValueBandsEl = null;
 
 const state = {
     configs: [],
@@ -71,6 +73,10 @@ const PANE_MARKUP = `
         <div class="output-grid">
             <section data-analysis-section="overview">
                 <div class="summary-stats" id="summaryStats"></div>
+                <div class="block-header"><h3>Scenarios</h3></div>
+                <div id="overviewScenarios"></div>
+                <div class="block-header"><h3>Value Bands</h3></div>
+                <dl id="overviewValueBands"></dl>
             </section>
             <section data-analysis-section="scenarios">
                 <div class="scenario-block">
@@ -976,8 +982,8 @@ function renderScenarioCards(config) {
     });
 }
 
-function renderValueBands(config) {
-    if (!valueBandsEl) {
+function renderValueBands(config, targetEl = valueBandsEl) {
+    if (!targetEl) {
         return;
     }
     const preferences = getPreferences(config);
@@ -985,7 +991,7 @@ function renderValueBands(config) {
     const targetCagr = Number.isFinite(targetCagrRaw) ? targetCagrRaw : 0.1;
     const metrics = config.metrics;
     const exitYearValue = Number.isFinite(metrics.exitYear) ? metrics.exitYear : null;
-    valueBandsEl.replaceChildren();
+    targetEl.replaceChildren();
     [
         { label: 'Expected Terminal Price', value: formatCurrency(metrics.expectedTerminalPrice) },
         {
@@ -1005,8 +1011,43 @@ function renderValueBands(config) {
         dt.textContent = band.label;
         const dd = document.createElement('dd');
         dd.textContent = band.value;
-        valueBandsEl.append(dt, dd);
+        targetEl.append(dt, dd);
     });
+}
+
+// Overview landing screen (G1): the four highest-signal scenario fields as
+// compact rows, ordered by probability — name, prob, multiple, price CAGR.
+function renderOverviewScenarios(config) {
+    if (!overviewScenariosEl) {
+        return;
+    }
+    overviewScenariosEl.replaceChildren();
+    const outcomes = (config.metrics && config.metrics.outcomes) || [];
+    [...outcomes]
+        .sort((a, b) => b.prob - a.prob)
+        .forEach((outcome) => {
+            const row = document.createElement('div');
+            row.className = 'overview-scenario-row';
+
+            const name = document.createElement('span');
+            name.className = 'overview-scenario-name';
+            name.textContent = outcome.name;
+
+            const vals = document.createElement('span');
+            vals.className = 'overview-scenario-vals';
+            [
+                `${(outcome.prob * 100).toFixed(1)}%`,
+                `${outcome.multiple.toFixed(2)}x`,
+                formatPercent(outcome.priceCagr),
+            ].forEach((text) => {
+                const span = document.createElement('span');
+                span.textContent = text;
+                vals.appendChild(span);
+            });
+
+            row.append(name, vals);
+            overviewScenariosEl.appendChild(row);
+        });
 }
 
 function drawKellyMarker(
@@ -1852,6 +1893,8 @@ function renderActiveTicker() {
     renderSummary(config);
     renderScenarioCards(config);
     renderValueBands(config);
+    renderOverviewScenarios(config);
+    renderValueBands(config, overviewValueBandsEl);
     renderKellyCurve(config);
     renderBeliefState(config);
     renderEvidenceTimeline(config);
@@ -2630,6 +2673,8 @@ function resolvePaneElements(rootEl) {
     evidenceTimelineEl = rootEl.querySelector('#evidenceTimeline');
     predictionsCardEl = rootEl.querySelector('#predictionsCard');
     decisionJournalCardEl = rootEl.querySelector('#decisionJournalCard');
+    overviewScenariosEl = rootEl.querySelector('#overviewScenarios');
+    overviewValueBandsEl = rootEl.querySelector('#overviewValueBands');
 }
 
 export function showAnalysisSection(name) {

@@ -163,6 +163,54 @@ describe('analysis lab pane rendering', () => {
         expect(meta.textContent).toContain('KELLY');
     });
 
+    it('restores the overview landing screen with scenario rows and value bands', async () => {
+        const mockIndex = { tickers: [{ symbol: 'AAPL', path: 'aapl.json' }] };
+        const mockHoldings = { AAPL: { shares: 10 } };
+        const mockAapl = {
+            symbol: 'AAPL',
+            name: 'Apple',
+            market: { price: 150 },
+            scenarios: [
+                { id: 'bear', name: 'Bear Case', prob: 0.2, multiple: 0.6 },
+                { id: 'bull', name: 'Bull Case', prob: 0.55, multiple: 2.1 },
+                { id: 'base', name: 'Base Case', prob: 0.35, multiple: 1.2 },
+            ],
+        };
+        const fetchMock = jest.fn((url) => {
+            const u = url.toString();
+            if (u.includes('index.json')) {
+                return Promise.resolve({ ok: true, json: async () => mockIndex });
+            }
+            if (u.includes('holdings_details.json')) {
+                return Promise.resolve({ ok: true, json: async () => mockHoldings });
+            }
+            if (u.includes('aapl.json')) {
+                return Promise.resolve({ ok: true, json: async () => mockAapl });
+            }
+            if (u.includes('.md')) {
+                return Promise.resolve({ ok: true, text: async () => '' });
+            }
+            return Promise.resolve({ ok: true, json: async () => ({}) });
+        });
+
+        const { lab } = await setupPane(fetchMock);
+        lab.setActiveAnalysisSymbol('AAPL');
+
+        const rows = document.querySelectorAll('#overviewScenarios .overview-scenario-row');
+        expect(rows.length).toBe(3);
+        // Rows are ordered by probability desc: bull 55, base 35, bear 20.
+        expect(rows[0].querySelector('.overview-scenario-name').textContent).toBe('Bull Case');
+        expect(rows[2].querySelector('.overview-scenario-name').textContent).toBe('Bear Case');
+
+        const vals = rows[0].querySelectorAll('.overview-scenario-vals span');
+        expect(vals.length).toBe(3);
+        expect(vals[0].textContent).toBe('55.0%');
+        expect(vals[1].textContent).toBe('2.10x');
+
+        expect(document.querySelectorAll('#overviewValueBands dt').length).toBe(4);
+        expect(document.querySelectorAll('#overviewValueBands dd').length).toBe(4);
+    });
+
     it('handles empty configs and shows the context-strip warning', async () => {
         const mockIndex = {
             tickers: [],
