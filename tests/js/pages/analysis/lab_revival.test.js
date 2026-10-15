@@ -393,8 +393,10 @@ describe('Analysis Lab Revival (WO-7 & WO-9)', () => {
             renderBeliefState(config);
 
             const card = document.getElementById('beliefStateCard');
-            expect(card.textContent).toContain('Current Belief: 45.0%');
-            expect(card.textContent).toContain('Confidence: 80%');
+            expect(card.querySelector('.belief-prob').textContent).toBe('45.0%');
+            const meta = card.querySelector('.belief-meta');
+            expect(meta.textContent).toContain('confidence 80%');
+            expect(meta.textContent).toContain('as of 2026-09-30');
             expect(card.textContent).toContain('AI Ethernet leadership');
             expect(card.textContent).toContain('Customer concentration');
             expect(card.textContent).toContain('Will 1.6T LPO displace');
@@ -472,6 +474,14 @@ describe('Analysis Lab Revival (WO-7 & WO-9)', () => {
             expect(card.textContent).toContain('FY2026 AI Revenue >= $1.5B');
             expect(card.textContent).toContain('True');
             expect(card.textContent).toContain('Pending (40%)');
+            // Two-line rows: claim line plus a muted meta line.
+            const firstRow = card.querySelector('.prediction-item');
+            expect(firstRow.querySelector('.prediction-claim').textContent).toContain(
+                'FY2026 AI Revenue >= $1.5B'
+            );
+            expect(firstRow.querySelector('.prediction-meta').textContent).toContain(
+                'Target 2026-11-15'
+            );
         });
 
         it('renders stale-prediction badge when predictions are overdue and hides when zero stale', async () => {
@@ -547,6 +557,7 @@ describe('Analysis Lab Revival (WO-7 & WO-9)', () => {
             expect(card.textContent).toContain('high trailing multiple');
             expect(card.textContent).toContain('Trim to under 2%');
             expect(card.textContent).toContain('2026-12-15');
+            expect(card.querySelector('.action-meta').textContent).toContain('Entry 1 of 1');
         });
     });
 

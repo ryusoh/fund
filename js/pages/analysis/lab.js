@@ -1449,9 +1449,7 @@ function renderBeliefState(config) {
     const belief = config.belief_state;
     if (!belief) {
         const p = document.createElement('p');
-        p.style.color = 'var(--text-muted)';
-        p.style.fontSize = '0.8rem';
-        p.style.margin = '0';
+        p.className = 'pane-empty';
         p.textContent = 'Belief state not yet initialized for this ticker.';
         beliefStateCardEl.appendChild(p);
         return;
@@ -1460,31 +1458,30 @@ function renderBeliefState(config) {
     const header = document.createElement('div');
     header.className = 'belief-header';
 
-    const left = document.createElement('span');
-    left.textContent = `Current Belief: ${(belief.probability * 100).toFixed(1)}% (Confidence: ${(belief.confidence * 100).toFixed(0)}%)`;
-    left.style.fontWeight = '700';
-    left.style.color = 'var(--text-main)';
+    const prob = document.createElement('span');
+    prob.className = 'belief-prob';
+    prob.textContent = `${(belief.probability * 100).toFixed(1)}%`;
 
-    const asOf = document.createElement('span');
-    asOf.style.fontSize = '0.75rem';
-    asOf.style.color = 'var(--text-muted)';
-    asOf.textContent = belief.as_of ? `As of: ${belief.as_of.slice(0, 10)}` : '';
+    const asOf = belief.as_of ? belief.as_of.slice(0, 10) : null;
+    const meta = document.createElement('span');
+    meta.className = 'belief-meta';
+    meta.textContent = `confidence ${(belief.confidence * 100).toFixed(0)}%${
+        asOf ? ` · as of ${asOf}` : ''
+    }`;
 
-    header.append(left, asOf);
+    header.append(prob, meta);
     beliefStateCardEl.appendChild(header);
 
     if (config.industry_thesis) {
         const industryLink = document.createElement('div');
-        industryLink.style.fontSize = '0.75rem';
-        industryLink.style.marginTop = '4px';
+        industryLink.className = 'belief-thesis';
         const docName = config.industry_thesis.split('/').pop();
         // security: remediate DOM-based XSS sink
         const span = document.createElement('span');
-        span.style.color = 'var(--text-muted)';
+        span.className = 'belief-thesis-label';
         span.textContent = 'Industry Layer: ';
         const a = document.createElement('a');
-        a.style.color = 'var(--text-main)';
-        a.style.textDecoration = 'underline';
+        a.className = 'belief-thesis-link';
         a.href = '../' + config.industry_thesis;
         a.textContent = docName;
         industryLink.appendChild(span);
@@ -1492,53 +1489,43 @@ function renderBeliefState(config) {
         beliefStateCardEl.appendChild(industryLink);
     }
 
-    if (belief.evidence_for && belief.evidence_for.length > 0) {
-        const forTitle = document.createElement('div');
-        forTitle.style.fontSize = '0.75rem';
-        forTitle.style.color = 'var(--text-muted)';
-        forTitle.textContent = 'Evidence For (Bullish Moat Factors):';
+    const groups = [
+        {
+            title: 'Evidence For (Bullish Moat Factors):',
+            modifier: '',
+            items: belief.evidence_for,
+            liClass: 'evidence-for-item',
+        },
+        {
+            title: 'Evidence Against & Falsification Risks:',
+            modifier: 'belief-group-title--against',
+            items: belief.evidence_against,
+            liClass: 'evidence-against-item',
+        },
+        {
+            title: 'Open Questions & Resolvable Unknowns:',
+            modifier: 'belief-group-title--questions',
+            items: belief.open_questions,
+            liClass: 'open-question-item',
+        },
+    ];
+    groups.forEach((group) => {
+        if (!group.items || group.items.length === 0) {
+            return;
+        }
+        const title = document.createElement('div');
+        title.className = `belief-group-title${group.modifier ? ` ${group.modifier}` : ''}`;
+        title.textContent = group.title;
         const ul = document.createElement('ul');
         ul.className = 'belief-list';
-        belief.evidence_for.forEach((item) => {
+        group.items.forEach((item) => {
             const li = document.createElement('li');
-            li.className = 'evidence-for-item';
+            li.className = group.liClass;
             li.textContent = item;
             ul.appendChild(li);
         });
-        beliefStateCardEl.append(forTitle, ul);
-    }
-
-    if (belief.evidence_against && belief.evidence_against.length > 0) {
-        const againstTitle = document.createElement('div');
-        againstTitle.style.fontSize = '0.75rem';
-        againstTitle.style.color = PANE_CHART_COLORS.gold;
-        againstTitle.textContent = 'Evidence Against & Falsification Risks:';
-        const ul = document.createElement('ul');
-        ul.className = 'belief-list';
-        belief.evidence_against.forEach((item) => {
-            const li = document.createElement('li');
-            li.className = 'evidence-against-item';
-            li.textContent = item;
-            ul.appendChild(li);
-        });
-        beliefStateCardEl.append(againstTitle, ul);
-    }
-
-    if (belief.open_questions && belief.open_questions.length > 0) {
-        const qTitle = document.createElement('div');
-        qTitle.style.fontSize = '0.75rem';
-        qTitle.style.color = 'var(--text-muted)';
-        qTitle.textContent = 'Open Questions & Resolvable Unknowns:';
-        const ul = document.createElement('ul');
-        ul.className = 'belief-list';
-        belief.open_questions.forEach((item) => {
-            const li = document.createElement('li');
-            li.className = 'open-question-item';
-            li.textContent = item;
-            ul.appendChild(li);
-        });
-        beliefStateCardEl.append(qTitle, ul);
-    }
+        beliefStateCardEl.append(title, ul);
+    });
 }
 
 async function renderEvidenceTimeline(config) {
@@ -1694,26 +1681,17 @@ function renderPredictions(config) {
     const stalePredictions = computeStalePredictions(predictions);
 
     const titleDiv = document.createElement('div');
-    titleDiv.style.display = 'flex';
-    titleDiv.style.justifyContent = 'space-between';
-    titleDiv.style.alignItems = 'center';
-    titleDiv.style.marginBottom = '6px';
+    titleDiv.className = 'prediction-title-row';
 
     const h4 = document.createElement('h4');
-    h4.style.margin = '0';
-    h4.style.fontSize = '0.85rem';
-    h4.style.color = 'var(--text-muted)';
-    h4.style.textTransform = 'uppercase';
+    h4.className = 'prediction-title';
     h4.textContent = 'Falsifiable Predictions';
 
     const badgesContainer = document.createElement('div');
-    badgesContainer.style.display = 'flex';
-    badgesContainer.style.alignItems = 'center';
-    badgesContainer.style.gap = '8px';
+    badgesContainer.className = 'prediction-badge-row';
 
     const brierBadge = document.createElement('span');
-    brierBadge.style.fontSize = '0.75rem';
-    brierBadge.style.color = 'var(--text-main)';
+    brierBadge.className = 'prediction-badge';
     brierBadge.textContent = brierResult
         ? `Brier: ${brierResult.brierScore} (N=${brierResult.count})`
         : 'Brier: N/A';
@@ -1731,9 +1709,7 @@ function renderPredictions(config) {
 
     if (predictions.length === 0) {
         const p = document.createElement('p');
-        p.style.color = 'var(--text-muted)';
-        p.style.fontSize = '0.8rem';
-        p.style.margin = '0';
+        p.className = 'pane-empty';
         p.textContent = 'No dated predictions recorded yet.';
         predictionsCardEl.appendChild(p);
         return;
@@ -1744,17 +1720,26 @@ function renderPredictions(config) {
         row.className = 'prediction-item';
 
         const claimSpan = document.createElement('span');
-        claimSpan.textContent = `${p.claim} (Target: ${p.target_date})`;
+        claimSpan.className = 'prediction-claim';
+        claimSpan.textContent = p.claim;
+
+        const probNum = Number(p.probability);
+        const probText = Number.isFinite(probNum) ? `${(probNum * 100).toFixed(0)}%` : 'n/a';
+        const statusText = p.resolved ? (p.outcome ? 'True' : 'False') : `Pending (${probText})`;
+
+        const detailRow = document.createElement('div');
+        detailRow.className = 'prediction-detail-row';
+
+        const metaSpan = document.createElement('span');
+        metaSpan.className = 'prediction-meta';
+        metaSpan.textContent = `Target ${p.target_date} · ${probText} · ${statusText}`;
 
         const statusSpan = document.createElement('span');
         statusSpan.className = `prediction-status ${p.resolved ? 'status-resolved' : 'status-pending'}`;
-        statusSpan.textContent = p.resolved
-            ? p.outcome
-                ? 'True'
-                : 'False'
-            : `Pending (${(p.probability * 100).toFixed(0)}%)`;
+        statusSpan.textContent = statusText;
 
-        row.append(claimSpan, statusSpan);
+        detailRow.append(metaSpan, statusSpan);
+        row.append(claimSpan, detailRow);
         predictionsCardEl.appendChild(row);
     });
 }
@@ -1767,18 +1752,13 @@ function renderDecisionJournal(config) {
 
     const journal = config.decision_journal || [];
     const h4 = document.createElement('h4');
-    h4.style.margin = '0 0 6px 0';
-    h4.style.fontSize = '0.85rem';
-    h4.style.color = 'var(--text-muted)';
-    h4.style.textTransform = 'uppercase';
+    h4.className = 'journal-title';
     h4.textContent = 'Decision Journal';
     decisionJournalCardEl.appendChild(h4);
 
     if (journal.length === 0) {
         const p = document.createElement('p');
-        p.style.color = 'var(--text-muted)';
-        p.style.fontSize = '0.8rem';
-        p.style.margin = '0';
+        p.className = 'pane-empty';
         p.textContent = 'No decision journal entries logged yet.';
         decisionJournalCardEl.appendChild(p);
         return;
@@ -1792,21 +1772,19 @@ function renderDecisionJournal(config) {
     actionSpan.textContent = latest.action || 'ACTION';
     const metaSpan = document.createElement('span');
     metaSpan.className = 'action-meta';
-    metaSpan.textContent = `(${latest.date}) · Review: ${latest.review_date || 'TBD'}`;
+    metaSpan.textContent = `Entry ${journal.length} of ${journal.length} · (${latest.date}) · Review: ${latest.review_date || 'TBD'}`;
     actionDiv.appendChild(actionSpan);
     actionDiv.appendChild(document.createTextNode(' '));
     actionDiv.appendChild(metaSpan);
     const sitDiv = document.createElement('div');
-    sitDiv.style.color = 'var(--ink)';
-    sitDiv.style.margin = '4px 0';
+    sitDiv.className = 'journal-situation';
     sitDiv.textContent = latest.situation || '';
 
     decisionJournalCardEl.append(actionDiv, sitDiv);
 
     if (latest.alternatives_rejected && latest.alternatives_rejected.length > 0) {
         const altDiv = document.createElement('div');
-        altDiv.style.fontSize = '0.75rem';
-        altDiv.style.color = 'var(--text-muted)';
+        altDiv.className = 'journal-alternatives';
         altDiv.textContent = `Rejected: ${latest.alternatives_rejected.join('; ')}`;
         decisionJournalCardEl.appendChild(altDiv);
     }

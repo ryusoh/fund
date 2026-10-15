@@ -335,6 +335,47 @@
     color: var(--blue-color);
 }
 
+/* Belief state — the probability is the hero number */
+.analysis-pane .belief-prob {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--text-color);
+    font-variant-numeric: tabular-nums;
+}
+
+.analysis-pane .belief-meta {
+    font-size: 0.72rem;
+    color: var(--muted-text);
+}
+
+.analysis-pane .belief-group-title {
+    font-size: 0.75rem;
+    color: var(--muted-text);
+    margin-top: 6px;
+}
+
+.analysis-pane .belief-group-title--against {
+    color: var(--primary-color);
+}
+
+.analysis-pane .belief-group-title--questions {
+    color: var(--blue-color);
+}
+
+.analysis-pane .belief-thesis {
+    font-size: 0.75rem;
+    margin-top: 4px;
+}
+
+.analysis-pane .belief-thesis-label {
+    color: var(--muted-text);
+}
+
+.analysis-pane .belief-thesis-link {
+    color: var(--text-color);
+    text-decoration: underline;
+}
+
 /* Evidence timeline — flat entries with a status tick on the left */
 .analysis-pane .timeline-container {
     max-height: 260px;
@@ -403,9 +444,9 @@
 
 .analysis-pane .prediction-item {
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
     align-items: flex-start;
-    gap: 10px;
+    gap: 2px;
     border-bottom: 1px solid var(--border-color);
     padding: 6px 0;
 }
@@ -414,8 +455,47 @@
     border-bottom: none;
 }
 
+.analysis-pane .prediction-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.analysis-pane .prediction-title {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--muted-text);
+    text-transform: uppercase;
+}
+
+.analysis-pane .prediction-badge-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.analysis-pane .prediction-badge {
+    font-size: 0.75rem;
+    color: var(--text-color);
+}
+
+.analysis-pane .prediction-detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+}
+
+.analysis-pane .prediction-meta {
+    font-size: 0.72rem;
+    color: var(--muted-text);
+}
+
 .analysis-pane .prediction-status {
-    font-size: 0.68rem;
+    font-size: 0.72rem;
+    font-weight: 700;
     padding: 1px 6px;
     border-radius: 2px;
     text-transform: uppercase;
@@ -433,7 +513,8 @@
 }
 
 .analysis-pane .prediction-stale-badge {
-    font-size: 0.68rem;
+    font-size: 0.72rem;
+    font-weight: 700;
     padding: 1px 6px;
     border: 1px solid var(--red-color);
     border-radius: 2px;
@@ -456,6 +537,27 @@
 .analysis-pane .decision-action {
     font-weight: 700;
     color: var(--text-color);
+}
+
+.analysis-pane .journal-title {
+    margin: 0 0 6px 0;
+    font-size: 0.85rem;
+    color: var(--muted-text);
+    text-transform: uppercase;
+}
+
+.analysis-pane .action-meta {
+    color: var(--muted-text);
+}
+
+.analysis-pane .journal-situation {
+    color: var(--text-color);
+    margin: 4px 0;
+}
+
+.analysis-pane .journal-alternatives {
+    font-size: 0.75rem;
+    color: var(--muted-text);
 }
 
 /* What-If sandbox — a single hairline, gold tag */
