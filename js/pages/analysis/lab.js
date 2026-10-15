@@ -144,14 +144,14 @@ const PANE_MARKUP = `
                     <canvas
                         id="monteCarloCanvas"
                         width="1200"
-                        height="400"
+                        height="240"
                         role="img"
                         aria-label="Monte Carlo results"
                     ></canvas>
                     <canvas
                         id="monteCarloFanCanvas"
                         width="1200"
-                        height="400"
+                        height="240"
                         role="img"
                         aria-label="Monte Carlo fan envelope"
                     ></canvas>

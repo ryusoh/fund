@@ -264,9 +264,16 @@
     gap: 10px;
 }
 
-/* MC stat cards keep a small padding inside the risk-sim block */
+/* MC stat cards — one flat wrapping row like the summary stats, so the
+   view stays inside the pane instead of stacking ~10 lines */
+.analysis-pane .risk-sim .card-row {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 4px 18px;
+}
+
 .analysis-pane .risk-sim .stat-card {
-    padding: 10px;
+    padding: 2px 0;
 }
 
 .analysis-pane .badge-row {

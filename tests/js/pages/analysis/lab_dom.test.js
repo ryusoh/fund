@@ -182,7 +182,7 @@ describe('analysis lab pane controller', () => {
         expect(kelly.height).toBe(400);
         expect(kelly.getAttribute('role')).toBe('img');
         expect(mc.width).toBe(1200);
-        expect(mc.height).toBe(400);
+        expect(mc.height).toBe(240);
         expect(mc.getAttribute('role')).toBe('img');
 
         lab.setActiveAnalysisSymbol('TEST');
