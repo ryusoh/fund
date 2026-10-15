@@ -152,6 +152,28 @@ describe('analysis lab pane controller', () => {
         expect(lab.getActiveAnalysisConfig().symbol).toBe('TEST');
     });
 
+    it('exposes canvases at 2× backing resolution with img roles and dynamic aria-labels', () => {
+        const kelly = document.getElementById('kellyCurveCanvas');
+        const mc = document.getElementById('monteCarloCanvas');
+        expect(kelly.width).toBe(1200);
+        expect(kelly.height).toBe(400);
+        expect(kelly.getAttribute('role')).toBe('img');
+        expect(mc.width).toBe(1200);
+        expect(mc.height).toBe(400);
+        expect(mc.getAttribute('role')).toBe('img');
+
+        lab.setActiveAnalysisSymbol('TEST');
+        expect(kelly.getAttribute('aria-label')).toContain('Kelly curve');
+
+        lab.__analysisLabTesting.renderMonteCarloResults({
+            mean: 120,
+            VaR_95: 10,
+            CVaR_95: 15,
+            histogram: { counts: [5, 15, 30] },
+        });
+        expect(mc.getAttribute('aria-label')).toContain('Terminal price histogram');
+    });
+
     it('re-renders the active section when currencyChangedGlobal fires', async () => {
         lab.setActiveAnalysisSymbol('TEST');
         const summary = document.getElementById('summaryStats');

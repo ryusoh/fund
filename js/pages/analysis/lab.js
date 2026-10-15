@@ -87,7 +87,13 @@ const PANE_MARKUP = `
             <section data-analysis-section="kelly">
                 <div class="kelly-card">
                     <div class="block-header"><h3>Kelly Criterion Position Sizing</h3></div>
-                    <canvas id="kellyCurveCanvas" width="600" height="200"></canvas>
+                    <canvas
+                        id="kellyCurveCanvas"
+                        width="1200"
+                        height="400"
+                        role="img"
+                        aria-label="Kelly curve"
+                    ></canvas>
                     <div id="kellyMetrics" class="badge-row"></div>
                 </div>
             </section>
@@ -95,7 +101,13 @@ const PANE_MARKUP = `
                 <div class="risk-sim">
                     <div class="block-header"><h3>Monte Carlo Risk Simulation</h3></div>
                     <div id="riskMetrics" class="card-row"></div>
-                    <canvas id="monteCarloCanvas" width="600" height="200"></canvas>
+                    <canvas
+                        id="monteCarloCanvas"
+                        width="1200"
+                        height="400"
+                        role="img"
+                        aria-label="Monte Carlo results"
+                    ></canvas>
                 </div>
             </section>
             <section data-analysis-section="belief">
@@ -1020,9 +1032,9 @@ function drawKellyMarker(
         ctx.save();
     }
     ctx.strokeStyle = color;
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 3;
     if (isDashed && typeof ctx.setLineDash === 'function') {
-        ctx.setLineDash([3, 3]);
+        ctx.setLineDash([6, 6]);
     }
     ctx.beginPath();
     ctx.moveTo(x, padTop);
@@ -1032,12 +1044,12 @@ function drawKellyMarker(
     ctx.fillStyle = color;
     ctx.beginPath();
     if (typeof ctx.arc === 'function') {
-        ctx.arc(x, y, 3.5, 0, Math.PI * 2);
+        ctx.arc(x, y, 7, 0, Math.PI * 2);
         ctx.fill();
     }
     if (typeof ctx.fillText === 'function') {
-        ctx.font = '10px "JetBrains Mono", monospace';
-        ctx.fillText(label, Math.min(x - 15, width - 60), padTop - 6);
+        ctx.font = '20px "JetBrains Mono", monospace';
+        ctx.fillText(label, Math.min(x - 30, width - 120), padTop - 12);
     }
     if (typeof ctx.restore === 'function') {
         ctx.restore();
@@ -1046,7 +1058,7 @@ function drawKellyMarker(
 
 function drawKellyCurvePath(ctx, toX, toY, g, maxF, pointsCount, padLeft, plotW, baselineY) {
     ctx.strokeStyle = PANE_CHART_COLORS.grid;
-    ctx.lineWidth = 1;
+    ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(padLeft, baselineY);
     ctx.lineTo(padLeft + plotW, baselineY);
@@ -1054,7 +1066,7 @@ function drawKellyCurvePath(ctx, toX, toY, g, maxF, pointsCount, padLeft, plotW,
 
     ctx.beginPath();
     ctx.strokeStyle = PANE_CHART_COLORS.line;
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 4;
     for (let i = 0; i <= pointsCount; i++) {
         const f = (i / pointsCount) * maxF;
         const y = toY(g(f));
@@ -1331,15 +1343,25 @@ function renderKellyCurve(config) {
     }
 
     const params = computeKellyParameters(config, metrics);
-    const padLeft = 45;
-    const padRight = 20;
-    const padTop = 25;
-    const padBottom = 25;
+    const padLeft = 90;
+    const padRight = 40;
+    const padTop = 50;
+    const padBottom = 50;
     const plotW = width - padLeft - padRight;
     const plotH = height - padTop - padBottom;
 
     const toX = (f) => padLeft + (f / params.maxF) * plotW;
     const toY = (val) => padTop + (1 - (val - params.minG) / params.rangeG) * plotH;
+
+    if (typeof ctx.fillText === 'function') {
+        // Muted y-axis min/max growth labels (2× backing store → 20px renders 10px)
+        ctx.fillStyle = PANE_CHART_COLORS.muted;
+        ctx.font = '20px "JetBrains Mono", monospace';
+        ctx.textAlign = 'right';
+        ctx.fillText(formatPercent(params.minG + params.rangeG), padLeft - 10, padTop + 18);
+        ctx.fillText(formatPercent(params.minG), padLeft - 10, padTop + plotH);
+        ctx.textAlign = 'left';
+    }
 
     if (typeof ctx.beginPath === 'function') {
         drawKellyCurvePath(ctx, toX, toY, params.g, params.maxF, 40, padLeft, plotW, toY(params.r));
@@ -1367,6 +1389,13 @@ function renderKellyCurve(config) {
         params.fullKelly,
         params.scaledKelly,
         params.currentWeight
+    );
+
+    kellyCurveCanvas.setAttribute(
+        'aria-label',
+        `Kelly curve — full ${formatPercent(params.fullKelly)}, scaled ½K ` +
+            `${formatPercent(params.scaledKelly)}, current weight ` +
+            `${formatPercent(params.currentWeight)}.`
     );
 }
 
@@ -2024,8 +2053,8 @@ function _renderMonteCarloHistogram(result, ctx, width, height) {
 
         ctx.fillStyle = PANE_CHART_COLORS.red;
         counts.forEach((count, i) => {
-            const barHeight = (count / maxCount) * (height - 20);
-            ctx.fillRect(i * barWidth, height - barHeight, barWidth - 1, barHeight);
+            const barHeight = (count / maxCount) * (height - 40);
+            ctx.fillRect(i * barWidth, height - barHeight, barWidth - 2, barHeight);
         });
     }
 }
@@ -2033,10 +2062,10 @@ function _renderMonteCarloHistogram(result, ctx, width, height) {
 function _renderMonteCarloFanChart(result, ctx, width, height) {
     if (result.fanChart && result.fanChart.length > 1 && typeof ctx.beginPath === 'function') {
         const fan = result.fanChart;
-        const padL = 40;
-        const padR = 20;
-        const padT = 20;
-        const padB = 25;
+        const padL = 80;
+        const padR = 40;
+        const padT = 40;
+        const padB = 50;
         const plotW = width - padL - padR;
         const plotH = height - padT - padB;
 
@@ -2070,7 +2099,7 @@ function _renderMonteCarloFanChart(result, ctx, width, height) {
         ctx.fill();
 
         ctx.strokeStyle = PANE_CHART_COLORS.green;
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 4;
         ctx.beginPath();
         ctx.moveTo(getX(0), getY(fan[0].median));
         for (let i = 1; i < fan.length; i++) {
@@ -2080,11 +2109,11 @@ function _renderMonteCarloFanChart(result, ctx, width, height) {
 
         if (typeof ctx.fillText === 'function') {
             ctx.fillStyle = PANE_CHART_COLORS.muted;
-            ctx.font = '10px "JetBrains Mono", monospace';
+            ctx.font = '20px "JetBrains Mono", monospace';
             ctx.fillText(
                 `Fan Envelope (P5–P95) · ${result.runCount || 10000} paths`,
-                padL + 10,
-                padT + 12
+                padL + 20,
+                padT + 24
             );
         }
     }
@@ -2101,6 +2130,13 @@ function renderMonteCarloResults(result) {
         ctx,
         width,
         height
+    );
+
+    monteCarloCanvas.setAttribute(
+        'aria-label',
+        `Terminal price histogram — median ${formatCurrency(result.median)}, ` +
+            `VaR(95%) ${formatCurrency(result.VaR_95)}, ` +
+            `${result.runCount || 10000} paths.`
     );
 }
 function aggregateScenarios(configs, horizon) {
