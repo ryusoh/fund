@@ -120,6 +120,49 @@ describe('analysis lab pane rendering', () => {
         expect(document.getElementById('paneContext').textContent).toContain('No tickers loaded');
     });
 
+    it('marks the active symbol and shows the function/as-of meta in the strip', async () => {
+        const mockIndex = { tickers: [{ symbol: 'AAPL', path: 'aapl.json' }] };
+        const mockHoldings = { AAPL: { shares: 10 } };
+        const mockAapl = {
+            symbol: 'AAPL',
+            name: 'Apple',
+            market: { price: 150 },
+            meta: { asOf: '2026-10-01T00:00:00Z' },
+            scenarios: [{ id: 'base', prob: 1, multiple: 2 }],
+        };
+        const fetchMock = jest.fn((url) => {
+            const u = url.toString();
+            if (u.includes('index.json')) {
+                return Promise.resolve({ ok: true, json: async () => mockIndex });
+            }
+            if (u.includes('holdings_details.json')) {
+                return Promise.resolve({ ok: true, json: async () => mockHoldings });
+            }
+            if (u.includes('aapl.json')) {
+                return Promise.resolve({ ok: true, json: async () => mockAapl });
+            }
+            if (u.includes('.md')) {
+                return Promise.resolve({ ok: true, text: async () => '' });
+            }
+            return Promise.resolve({ ok: true, json: async () => ({}) });
+        });
+
+        const { lab } = await setupPane(fetchMock);
+
+        const active = document.querySelector('.context-symbol.active');
+        expect(active).not.toBeNull();
+        expect(active.getAttribute('aria-current')).toBe('true');
+        expect(document.querySelectorAll('.context-symbol[aria-current="true"]').length).toBe(1);
+
+        lab.setActiveAnalysisSymbol('AAPL');
+        const meta = document.getElementById('contextMeta');
+        expect(meta.textContent).toContain('OVERVIEW');
+        expect(meta.textContent).toContain('2026-10-01');
+
+        lab.showAnalysisSection('kelly');
+        expect(meta.textContent).toContain('KELLY');
+    });
+
     it('handles empty configs and shows the context-strip warning', async () => {
         const mockIndex = {
             tickers: [],

@@ -1798,15 +1798,50 @@ function renderContextStrip() {
     others.forEach((config) => {
         appendContextSymbol(config);
     });
+
+    const meta = document.createElement('span');
+    meta.className = 'context-meta';
+    meta.id = 'contextMeta';
+    contextEl.appendChild(meta);
+    updateContextMeta();
 }
 
 function appendContextSymbol(config) {
     const span = document.createElement('span');
     const isActive = config.symbol === state.activeSymbol;
     span.className = `context-symbol${isActive ? ' active' : ''}`;
+    if (isActive) {
+        span.setAttribute('aria-current', 'true');
+    }
     span.textContent = config.symbol;
     span.title = `${config.name} · ${formatPercent(config.weight)}`;
     contextEl.appendChild(span);
+}
+
+const SECTION_LABELS = {
+    overview: 'OVERVIEW',
+    scenarios: 'SCENARIOS',
+    value: 'VALUE',
+    kelly: 'KELLY',
+    mc: 'MONTE CARLO',
+    belief: 'BELIEF',
+    evidence: 'EVIDENCE',
+    predictions: 'PREDICTIONS',
+    journal: 'JOURNAL',
+};
+
+// Right side of the context strip: the active function code and the as-of
+// date of the underlying config data (Bloomberg function-screen chrome).
+function updateContextMeta() {
+    const meta = paneRoot && paneRoot.querySelector('#contextMeta');
+    if (!meta) {
+        return;
+    }
+    const config = state.configs.find((cfg) => cfg.symbol === state.activeSymbol);
+    const asOf = config && config.meta ? config.meta.asOf : null;
+    const asOfText = typeof asOf === 'string' && asOf ? asOf.slice(0, 10) : '—';
+    const func = SECTION_LABELS[state.activeSection] || state.activeSection.toUpperCase();
+    meta.textContent = `${func} · ${asOfText}`;
 }
 
 function renderActiveTicker() {
@@ -2606,6 +2641,7 @@ export function showAnalysisSection(name) {
     paneRoot.querySelectorAll('[data-analysis-section]').forEach((section) => {
         section.classList.toggle('is-hidden', section.dataset.analysisSection !== target);
     });
+    updateContextMeta();
 }
 
 export function setActiveAnalysisSymbol(symbol) {

@@ -76,6 +76,11 @@
     color: var(--muted-text);
 }
 
+.analysis-pane .context-meta {
+    margin-left: auto;
+    color: var(--muted-text);
+}
+
 /* Shared empty / loading / error states — one class family, no inline styles */
 .analysis-pane .pane-empty {
     margin: 0;
