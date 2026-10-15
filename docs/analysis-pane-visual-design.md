@@ -544,7 +544,7 @@ here so the doc stays the single source of truth):
 
 Preamble (run for every order, must stay green):
 
-```
+```sh
 npx eslint js/pages/analysis/lab.js js/transactions/terminal/handlers/analysis.js tests/js/pages/analysis tests/js/transactions/terminal/handlers/analysis.test.js
 npx stylelint css/terminal/analysis.css
 npx jest tests/js/pages/analysis tests/js/transactions/terminal/handlers/analysis.test.js
@@ -709,14 +709,14 @@ weight Z%.`
   `.prediction-badge-row` > `.prediction-badge` (Brier) and the existing
   `.prediction-stale-badge`; empty state → `.pane-empty`; each row becomes
   claim line + muted meta line: `.prediction-claim` = claim text,
-  `.prediction-meta` = `Target 2026-12-31 · 65% · ` status text (the status
+  `.prediction-meta` = `Target 2026-12-31 · 65% ·` status text (the status
   chip keeps its `.prediction-status` class and text). Row keeps
   `.prediction-item` but stacks the two lines (CSS: flex-direction column,
   align-items flex-start).
 - **Journal (design: Entry N of M context).** **Find** (`renderDecisionJournal`
   ~1691-1734): inline-styled h4, empty `<p>`, `sitDiv`, `altDiv`.
   **Change:** h4 → `.journal-title`; empty → `.pane-empty`; `action-meta`
-  gains prefix `Entry N of M · ` from the journal array length/index; sitDiv →
+  gains prefix `Entry N of M ·` from the journal array length/index; sitDiv →
   `.journal-situation`; altDiv → `.journal-alternatives`. (`.action-meta` gets
   its first CSS rule here — G12.)
 - **Find** (analysis.css): no rules for the new classes. **Change:** add
