@@ -3,7 +3,7 @@
     "name": "Aehr Test Systems",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-10-14T13:06:06.839136+00:00",
+        "asOf": "2026-10-15T12:52:19.204786+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -28,29 +28,29 @@
         }
     },
     "market": {
-        "price": 77.51,
-        "eps": -0.23,
+        "price": 71.49,
+        "eps": -0.21,
         "forwardEps": 1.3833,
         "pe": null,
-        "forwardPe": 56.0315,
+        "forwardPe": 51.6796,
         "beta": 3.484,
-        "marketCap": 2531441408.0,
+        "marketCap": 2334830848.0,
         "currency": "USD",
-        "marketDataUpdatedAt": "2026-10-14T13:06:06.647715+00:00",
-        "pegRatio": 0.74,
-        "enterpriseValue": 2421935104.0,
+        "marketDataUpdatedAt": "2026-10-15T12:52:18.905625+00:00",
+        "pegRatio": 0.73,
+        "enterpriseValue": 2225560064.0,
         "ebitda": -11344000.0,
         "dividendYield": 0.0,
-        "fiftyDayAverage": 97.6994,
-        "twoHundredDayAverage": 71.9179,
-        "averageVolume": 2860453.0,
-        "averageDailyVolume10Day": 2501310.0,
+        "fiftyDayAverage": 96.9314,
+        "twoHundredDayAverage": 72.168,
+        "averageVolume": 2707235.0,
+        "averageDailyVolume10Day": 2672640.0,
         "fiftyTwoWeekHigh": 147.4,
         "fiftyTwoWeekLow": 18.7,
-        "evToEbitda": -213.4992
+        "evToEbitda": -196.1883
     },
     "risk": {
-        "volatility": 1.2467,
+        "volatility": 1.2479,
         "estimateSource": "historical",
         "correlations": null
     },
@@ -70,6 +70,7 @@
             "id": "bull",
             "name": "Bull – AI Burn-In Standard + SiC Recovery",
             "prob": 0.25,
+            "macroState": null,
             "growth": {
                 "epsCagr": 0.35,
                 "epsCagrSigma": null
@@ -84,6 +85,7 @@
             "id": "base",
             "name": "Base – Guide Met, Then Deceleration",
             "prob": 0.45,
+            "macroState": null,
             "growth": {
                 "epsCagr": 0.2,
                 "epsCagrSigma": null
@@ -98,6 +100,7 @@
             "id": "bear",
             "name": "Bear – Backlog Evaporates / Burn-In Intensity Falls",
             "prob": 0.3,
+            "macroState": null,
             "growth": {
                 "epsCagr": 0.05,
                 "epsCagrSigma": null

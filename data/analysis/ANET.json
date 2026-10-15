@@ -3,7 +3,7 @@
     "name": "Arista Networks",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-10-14T13:06:07.305728+00:00",
+        "asOf": "2026-10-15T12:52:19.578438+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -29,28 +29,28 @@
     },
     "market": {
         "forwardEps": 5.2169,
-        "pe": 64.5173,
-        "forwardPe": 39.2037,
+        "pe": 61.6467,
+        "forwardPe": 37.4593,
         "beta": 1.605,
-        "marketCap": 257945681920.0,
-        "enterpriseValue": 244602372096.0,
+        "marketCap": 246468526080.0,
+        "enterpriseValue": 233125216256.0,
         "ebitda": 4639600128.0,
         "currency": "USD",
         "fiftyTwoWeekHigh": 217.41,
         "fiftyTwoWeekLow": 114.52,
-        "marketDataUpdatedAt": "2026-10-14T13:06:07.134150+00:00",
-        "evToEbitda": 52.7206,
+        "marketDataUpdatedAt": "2026-10-15T12:52:19.421588+00:00",
+        "evToEbitda": 50.2468,
         "eps": 3.17,
-        "price": 204.52,
-        "fiftyDayAverage": 198.867,
-        "twoHundredDayAverage": 161.8387,
-        "averageVolume": 6043181.0,
-        "averageDailyVolume10Day": 4927200.0,
-        "pegRatio": 1.58,
+        "price": 195.42,
+        "fiftyDayAverage": 198.9652,
+        "twoHundredDayAverage": 162.1566,
+        "averageVolume": 6009510.0,
+        "averageDailyVolume10Day": 5031400.0,
+        "pegRatio": 1.53,
         "dividendYield": 0.0
     },
     "risk": {
-        "volatility": 0.5318,
+        "volatility": 0.5329,
         "estimateSource": "historical",
         "correlations": null
     },
@@ -70,6 +70,7 @@
             "id": "bull",
             "name": "Bull – AI Ethernet Champion",
             "prob": 0.4,
+            "macroState": null,
             "growth": {
                 "epsCagr": 0.28,
                 "epsCagrSigma": null
@@ -84,6 +85,7 @@
             "id": "base",
             "name": "Base – Strong but Shared AI Winner",
             "prob": 0.5,
+            "macroState": null,
             "growth": {
                 "epsCagr": 0.18,
                 "epsCagrSigma": null
@@ -98,6 +100,7 @@
             "id": "bear",
             "name": "Bear – Capex Hangover & Competition Bite",
             "prob": 0.1,
+            "macroState": null,
             "growth": {
                 "epsCagr": 0.08,
                 "epsCagrSigma": null

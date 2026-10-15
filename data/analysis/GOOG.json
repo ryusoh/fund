@@ -3,7 +3,7 @@
     "name": "Alphabet",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-10-14T13:06:08.293943+00:00",
+        "asOf": "2026-10-15T12:52:20.358864+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -28,29 +28,29 @@
         }
     },
     "market": {
-        "forwardEps": 15.3198,
-        "pe": 17.5374,
-        "forwardPe": 22.815,
+        "forwardEps": 15.2517,
+        "pe": 17.5332,
+        "forwardPe": 22.5318,
         "beta": 1.211,
-        "marketCap": 4274606833664.0,
-        "enterpriseValue": 4170969513984.0,
+        "marketCap": 4202817126400.0,
+        "enterpriseValue": 4099179544576.0,
         "ebitda": 173164003328.0,
         "dividendYield": 0.25,
         "currency": "USD",
         "fiftyTwoWeekHigh": 404.47,
         "fiftyTwoWeekLow": 244.67,
-        "marketDataUpdatedAt": "2026-10-14T13:06:08.131774+00:00",
-        "evToEbitda": 24.0868,
-        "eps": 19.93,
-        "price": 349.52,
-        "fiftyDayAverage": 342.7782,
-        "twoHundredDayAverage": 338.7195,
-        "averageVolume": 17878128.0,
-        "averageDailyVolume10Day": 15168090.0,
+        "marketDataUpdatedAt": "2026-10-15T12:52:20.190916+00:00",
+        "evToEbitda": 23.6722,
+        "eps": 19.6,
+        "price": 343.65,
+        "fiftyDayAverage": 342.1442,
+        "twoHundredDayAverage": 338.863,
+        "averageVolume": 17874728.0,
+        "averageDailyVolume10Day": 14748140.0,
         "pegRatio": 1.23
     },
     "risk": {
-        "volatility": 0.3101,
+        "volatility": 0.3099,
         "estimateSource": "historical",
         "correlations": null
     },
@@ -70,6 +70,7 @@
             "id": "bull",
             "name": "Bull",
             "prob": 0.2,
+            "macroState": null,
             "growth": {
                 "epsCagr": 0.15,
                 "epsCagrSigma": null
@@ -84,6 +85,7 @@
             "id": "base",
             "name": "Base",
             "prob": 0.6,
+            "macroState": null,
             "growth": {
                 "epsCagr": 0.1,
                 "epsCagrSigma": null
@@ -98,6 +100,7 @@
             "id": "bear",
             "name": "Bear",
             "prob": 0.2,
+            "macroState": null,
             "growth": {
                 "epsCagr": 0.04,
                 "epsCagrSigma": null

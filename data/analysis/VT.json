@@ -3,7 +3,7 @@
     "name": "Vanguard Total World Index Fund",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-10-14T13:06:09.195159+00:00",
+        "asOf": "2026-10-15T12:52:21.340669+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -28,21 +28,21 @@
         }
     },
     "market": {
-        "pe": 20.6448,
+        "pe": 20.3747,
         "dividendYield": 1.53,
         "currency": "USD",
         "fiftyTwoWeekHigh": 162.71,
         "fiftyTwoWeekLow": 133.65,
-        "marketDataUpdatedAt": "2026-10-14T13:06:09.013306+00:00",
-        "price": 159.76,
+        "marketDataUpdatedAt": "2026-10-15T12:52:21.156080+00:00",
+        "price": 157.67,
         "eps": 6.22,
-        "fiftyDayAverage": 160.0632,
-        "twoHundredDayAverage": 151.9322,
-        "averageVolume": 2524832.0,
-        "averageDailyVolume10Day": 3062220.0
+        "fiftyDayAverage": 160.0076,
+        "twoHundredDayAverage": 152.0081,
+        "averageVolume": 2553446.0,
+        "averageDailyVolume10Day": 2856770.0
     },
     "risk": {
-        "volatility": 0.1391,
+        "volatility": 0.1397,
         "estimateSource": "historical",
         "correlations": null
     },
@@ -62,6 +62,7 @@
             "id": "bull",
             "name": "Bull",
             "prob": 0.2,
+            "macroState": null,
             "growth": {
                 "epsCagr": 0.08,
                 "epsCagrSigma": null
@@ -76,6 +77,7 @@
             "id": "base",
             "name": "Base",
             "prob": 0.6,
+            "macroState": null,
             "growth": {
                 "epsCagr": 0.05,
                 "epsCagrSigma": null
@@ -90,6 +92,7 @@
             "id": "bear",
             "name": "Bear",
             "prob": 0.2,
+            "macroState": null,
             "growth": {
                 "epsCagr": 0.02,
                 "epsCagrSigma": null

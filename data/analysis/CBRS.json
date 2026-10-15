@@ -3,7 +3,7 @@
     "name": "Cerebras Systems",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-10-14T13:06:07.804077+00:00",
+        "asOf": "2026-10-15T12:52:19.961711+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -28,29 +28,29 @@
         }
     },
     "market": {
-        "price": 149.085,
-        "eps": -5.14,
+        "price": 141.48,
+        "eps": -4.88,
         "forwardEps": 1.2737,
         "pe": null,
-        "forwardPe": 117.0506,
+        "forwardPe": 111.0797,
         "beta": null,
-        "marketCap": 35417239552.0,
+        "marketCap": 33610559488.0,
         "currency": "USD",
-        "marketDataUpdatedAt": "2026-10-14T13:06:07.643805+00:00",
+        "marketDataUpdatedAt": "2026-10-15T12:52:19.801683+00:00",
         "pegRatio": null,
-        "enterpriseValue": 28982759424.0,
+        "enterpriseValue": 27176085504.0,
         "ebitda": -484790016.0,
         "dividendYield": 0.0,
-        "fiftyDayAverage": 196.8526,
-        "twoHundredDayAverage": 208.5421,
-        "averageVolume": 7338978.0,
-        "averageDailyVolume10Day": 11238190.0,
+        "fiftyDayAverage": 195.1392,
+        "twoHundredDayAverage": 207.9094,
+        "averageVolume": 7448767.0,
+        "averageDailyVolume10Day": 11011660.0,
         "fiftyTwoWeekHigh": 386.34,
-        "fiftyTwoWeekLow": 142.07,
-        "evToEbitda": -59.7842
+        "fiftyTwoWeekLow": 139.905,
+        "evToEbitda": -56.0574
     },
     "risk": {
-        "volatility": 1.1526,
+        "volatility": 1.1493,
         "estimateSource": "historical",
         "correlations": null
     },
@@ -70,6 +70,7 @@
             "id": "bull",
             "name": "Bull – OpenAI MRA Delivers, Wafer-Scale Decode Wins",
             "prob": 0.25,
+            "macroState": null,
             "growth": {
                 "epsCagr": 0.52,
                 "epsCagrSigma": null
@@ -84,6 +85,7 @@
             "id": "base",
             "name": "Base – Committed Capacity Delivers, Optionality Lapses",
             "prob": 0.4,
+            "macroState": null,
             "growth": {
                 "epsCagr": 0.27,
                 "epsCagrSigma": null
@@ -98,6 +100,7 @@
             "id": "bear",
             "name": "Bear – OpenAI Entanglement Breaks / Decode Reverts to GPU",
             "prob": 0.35,
+            "macroState": null,
             "growth": {
                 "epsCagr": -0.1,
                 "epsCagrSigma": null
