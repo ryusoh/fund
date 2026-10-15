@@ -557,6 +557,9 @@ assertions in the same commit.
 
 **Files:** `js/pages/analysis/lab.js`, `css/terminal/analysis.css`
 
+- **Find** (`renderSummary` ~889-895): `No metrics available` div with inline
+  `color`/`padding`. **Change:** `className = 'pane-empty'`, inline styles
+  deleted.
 - **Find** (lab.js, `initAnalysisPane`, ~2591-2609):
   `loadingDiv.style.color = 'white';` and `errDiv.style.color = 'red';`
   **Change:** drop both inline styles; loading div gets
