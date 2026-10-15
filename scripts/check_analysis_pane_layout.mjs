@@ -192,6 +192,22 @@ async function main() {
             overflow: mcAfter.scroll - mcAfter.client,
         });
 
+        // Instrument validation: the fit assertion above is only meaningful
+        // if the stage is actually constrained by the pane. Before the
+        // .lab-container contract, the stage grew with content and every
+        // scroll == client check passed vacuously. A content-driven stage has
+        // per-section heights; a constrained one is identical every visit.
+        const clients = results.map((r) => r.client);
+        const spread = Math.max(...clients) - Math.min(...clients);
+        if (spread > 1) {
+            throw new Error(
+                `analysis stage height varies across views (${Math.min(...clients)}–` +
+                    `${Math.max(...clients)}px) — the stage is not constrained by the ` +
+                    'pane, so the viewport-fit assertions above were vacuous. ' +
+                    'The .lab-container/stage flex contract is broken.'
+            );
+        }
+
         console.log('analysis-pane viewport-fit gate: PASS');
         for (const r of results) {
             console.log(

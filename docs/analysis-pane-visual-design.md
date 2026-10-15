@@ -965,7 +965,10 @@ stage.clientHeight + 1` after each view. Exits non-zero on violation, so
   scenarios intentionally lack growth/valuation blocks, so `analysis mc` in
   PORT context renders the worker's error pane, which is still a layout
   surface the gate measures; the full 10k-path render is gated in the anet
-  context.
+  context. The gate also validates its instrument: it fails if the stage's
+  `clientHeight` varies across views, because an unconstrained (content-driven)
+  stage makes every `scroll <= client` assertion vacuously true — the exact
+  trap this gate fell into before the `.lab-container` contract existed.
 
 Visual note (human review): the elastic contract enlarges the Kelly canvas
 and both MC canvases to fill leftover space — a deliberate change from the
