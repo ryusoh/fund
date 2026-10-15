@@ -898,7 +898,16 @@ stacked canvases simply added up. The structural fix gives the active
 section a definite height and makes every graphical region elastic, so the
 browser — not the author — distributes space:
 
-- `.output-grid` gets `flex: 1 1 auto; min-height: 0` inside the
+- `.lab-container` (the wrapper `buildPaneDom` appends) gets
+  `display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0`, and
+  `.analysis-stage` gets `flex: 1 1 auto` inside it. This is the load-bearing
+  link: the pane root is a `.chart-card` flex column with a definite desktop
+  height (`min(clamp(320px, 50vh, 480px), calc(100vh - 260px))` from
+  `css/terminal/responsive.css`) and `overflow: hidden`. Without the wrapper
+  contract the wrapper grew with content and the card clipped it silently —
+  no scrollbar, lines just vanished. That, not any single section's content,
+  was the root cause of "lines out of the viewport".
+- `.output-grid` gets `flex: 1 1 auto; min-height: 0` inside the now
   height-definite `.analysis-stage`, and
   `section[data-analysis-section]` gets `height: 100%` — the active
   section's box equals the stage's content box.
@@ -907,9 +916,14 @@ browser — not the author — distributes space:
   share whatever space the text content leaves, and `object-fit` preserves
   the backing-store aspect ratio. They cannot push text out of the viewport
   because they only receive leftover space.
-- `.timeline-container` becomes elastic (`flex: 1 1 auto; min-height: 0`)
-  instead of a fixed `max-height: 260px`, so the evidence view follows the
-  same contract.
+- Growing text lists get the same containment as the timeline:
+  `.overview-lists` (Scenarios + Value Bands on the overview) and
+  `.scenario-block .card-row` (result cards) are elastic scroll regions
+  (`flex: 1 1 auto; min-height: 0; overflow-y: auto`). `.timeline-container`
+  likewise becomes elastic instead of a fixed `max-height: 260px`.
+- The pane's design floor is 320px, reached at viewport height 580px; below
+  that the shared terminal card rule shrinks every card further, which is
+  outside this pane's contract.
 
 Drawing code is unaffected: canvas backing stores stay fixed-attribute
 (1200×400 / 1200×240), renders never read client geometry — the
@@ -942,12 +956,16 @@ trusted.
 - **Layout gate** (`scripts/check_analysis_pane_layout.mjs`, wired as
   `make analysis-layout-check`): drives a real headless Chromium through
   every function view (`analysis` overview/scenarios/value/kelly on PORT,
-  then `analysis anet` + belief/evidence/predictions/journal, then
+  then belief/evidence/predictions/journal, then `analysis anet` +
   `analysis mc` — polling for the worker's stat cards) at the minimum
-  supported desktop viewport (1280×680, which puts the pane at its 320px
-  floor — the worst case), asserting `stage.scrollHeight <=
+  supported desktop viewport (1280×580, which floors the pane at its 320px
+  design minimum), asserting `stage.scrollHeight <=
 stage.clientHeight + 1` after each view. Exits non-zero on violation, so
-  CI can hold the line the same way unit tests do.
+  CI can hold the line the same way unit tests do. Note: the PORT aggregate
+  scenarios intentionally lack growth/valuation blocks, so `analysis mc` in
+  PORT context renders the worker's error pane, which is still a layout
+  surface the gate measures; the full 10k-path render is gated in the anet
+  context.
 
 Visual note (human review): the elastic contract enlarges the Kelly canvas
 and both MC canvases to fill leftover space — a deliberate change from the

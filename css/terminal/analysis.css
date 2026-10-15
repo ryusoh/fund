@@ -78,6 +78,17 @@
     color: var(--red-color);
 }
 
+/* The pane root is a .chart-card flex column with a definite desktop height
+   and overflow:hidden. Without this contract the wrapper grows with content
+   and the card clips it silently — no scrollbar, lines just vanish (the
+   original "out of the viewport" report). */
+.analysis-pane .lab-container {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
 /* Stage — the scrollable body of the pane */
 .analysis-pane .analysis-stage {
     padding: 14px 20px 18px;
@@ -85,6 +96,7 @@
     flex-direction: column;
     gap: 14px;
     overflow-y: auto;
+    flex: 1 1 auto;
     min-height: 0;
 }
 
@@ -97,10 +109,18 @@
     min-height: 0;
 }
 
+/* Viewport-fit contract: the grid fills the height-definite stage, so the
+   active section has a definite box equal to the stage's content box. */
+.analysis-pane .output-grid {
+    flex: 1 1 auto;
+}
+
 .analysis-pane section[data-analysis-section] {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    height: 100%;
+    min-height: 0;
 }
 
 /* Section headers — small caps, one hairline */
@@ -156,6 +176,28 @@
     color: var(--text-color);
     white-space: nowrap;
     font-variant-numeric: tabular-nums;
+}
+
+/* Overview landing: the two lists below the summary strip share one elastic
+   scroll region, so a long scenario list can never push the section past the
+   stage (same containment pattern as the evidence timeline). */
+.analysis-pane .overview-lists {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+/* Scenario Analysis: header stays, the result-card list scrolls. */
+.analysis-pane .scenario-block {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.analysis-pane .scenario-block .card-row {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
 }
 
 /* Scenario rows — flat list, hairline separators, metrics flow inline */
@@ -247,10 +289,15 @@
     text-align: right;
 }
 
-/* Kelly / Monte Carlo — canvas scales to the pane width */
-.analysis-pane canvas {
+/* Kelly / Monte Carlo — pane canvases are elastic: they share whatever
+   space the text content leaves inside the definite-height section, so
+   they can never push content out of the viewport. object-fit preserves
+   the backing-store aspect ratio. */
+.analysis-pane canvas.pane-canvas {
     width: 100%;
-    height: auto;
+    flex: 1 1 0;
+    min-height: 0;
+    object-fit: contain;
 }
 
 .analysis-pane .kelly-card,
@@ -386,9 +433,11 @@
     text-decoration: underline;
 }
 
-/* Evidence timeline — flat entries with a status tick on the left */
+/* Evidence timeline — flat entries with a status tick on the left; elastic
+   like the canvases so the evidence view follows the viewport-fit contract */
 .analysis-pane .timeline-container {
-    max-height: 260px;
+    flex: 1 1 auto;
+    min-height: 0;
     overflow-y: auto;
     display: flex;
     flex-direction: column;

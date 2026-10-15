@@ -107,10 +107,12 @@ const PANE_MARKUP = `
         <div class="output-grid">
             <section data-analysis-section="overview">
                 <div class="summary-stats" id="summaryStats"></div>
-                <div class="block-header"><h3>Scenarios</h3></div>
-                <div id="overviewScenarios"></div>
-                <div class="block-header"><h3>Value Bands</h3></div>
-                <dl id="overviewValueBands"></dl>
+                <div class="overview-lists">
+                    <div class="block-header"><h3>Scenarios</h3></div>
+                    <div id="overviewScenarios"></div>
+                    <div class="block-header"><h3>Value Bands</h3></div>
+                    <dl id="overviewValueBands"></dl>
+                </div>
             </section>
             <section data-analysis-section="scenarios">
                 <div class="scenario-block">
@@ -129,6 +131,7 @@ const PANE_MARKUP = `
                     <div class="block-header"><h3>Kelly Criterion Position Sizing</h3></div>
                     <canvas
                         id="kellyCurveCanvas"
+                        class="pane-canvas"
                         width="1200"
                         height="400"
                         role="img"
@@ -143,6 +146,7 @@ const PANE_MARKUP = `
                     <div id="riskMetrics" class="card-row"></div>
                     <canvas
                         id="monteCarloCanvas"
+                        class="pane-canvas"
                         width="1200"
                         height="240"
                         role="img"
@@ -150,6 +154,7 @@ const PANE_MARKUP = `
                     ></canvas>
                     <canvas
                         id="monteCarloFanCanvas"
+                        class="pane-canvas"
                         width="1200"
                         height="240"
                         role="img"
@@ -1940,6 +1945,7 @@ function renderActiveTicker() {
         p.textContent = 'Run simulation to see metrics.';
         riskMetricsEl.replaceChildren(p);
     }
+    checkPaneViewportFit();
 }
 
 // --- Bayesian Handlers ---
@@ -2294,6 +2300,7 @@ function renderMonteCarloResults(result) {
             `P5–P95 fan envelope — ${result.runCount || 10000} paths.`
         );
     }
+    checkPaneViewportFit();
 }
 function aggregateScenarios(configs, horizon) {
     const weightedConfigs = configs.filter((cfg) => Number(cfg.weight ?? 0) > 0);
@@ -2757,6 +2764,38 @@ function resolvePaneElements(rootEl) {
     overviewValueBandsEl = rootEl.querySelector('#overviewValueBands');
 }
 
+/**
+ * Viewport-fit guard (deterministic ensure/detect layer): the analysis-stage
+ * is a fixed-height flex column, so any section taller than the stage shows
+ * up as scrollHeight > clientHeight. A hidden subtree reports 0 sizes and
+ * cannot be measured — return null instead of guessing. See
+ * docs/analysis-pane-visual-design.md, "Viewport fit".
+ */
+export function checkPaneViewportFit() {
+    if (!paneRoot) {
+        return null;
+    }
+    const stage = paneRoot.querySelector('.analysis-stage');
+    if (!stage) {
+        return null;
+    }
+    const client = stage.clientHeight;
+    const scroll = stage.scrollHeight;
+    if (client === 0 || scroll === 0) {
+        // Hidden subtree (landmine: measurement during display:none is 0).
+        return null;
+    }
+    const overflow = scroll - client;
+    if (overflow > 1) {
+        logger.warn(
+            `Analysis pane layout: '${state.activeSection}' section is ${overflow}px ` +
+                `taller than the stage viewport (${scroll}px > ${client}px).`
+        );
+        return { section: state.activeSection, overflow };
+    }
+    return { section: state.activeSection, overflow: 0 };
+}
+
 export function showAnalysisSection(name) {
     const target = ANALYSIS_SECTIONS.includes(name) ? name : 'overview';
     state.activeSection = target;
@@ -2767,6 +2806,7 @@ export function showAnalysisSection(name) {
         section.classList.toggle('is-hidden', section.dataset.analysisSection !== target);
     });
     updateContextMeta();
+    checkPaneViewportFit();
 }
 
 export function setActiveAnalysisSymbol(symbol) {
@@ -2998,5 +3038,6 @@ export const __analysisLabTesting = {
     renderContextStrip,
     buildAnalysisSnapshot,
     syncPaneChartColors,
+    checkPaneViewportFit,
     PANE_CHART_COLORS,
 };

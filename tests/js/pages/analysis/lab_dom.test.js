@@ -210,4 +210,95 @@ describe('analysis lab pane controller', () => {
 
         expect(summary.textContent).toContain('$200.00');
     });
+
+    it('marks every pane canvas with the pane-canvas viewport-fit class', () => {
+        ['kellyCurveCanvas', 'monteCarloCanvas', 'monteCarloFanCanvas'].forEach((id) => {
+            const canvas = document.getElementById(id);
+            expect(canvas).not.toBeNull();
+            expect(canvas.classList.contains('pane-canvas')).toBe(true);
+        });
+    });
+
+    it('checkPaneViewportFit returns null when the stage has no measurable box', () => {
+        // jsdom reports 0 for clientHeight/scrollHeight — the hidden-subtree
+        // case must short-circuit to null instead of guessing.
+        expect(lab.checkPaneViewportFit()).toBeNull();
+    });
+
+    it('checkPaneViewportFit reports the overflow in px when content exceeds the stage', async () => {
+        const { logger } = await import('@utils/logger.js');
+        const warnSpy = jest.spyOn(logger, 'warn').mockImplementation(() => {});
+        const stage = document.querySelector('.analysis-stage');
+        Object.defineProperty(stage, 'clientHeight', { value: 400, configurable: true });
+        Object.defineProperty(stage, 'scrollHeight', { value: 500, configurable: true });
+
+        state.activeSection = 'mc';
+        const report = lab.checkPaneViewportFit();
+
+        expect(report).toEqual({ section: 'mc', overflow: 100 });
+        expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('100px'));
+        warnSpy.mockRestore();
+    });
+
+    it('checkPaneViewportFit reports zero overflow when the section fits the stage', () => {
+        const stage = document.querySelector('.analysis-stage');
+        Object.defineProperty(stage, 'clientHeight', { value: 450, configurable: true });
+        Object.defineProperty(stage, 'scrollHeight', { value: 449, configurable: true });
+
+        state.activeSection = 'kelly';
+        expect(lab.checkPaneViewportFit()).toEqual({ section: 'kelly', overflow: 0 });
+    });
+
+    it('checkPaneViewportFit runs after a section switch', async () => {
+        const { logger } = await import('@utils/logger.js');
+        const warnSpy = jest.spyOn(logger, 'warn').mockImplementation(() => {});
+        const stage = document.querySelector('.analysis-stage');
+        Object.defineProperty(stage, 'clientHeight', { value: 400, configurable: true });
+        Object.defineProperty(stage, 'scrollHeight', { value: 430, configurable: true });
+
+        lab.showAnalysisSection('belief');
+
+        expect(state.activeSection).toBe('belief');
+        expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('belief'));
+        warnSpy.mockRestore();
+    });
+});
+
+describe('analysis pane CSS viewport-fit contract', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const css = fs.readFileSync(path.resolve(process.cwd(), 'css/terminal/analysis.css'), 'utf8');
+    const normalized = css.replace(/\s+/g, ' ');
+
+    it('constrains pane canvases to the flex column instead of a fixed height', () => {
+        expect(normalized).toContain('canvas.pane-canvas');
+        expect(normalized).toContain('object-fit: contain');
+        expect(normalized).toMatch(/\.analysis-pane canvas\.pane-canvas[^}]*flex: 1 1 0/);
+        expect(normalized).toMatch(/\.analysis-pane canvas\.pane-canvas[^}]*min-height: 0/);
+    });
+
+    it('gives analysis sections full stage height with a zero min-height floor', () => {
+        expect(normalized).toMatch(/section\[data-analysis-section\][^}]*height: 100%/);
+        expect(normalized).toMatch(/section\[data-analysis-section\][^}]*min-height: 0/);
+    });
+
+    it('pins the lab wrapper and stage into the card flex column', () => {
+        // Without this, the wrapper grows with content and the card's
+        // overflow:hidden clips it silently — the detector has no scrollbar
+        // to observe.
+        expect(normalized).toMatch(/\.lab-container[^}]*flex: 1 1 auto/);
+        expect(normalized).toMatch(/\.lab-container[^}]*min-height: 0/);
+        expect(normalized).toMatch(/\.analysis-stage[^}]*flex: 1 1 auto/);
+    });
+
+    it('contains the overview and scenario lists in elastic scroll regions', () => {
+        expect(normalized).toMatch(/\.overview-lists[^}]*overflow-y: auto/);
+        expect(normalized).toMatch(/\.overview-lists[^}]*min-height: 0/);
+        expect(normalized).toMatch(/\.scenario-block[^}]*height: 100%/);
+        expect(normalized).toMatch(/\.scenario-block \.card-row[^}]*overflow-y: auto/);
+    });
+
+    it('lets the output grid absorb free stage height', () => {
+        expect(normalized).toMatch(/\.output-grid[^}]*flex: 1 1 auto/);
+    });
 });
