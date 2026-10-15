@@ -123,6 +123,11 @@ describe('analysis lab pane controller', () => {
         expect(state.monteCarloWorker).toBeNull();
     });
 
+    it('marks the pane scroll regions as keyboard-focusable', () => {
+        expect(document.querySelector('.analysis-stage').getAttribute('tabindex')).toBe('0');
+        expect(document.getElementById('evidenceTimeline').getAttribute('tabindex')).toBe('0');
+    });
+
     it('showAnalysisSection toggles section visibility and state', () => {
         lab.showAnalysisSection('kelly');
         expect(state.activeSection).toBe('kelly');

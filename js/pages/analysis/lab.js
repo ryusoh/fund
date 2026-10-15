@@ -67,7 +67,7 @@ const ANALYSIS_SECTIONS = [
 
 const PANE_MARKUP = `
     <div class="pane-context" id="paneContext"></div>
-    <div class="analysis-stage">
+    <div class="analysis-stage" tabindex="0">
         <div class="output-grid">
             <section data-analysis-section="overview">
                 <div class="summary-stats" id="summaryStats"></div>
@@ -110,7 +110,7 @@ const PANE_MARKUP = `
                 <div class="block-header" id="evidenceTimelineHeader">
                     <h3>Verified Evidence Log (.jsonl)</h3>
                 </div>
-                <div id="evidenceTimeline" class="timeline-container"></div>
+                <div id="evidenceTimeline" class="timeline-container" tabindex="0"></div>
             </section>
             <section data-analysis-section="predictions">
                 <div class="prediction-box" id="predictionsCard"></div>
