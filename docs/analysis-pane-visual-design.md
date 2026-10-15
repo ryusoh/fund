@@ -879,8 +879,76 @@ entries` variant when empty; generic line when the cache has no entry)
       `__analysisLabTesting` too.
 - **Find** (handler tests ~60-89): pinned generic-line expectations.
   **Change:** mock `buildAnalysisSnapshot` on the lab mock; assert delegation
-  with canned per-view strings; update the ticker-switch test to the
-  name · weight payload (mock `getActiveAnalysisConfig`); MC tests updated for
-  the median/symbol segment. Add `lab.test.js` coverage for the builder itself
-  (overview/scenarios/kelly/evidence-empty branches).
 - **Verify:** preamble.
+
+## Viewport fit — deterministic ensure / detect / test
+
+Post-WO experience (2026-10-15): the WO9 MC split pushed most of the MC view
+out of the pane, found by a human. That is the whack-a-mole pattern this
+section replaces with three deterministic layers. Invariant, stated once:
+**in the common case, the active section never makes `.analysis-stage`
+scroll — no element sits outside the pane viewport.** (Pathological data —
+e.g. 50 scenario cards — may still scroll by design; `.analysis-stage`'s
+`overflow-y: auto` stays as the safety net, per §4 above.)
+
+### Layer 1 — Ensure: a CSS layout contract overflow cannot violate
+
+Overflow happened because content height was unbounded: stat rows and
+stacked canvases simply added up. The structural fix gives the active
+section a definite height and makes every graphical region elastic, so the
+browser — not the author — distributes space:
+
+- `.output-grid` gets `flex: 1 1 auto; min-height: 0` inside the
+  height-definite `.analysis-stage`, and
+  `section[data-analysis-section]` gets `height: 100%` — the active
+  section's box equals the stage's content box.
+- Every pane canvas carries `class="pane-canvas"` and the rule
+  `flex: 1 1 0; min-height: 0; width: 100%; object-fit: contain` — canvases
+  share whatever space the text content leaves, and `object-fit` preserves
+  the backing-store aspect ratio. They cannot push text out of the viewport
+  because they only receive leftover space.
+- `.timeline-container` becomes elastic (`flex: 1 1 auto; min-height: 0`)
+  instead of a fixed `max-height: 260px`, so the evidence view follows the
+  same contract.
+
+Drawing code is unaffected: canvas backing stores stay fixed-attribute
+(1200×400 / 1200×240), renders never read client geometry — the
+hidden-measurement landmine stays sidestepped.
+
+### Layer 2 — Detect: a runtime measurement after every render
+
+`lab.js` exports `checkPaneViewportFit()`: it compares
+`.analysis-stage` `scrollHeight` to `clientHeight` and, when the stage is
+scrollable by more than 1px, logs a console warning naming the active
+section and the exact pixel overflow. It is called from
+`showAnalysisSection`, `renderActiveTicker`, and
+`renderMonteCarloResults` — i.e. after every state change that can alter
+layout. It returns `{ section, overflow }` (or `null` when the pane/element
+is not measurable) so tests can assert behavior deterministically.
+Zero-size subtrees (pane hidden) short-circuit: measurements on
+`display: none` trees are the hidden-measurement landmine and must not be
+trusted.
+
+### Layer 3 — Test: two gates, zero eyeballs
+
+- **Contract tests** (`tests/js/pages/analysis/lab_dom.test.js`): the
+  markup contract (every pane canvas carries `pane-canvas`; sections fill
+  the stage) and the stylesheet contract (the elastic rules above exist in
+  `css/terminal/analysis.css`) are asserted as strings/attributes. If
+  someone removes the mechanism, these fail without any browser.
+- **Behavior tests**: `checkPaneViewportFit` branches — hidden pane →
+  `null`; overflowing stage → `{ overflow }` + warning; fitting stage →
+  `overflow: 0`.
+- **Layout gate** (`scripts/check_analysis_pane_layout.mjs`, wired as
+  `make analysis-layout-check`): drives a real headless Chromium through
+  every function view (`analysis` overview/scenarios/value/kelly on PORT,
+  then `analysis anet` + belief/evidence/predictions/journal, then
+  `analysis mc` — polling for the worker's stat cards) at the minimum
+  supported desktop viewport (1280×680, which puts the pane at its 320px
+  floor — the worst case), asserting `stage.scrollHeight <=
+stage.clientHeight + 1` after each view. Exits non-zero on violation, so
+  CI can hold the line the same way unit tests do.
+
+Visual note (human review): the elastic contract enlarges the Kelly canvas
+and both MC canvases to fill leftover space — a deliberate change from the
+previous small fixed-aspect boxes.
