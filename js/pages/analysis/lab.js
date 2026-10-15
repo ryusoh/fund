@@ -888,8 +888,7 @@ function renderSummary(config) {
 
     if (!config || !config.metrics) {
         const div = document.createElement('div');
-        div.style.color = 'var(--text-muted)';
-        div.style.padding = '0 10px';
+        div.className = 'pane-empty';
         div.textContent = 'No metrics available';
         summaryStatsEl.appendChild(div);
         return;
@@ -1488,6 +1487,7 @@ async function renderEvidenceTimeline(config) {
     }
 
     let evidenceList = state.evidenceCache.get(config.symbol);
+    let fetchFailed = false;
     if (!evidenceList) {
         try {
             const text = await fetchText(`../data/analysis/${config.symbol}.evidence.jsonl`);
@@ -1495,13 +1495,21 @@ async function renderEvidenceTimeline(config) {
             state.evidenceCache.set(config.symbol, evidenceList);
         } catch {
             evidenceList = [];
+            fetchFailed = true;
         }
+    }
+
+    if (fetchFailed) {
+        const p = document.createElement('p');
+        p.className = 'pane-empty pane-empty--error';
+        p.textContent = 'Evidence log unavailable (fetch failed).';
+        evidenceTimelineEl.appendChild(p);
+        return;
     }
 
     if (!evidenceList || evidenceList.length === 0) {
         const p = document.createElement('p');
-        p.style.color = 'var(--text-muted)';
-        p.style.fontSize = '0.8rem';
+        p.className = 'pane-empty';
         p.textContent = 'No logged evidence entries on disk yet.';
         evidenceTimelineEl.appendChild(p);
         return;
@@ -1799,6 +1807,7 @@ function renderActiveTicker() {
     }
     if (riskMetricsEl) {
         const p = document.createElement('p');
+        p.className = 'pane-empty';
         p.textContent = 'Run simulation to see metrics.';
         riskMetricsEl.replaceChildren(p);
     }
@@ -1872,7 +1881,10 @@ export function runMonteCarloSimulation(paths = 10000) {
             }
             if (result && result.error) {
                 if (riskMetricsEl) {
-                    riskMetricsEl.replaceChildren(document.createTextNode(result.error));
+                    const p = document.createElement('p');
+                    p.className = 'pane-empty pane-empty--error';
+                    p.textContent = result.error;
+                    riskMetricsEl.replaceChildren(p);
                 }
                 resolve(null);
                 return;
@@ -1882,11 +1894,10 @@ export function runMonteCarloSimulation(paths = 10000) {
         };
         worker.onerror = function () {
             if (riskMetricsEl) {
-                riskMetricsEl.replaceChildren(
-                    document.createTextNode(
-                        'Monte Carlo simulation failed; see console for details.'
-                    )
-                );
+                const p = document.createElement('p');
+                p.className = 'pane-empty pane-empty--error';
+                p.textContent = 'Monte Carlo simulation failed; see console for details.';
+                riskMetricsEl.replaceChildren(p);
             }
             resolve(null);
         };
@@ -2590,9 +2601,8 @@ export async function initAnalysisPane(rootEl, { autoLoad = true } = {}) {
     try {
         if (summaryStatsEl) {
             const loadingDiv = document.createElement('div');
-            loadingDiv.style.color = 'white';
-            loadingDiv.style.padding = '10px';
-            loadingDiv.textContent = 'Loading...';
+            loadingDiv.className = 'pane-empty';
+            loadingDiv.textContent = 'Loading analysis data…';
             summaryStatsEl.replaceChildren(loadingDiv);
         }
         await buildConfigs();
@@ -2602,8 +2612,7 @@ export async function initAnalysisPane(rootEl, { autoLoad = true } = {}) {
         logger.error('Analysis init failed:', err);
         if (summaryStatsEl) {
             const errDiv = document.createElement('div');
-            errDiv.style.color = 'red';
-            errDiv.style.padding = '10px';
+            errDiv.className = 'pane-empty pane-empty--error';
             errDiv.textContent = `Error: ${err.message}`;
             summaryStatsEl.replaceChildren(errDiv);
         }

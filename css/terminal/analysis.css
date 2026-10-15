@@ -76,6 +76,18 @@
     color: var(--muted-text);
 }
 
+/* Shared empty / loading / error states — one class family, no inline styles */
+.analysis-pane .pane-empty {
+    margin: 0;
+    padding: 0 10px;
+    color: var(--muted-text);
+    font-size: 0.8rem;
+}
+
+.analysis-pane .pane-empty--error {
+    color: var(--red-color);
+}
+
 /* Stage — the scrollable body of the pane */
 .analysis-pane .analysis-stage {
     padding: 14px 20px 18px;

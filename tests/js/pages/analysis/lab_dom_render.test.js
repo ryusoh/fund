@@ -187,4 +187,29 @@ describe('analysis lab pane rendering', () => {
         expect(entries[0].classList.contains('superseded')).toBe(false);
         expect(entries[1].classList.contains('superseded')).toBe(true);
     });
+
+    it('renders a distinct error state when the evidence fetch fails', async () => {
+        const fetchMock = jest.fn(() => Promise.resolve({ ok: false }));
+        const { lab } = await setupPane(fetchMock, { autoLoad: false });
+        const { renderEvidenceTimeline, state } = lab.__analysisLabTesting;
+
+        state.evidenceCache.delete('ANET');
+        const config = { symbol: 'ANET', scenarios: [{ id: 'bull', name: 'Bull', prob: 1 }] };
+
+        await renderEvidenceTimeline(config);
+
+        const timeline = document.getElementById('evidenceTimeline');
+        const errorEl = timeline.querySelector('.pane-empty--error');
+        expect(errorEl).not.toBeNull();
+        expect(errorEl.textContent).toContain('Evidence log unavailable (fetch failed).');
+    });
+
+    it('renders a class-based error state when pane init fails', async () => {
+        const fetchMock = jest.fn(() => Promise.reject(new Error('network down')));
+        await setupPane(fetchMock);
+
+        const errEl = document.querySelector('#summaryStats .pane-empty--error');
+        expect(errEl).not.toBeNull();
+        expect(errEl.textContent).toContain('Error: network down');
+    });
 });
