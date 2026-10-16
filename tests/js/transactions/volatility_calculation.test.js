@@ -1,3 +1,6 @@
+jest.mock('../../../js/utils/smoothing.js', () => ({
+    smoothFinancialData: jest.fn((data) => data),
+}));
 import { jest } from '@jest/globals';
 import { drawVolatilityChart } from '../../../js/transactions/chart/renderers/volatility.js';
 import { transactionState } from '../../../js/transactions/state.js';

@@ -382,6 +382,7 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
 
         const shouldSmoothBalance =
             !filtersActive && balanceDataWithinRange.length > 2 && balanceSmoothingConfig;
+
         const balanceData = shouldSmoothBalance
             ? smoothFinancialData(
                   balanceDataWithinRange.map((item) => ({ x: item.date.getTime(), y: item.value })),

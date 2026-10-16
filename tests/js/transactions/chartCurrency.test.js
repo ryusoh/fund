@@ -109,7 +109,7 @@ describe('Regression: Currency Double Conversion in Balance Chart', () => {
         }));
 
         jest.doMock('../../../js/utils/smoothing.js', () => ({
-            smoothFinancialData: jest.fn((data) => data.map((p) => ({ x: p.x, y: p.y }))), // Identity pass-through
+            smoothFinancialData: jest.fn((data) => data), // Identity pass-through
         }));
 
         jest.doMock('../../../js/transactions/chart/renderers/yield.js', () => ({
@@ -457,7 +457,7 @@ describe('Regression: DrawdownAbs Currency Scaling', () => {
         }));
 
         jest.doMock('../../../js/utils/smoothing.js', () => ({
-            smoothFinancialData: jest.fn((data) => data.map((p) => ({ x: p.x, y: p.y }))),
+            smoothFinancialData: jest.fn((data) => data),
         }));
 
         global.document.getElementById = jest.fn((id) => {
