@@ -372,23 +372,45 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
             !contributionFromTransactions &&
             rawContributionData.length > 2 &&
             contributionSmoothingConfig;
-        const contributionData = shouldSmoothContribution
-            ? smoothFinancialData(
-                  rawContributionData.map((item) => ({ x: item.date.getTime(), y: item.amount })),
-                  contributionSmoothingConfig,
-                  true // preserveEnd - keep the last point unchanged
-              ).map((p) => ({ date: new Date(p.x), amount: p.y }))
-            : rawContributionData;
+        // Optimize array allocation and eliminate chained .map() for GC reduction
+        let contributionData;
+        if (shouldSmoothContribution) {
+            const rawMapped = new Array(rawContributionData.length);
+            for (let i = 0; i < rawContributionData.length; i++) {
+                rawMapped[i] = {
+                    x: rawContributionData[i].date.getTime(),
+                    y: rawContributionData[i].amount,
+                };
+            }
+            const smoothed = smoothFinancialData(rawMapped, contributionSmoothingConfig, true);
+            contributionData = new Array(smoothed.length);
+            for (let i = 0; i < smoothed.length; i++) {
+                contributionData[i] = { date: new Date(smoothed[i].x), amount: smoothed[i].y };
+            }
+        } else {
+            contributionData = rawContributionData;
+        }
 
         const shouldSmoothBalance =
             !filtersActive && balanceDataWithinRange.length > 2 && balanceSmoothingConfig;
-        const balanceData = shouldSmoothBalance
-            ? smoothFinancialData(
-                  balanceDataWithinRange.map((item) => ({ x: item.date.getTime(), y: item.value })),
-                  balanceSmoothingConfig,
-                  true // preserveEnd - keep the last point unchanged
-              ).map((p) => ({ date: new Date(p.x), value: p.y }))
-            : balanceDataWithinRange;
+
+        let balanceData;
+        if (shouldSmoothBalance) {
+            const rawMapped = new Array(balanceDataWithinRange.length);
+            for (let i = 0; i < balanceDataWithinRange.length; i++) {
+                rawMapped[i] = {
+                    x: balanceDataWithinRange[i].date.getTime(),
+                    y: balanceDataWithinRange[i].value,
+                };
+            }
+            const smoothed = smoothFinancialData(rawMapped, balanceSmoothingConfig, true);
+            balanceData = new Array(smoothed.length);
+            for (let i = 0; i < smoothed.length; i++) {
+                balanceData[i] = { date: new Date(smoothed[i].x), value: smoothed[i].y };
+            }
+        } else {
+            balanceData = balanceDataWithinRange;
+        }
 
         if (contributionData.length === 0 && balanceData.length === 0) {
             cachedPipeline = { empty: true };
