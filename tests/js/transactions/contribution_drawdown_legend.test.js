@@ -94,7 +94,11 @@ jest.mock('../../../js/transactions/chart/helpers.js', () => ({
 
 // mock utils/smoothing.js
 jest.mock('../../../js/utils/smoothing.js', () => ({
-    smoothFinancialData: (d) => d,
+    smoothFinancialData: (data) => {
+        return typeof data.map === 'function'
+            ? data.map((p) => ({ x: p.x, y: p.y }))
+            : data.slice();
+    },
 }));
 
 // mock utils.js
