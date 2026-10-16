@@ -94,7 +94,7 @@ jest.mock('../../../js/transactions/chart/helpers.js', () => ({
 
 // mock utils/smoothing.js
 jest.mock('../../../js/utils/smoothing.js', () => ({
-    smoothFinancialData: (d) => d,
+    smoothFinancialData: (data) => data,
 }));
 
 // mock utils.js
