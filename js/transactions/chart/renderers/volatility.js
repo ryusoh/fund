@@ -274,27 +274,13 @@ export async function drawVolatilityChart(ctx, chartManager, timestamp) {
 
         const rawPoints = series.data;
         const smoothingConfig = getSmoothingConfig('performance');
-        // Optimize array allocation and eliminate chained .map() for GC reduction
-        let points;
-        if (smoothingConfig) {
-            const rawMapped = new Array(rawPoints.length);
-            for (let j = 0; j < rawPoints.length; j++) {
-                rawMapped[j] = {
-                    x: parseLocalDate(rawPoints[j].date).getTime(),
-                    y: rawPoints[j].value,
-                };
-            }
-            const smoothed = smoothFinancialData(rawMapped, smoothingConfig, true);
-            points = new Array(smoothed.length);
-            for (let j = 0; j < smoothed.length; j++) {
-                points[j] = { date: parseLocalDate(smoothed[j].x), value: smoothed[j].y };
-            }
-        } else {
-            points = new Array(rawPoints.length);
-            for (let j = 0; j < rawPoints.length; j++) {
-                points[j] = { date: parseLocalDate(rawPoints[j].date), value: rawPoints[j].value };
-            }
-        }
+        const points = smoothingConfig
+            ? smoothFinancialData(
+                  rawPoints.map((p) => ({ x: parseLocalDate(p.date).getTime(), y: p.value })),
+                  smoothingConfig,
+                  true
+              ).map((p) => ({ date: parseLocalDate(p.x), value: p.y }))
+            : rawPoints.map((p) => ({ date: parseLocalDate(p.date), value: p.value }));
 
         const gradientStops = BENCHMARK_GRADIENTS[series.key];
         const resolvedColor = gradientStops

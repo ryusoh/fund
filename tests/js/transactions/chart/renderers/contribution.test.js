@@ -170,11 +170,7 @@ jest.mock('../../../../../js/transactions/utils.js', () => ({
 }));
 
 jest.mock('../../../../../js/utils/smoothing.js', () => ({
-    smoothFinancialData: jest.fn((data) => {
-        return typeof data.map === 'function'
-            ? data.map((p) => ({ x: p.x, y: p.y }))
-            : data.slice();
-    }),
+    smoothFinancialData: jest.fn((data) => data),
 }));
 
 import {

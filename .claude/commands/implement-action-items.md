@@ -30,14 +30,14 @@ to remote remains strictly forbidden without explicit instruction.
    formatting/lint commands. If verification fails and the item gave a fallback
    instruction, apply it once; otherwise revert your edit for that item
    (`git checkout -- <files>`), record the failure, and move on.
-    - A verification that cannot fail proves nothing — sanity-check that it
-      would actually go red on the unfixed state (e.g. a layout/measurement
-      assertion must first confirm the measured element is actually
-      constrained, or `scroll == client` passes vacuously).
-    - Cover every file type the session touched: a docs-only `markdownlint`
-      error (MD040/MD038) has broken CI on this repo even when all JS/CSS
-      checks were green. `make precommit-fix` is the CI-identical gate; scoped
-      runs must include `npx markdownlint-cli2 <changed .md files>`.
+   - A verification that cannot fail proves nothing — sanity-check that it
+     would actually go red on the unfixed state (e.g. a layout/measurement
+     assertion must first confirm the measured element is actually
+     constrained, or `scroll == client` passes vacuously).
+   - Cover every file type the session touched: a docs-only `markdownlint`
+     error (MD040/MD038) has broken CI on this repo even when all JS/CSS
+     checks were green. `make precommit-fix` is the CI-identical gate; scoped
+     runs must include `npx markdownlint-cli2 <changed .md files>`.
 5. **Commit that item only:**
     - `git add <the specific files you changed>` — never `git add -A` or
       `git add .` (other agents' work may share the tree).
