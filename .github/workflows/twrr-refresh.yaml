@@ -28,7 +28,13 @@ jobs:
               uses: actions/checkout@v7
               with:
                   token: ${{ secrets.GITHUB_TOKEN }}
-                  fetch-depth: 0
+                  # Shallow fetch: full history is ~1 GB (daily regenerated data
+                  # snapshots) and nothing here needs it — the pipeline
+                  # regenerates data from upstream APIs, the precheck reads
+                  # only the last 12 h of commit log, and push/pull --rebase
+                  # work fine from a shallow clone. ~100 commits covers weeks
+                  # at the current ~3 commits/day.
+                  fetch-depth: 100
 
             # The safety-net cron must be a true no-op when the main run
             # already committed: a redundant full run is NOT idempotent,
