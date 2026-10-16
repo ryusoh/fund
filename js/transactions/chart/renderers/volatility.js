@@ -275,25 +275,20 @@ export async function drawVolatilityChart(ctx, chartManager, timestamp) {
         const rawPoints = series.data;
         const smoothingConfig = getSmoothingConfig('performance');
         // Optimize array allocation and eliminate chained .map() for GC reduction
-        let points;
-        if (smoothingConfig) {
-            const rawMapped = new Array(rawPoints.length);
-            for (let j = 0; j < rawPoints.length; j++) {
-                rawMapped[j] = {
-                    x: parseLocalDate(rawPoints[j].date).getTime(),
-                    y: rawPoints[j].value,
-                };
-            }
-            const smoothed = smoothFinancialData(rawMapped, smoothingConfig, true);
-            points = new Array(smoothed.length);
-            for (let j = 0; j < smoothed.length; j++) {
-                points[j] = { date: parseLocalDate(smoothed[j].x), value: smoothed[j].y };
-            }
-        } else {
-            points = new Array(rawPoints.length);
-            for (let j = 0; j < rawPoints.length; j++) {
-                points[j] = { date: parseLocalDate(rawPoints[j].date), value: rawPoints[j].value };
-            }
+        const mapRawPoints = new Array(rawPoints.length);
+        for (let j = 0; j < rawPoints.length; j++) {
+            mapRawPoints[j] = {
+                x: parseLocalDate(rawPoints[j].date).getTime(),
+                y: rawPoints[j].value,
+            };
+        }
+        const smoothedPoints = smoothingConfig
+            ? smoothFinancialData(mapRawPoints, smoothingConfig, true)
+            : rawPoints.map((p) => ({ x: parseLocalDate(p.date).getTime(), y: p.value }));
+
+        const points = new Array(smoothedPoints.length);
+        for (let j = 0; j < smoothedPoints.length; j++) {
+            points[j] = { date: parseLocalDate(smoothedPoints[j].x), value: smoothedPoints[j].y };
         }
 
         const gradientStops = BENCHMARK_GRADIENTS[series.key];
