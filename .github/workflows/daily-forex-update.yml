@@ -25,7 +25,11 @@ jobs:
             - name: Checkout repository
               uses: actions/checkout@v7
               with:
-                  fetch-depth: 0 # Full history so the rebase-retry push below can find a merge base
+                  # Shallow fetch: nothing here reads history (data is fetched
+                  # from upstream APIs) and pull --rebase auto-deepens a
+                  # shallow clone to find a merge base (verified 2026-10-16),
+                  # so the full ~1 GB history is never needed.
+                  fetch-depth: 100
 
             - name: Set up Python
               uses: actions/setup-python@v7
