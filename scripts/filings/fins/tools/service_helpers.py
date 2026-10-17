@@ -891,31 +891,6 @@ def _infer_fiscal_year(meta: dict[str, Any], fiscal_period: Optional[str]) -> Op
     return None
 
 
-def _extract_year(iso_date: str) -> Optional[int]:
-    """Extract the year from an ISO date.
-
-    Args:
-        iso_date: ISO date string.
-
-    Returns:
-        year integer; `None` when it cannot be extracted.
-
-    Raises:
-        RuntimeError: raised when extraction fails.
-    """
-
-    parts = iso_date.split("-")
-    if len(parts) < 2:
-        return None
-    try:
-        year = int(parts[0])
-    except ValueError:
-        return None
-    if year <= 0:
-        return None
-    return year
-
-
 def _to_optional_float(value: Any) -> Optional[float]:
     """Convert any value to an optional float.
 
