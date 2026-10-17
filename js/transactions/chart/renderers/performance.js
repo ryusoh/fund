@@ -291,15 +291,22 @@ export async function drawPerformanceChart(ctx, chartManager, timestamp) {
         // Apply smoothing to the series data
         const rawPoints = series.data;
         const smoothingConfig = getSmoothingConfig('performance');
+        // Optimize array allocation and eliminate chained .map() for GC reduction
+        const mapRawPoints = new Array(rawPoints.length);
+        for (let j = 0; j < rawPoints.length; j++) {
+            mapRawPoints[j] = {
+                x: parseLocalDate(rawPoints[j].date).getTime(),
+                y: rawPoints[j].value,
+            };
+        }
         const smoothedPoints = smoothingConfig
-            ? smoothFinancialData(
-                  rawPoints.map((p) => ({ x: parseLocalDate(p.date).getTime(), y: p.value })),
-                  smoothingConfig,
-                  true // preserveEnd - keep the last point unchanged
-              )
-            : rawPoints.map((p) => ({ x: parseLocalDate(p.date).getTime(), y: p.value }));
+            ? smoothFinancialData(mapRawPoints, smoothingConfig, true)
+            : mapRawPoints;
 
-        const points = smoothedPoints.map((p) => ({ date: parseLocalDate(p.x), value: p.y }));
+        const points = new Array(smoothedPoints.length);
+        for (let j = 0; j < smoothedPoints.length; j++) {
+            points[j] = { date: parseLocalDate(smoothedPoints[j].x), value: smoothedPoints[j].y };
+        }
         const gradientStops = BENCHMARK_GRADIENTS[series.key];
         const resolvedColor = gradientStops
             ? gradientStops[1]
