@@ -91,10 +91,13 @@ checkout is on; squash on the detached HEAD and push it directly:
 ```bash
 git fetch origin <pr-branch>:refs/remotes/origin/<pr-branch>   # enables --force-with-lease
 cd /tmp/pr<N>
+pr_author=$(gh api repos/<owner>/<repo>/pulls/<N> --jq '.user.login')
+pr_author_id=$(gh api repos/<owner>/<repo>/pulls/<N> --jq '.user.id')
 git reset --soft $(git merge-base origin/main HEAD)
-git -c core.hooksPath=/dev/null commit -m "<conventional subject>
-
-Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>"
+git -c core.hooksPath=/dev/null commit \
+  --author="$pr_author <$pr_author_id+$pr_author@users.noreply.github.com>" \
+  -m "<conventional subject>" \
+  -m "Co-authored-by: $(git config user.name) <$(git config user.email)>"
 git push --force-with-lease origin HEAD:<pr-branch>
 gh pr checks <N>                    # wait for web-ci green
 gh pr merge <N> --squash --delete-branch
@@ -102,6 +105,11 @@ git checkout main && git pull --rebase origin main
 git branch -D pr<N>-head
 git worktree remove /tmp/pr<N> --force; git worktree remove /tmp/pr<N>-main --force
 ```
+
+The replacement commit must preserve the original PR author with `--author`; the
+rescuer's identity belongs in `Co-authored-by`. For a Jules PR this resolves to
+`google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>`.
+Do not rely on GitHub's squash-merge UI to repair attribution after the push.
 
 The PR title must stay a valid Conventional Commit subject — it becomes the
 squash-merge commit message.
