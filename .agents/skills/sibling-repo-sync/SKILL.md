@@ -57,11 +57,9 @@ Propagate an improvement made in this repo (`~/dev/fund`) to the sibling repos:
   frontmatter parser — a `---` horizontal rule in a skill body would be
   mangled); its `ship` skill uses `<primary-branch>`/`<branch_name>`
   placeholders (deliberately no hardcoded `main`), has an audience check and
-  asks for acknowledgement before pushing. Its AGENTS.md is STALE on
-  subproject names (checked 2026-08): it says `clean_adblock/` and
-  `tianditu_bypass/` but the real dirs are `adblock/` and `gov_bypass/` —
-  trust `ls` over the doc. Also stale: its Lanes table lists Sentinel but
-  `.jules/` has no sentinel persona. Its `ci.yml` already has a "Reject empty
+  asks for acknowledgement before pushing. Its AGENTS.md now correctly names
+  `adblock/` and `gov_bypass/` (verified 2026-10), but its Lanes table still
+  lists Sentinel while `.jules/` has no sentinel persona. Its `ci.yml` already has a "Reject empty
   pull request" step that hard-fails empty PRs (fund lacked this until
   2026-08). No stylelint — prettier covers CSS. Generated
   output not to hand-edit/commit: `coverage/`, `adblock/dist/`,
