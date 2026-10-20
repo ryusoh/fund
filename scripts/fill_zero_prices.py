@@ -161,6 +161,71 @@ def maybe_parse_price(value: str) -> float | None:
     return price
 
 
+def _parse_trade_date(date_str: str, symbol: str) -> dt.date | None:
+    try:
+        return dt.datetime.strptime(date_str, DATE_FORMAT).date()
+    except ValueError:
+        print(f"[WARN] Could not parse date '{date_str}' for symbol {symbol}", file=sys.stderr)
+        return None
+
+
+def _recalculate_net_amount(
+    row: Dict[str, str], quantity_raw: str, final_price: float, symbol: str
+) -> None:
+    try:
+        quantity = float(quantity_raw)
+        net_amount = quantity * final_price
+        sign = 1 if (row.get("Order Type", "").lower() == "buy") else -1
+        row["Net Amount"] = f"{net_amount * sign:.4f}"
+    except (ValueError, TypeError) as e:
+        logging.warning(f"Error calculating Net Amount for {symbol}: {e}")
+
+
+def _is_valid_zero_price(row: Dict[str, str]) -> bool:
+    price_raw = row.get("Executed Price") or row.get("Price") or ""
+    price = maybe_parse_price(price_raw)
+    return price is not None and price <= 0
+
+
+def _process_zero_price_row(
+    row: Dict[str, str],
+    splits: Dict[str, List[Tuple[dt.date, float]]],
+    reset_zero_net: bool,
+) -> Tuple[Dict[str, str], Dict[str, str] | None]:
+    if not _is_valid_zero_price(row):
+        return row, None
+
+    symbol = (row.get("Security") or "").strip()
+    date_str = (row.get("Trade Date") or row.get("tradeDate") or "").strip()
+
+    trade_date = _parse_trade_date(date_str, symbol)
+    if trade_date is None:
+        return row, None
+
+    yf_symbol = normalize_symbol(symbol)
+    close_price = fetch_close_price(yf_symbol, trade_date)
+    if close_price is None:
+        return row, None
+
+    adjustment = compute_split_adjustment(splits, symbol, trade_date)
+    final_price = close_price * adjustment
+
+    new_row = dict(row)  # copy so we do not mutate caller's data
+    new_row["Executed Price"] = f"{final_price:.4f}"
+
+    if reset_zero_net:
+        quantity_raw = row.get("Quantity") or ""
+        _recalculate_net_amount(new_row, quantity_raw, final_price, symbol)
+
+    mod = {
+        "Security": symbol,
+        "Trade Date": date_str,
+        "Price": new_row["Executed Price"],
+        "Adjustment": f"{adjustment:.4f}",
+    }
+    return new_row, mod
+
+
 def update_transactions(
     rows: Iterable[Dict[str, str]],
     splits: Dict[str, List[Tuple[dt.date, float]]],
@@ -170,52 +235,10 @@ def update_transactions(
     modifications: List[Dict[str, str]] = []
 
     for row in rows:
-        price_raw = row.get("Executed Price") or row.get("Price") or ""
-        price = maybe_parse_price(price_raw)
-        if price is None or price > 0:
-            updated_rows.append(row)
-            continue
-
-        symbol = (row.get("Security") or "").strip()
-        date_str = (row.get("Trade Date") or row.get("tradeDate") or "").strip()
-        quantity_raw = row.get("Quantity") or ""
-        try:
-            trade_date = dt.datetime.strptime(date_str, DATE_FORMAT).date()
-        except ValueError:
-            print(f"[WARN] Could not parse date '{date_str}' for symbol {symbol}", file=sys.stderr)
-            updated_rows.append(row)
-            continue
-
-        yf_symbol = normalize_symbol(symbol)
-        close_price = fetch_close_price(yf_symbol, trade_date)
-        if close_price is None:
-            updated_rows.append(row)
-            continue
-
-        adjustment = compute_split_adjustment(splits, symbol, trade_date)
-        final_price = close_price * adjustment
-
-        row = dict(row)  # copy so we do not mutate caller's data
-        row["Executed Price"] = f"{final_price:.4f}"
-
-        if reset_zero_net:
-            try:
-                quantity = float(quantity_raw)
-                net_amount = quantity * final_price
-                sign = 1 if (row.get("Order Type", "").lower() == "buy") else -1
-                row["Net Amount"] = f"{net_amount * sign:.4f}"
-            except (ValueError, TypeError) as e:
-                logging.warning(f"Error calculating Net Amount for {symbol}: {e}")
-
-        updated_rows.append(row)
-        modifications.append(
-            {
-                "Security": symbol,
-                "Trade Date": date_str,
-                "Price": row["Executed Price"],
-                "Adjustment": f"{adjustment:.4f}",
-            }
-        )
+        new_row, mod = _process_zero_price_row(row, splits, reset_zero_net)
+        updated_rows.append(new_row)
+        if mod is not None:
+            modifications.append(mod)
 
     return updated_rows, modifications
 
