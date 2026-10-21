@@ -513,33 +513,6 @@ def load_split_history() -> pd.DataFrame:
     return pd.DataFrame()
 
 
-def get_split_adjustment(symbol: str, date: pd.Timestamp, split_df: pd.DataFrame) -> float:
-    if split_df.empty:
-        return 1.0
-    relevant = split_df[(split_df["Symbol"] == symbol) & (split_df["Split Date"] > date)]
-    if relevant.empty:
-        return 1.0
-    total_multiplier = relevant["Split Multiplier"].prod()
-    return 1.0 / float(total_multiplier)  # type: ignore[arg-type]
-
-
-def cumulative_forward_split_factor(date: pd.Timestamp, splits_series: pd.Series) -> float:
-    """Compute how many shares today correspond to 1 share on the given date.
-
-    This accounts for all stock splits AFTER the given date.
-    To normalize EPS reported on `date` to today's fully-split-adjusted basis,
-    divide by this factor.
-    """
-    factor = 1.0
-    if splits_series is None or splits_series.empty:
-        return factor
-    for split_date, ratio in splits_series.items():
-        sd = pd.Timestamp(str(split_date)).tz_localize(None)
-        if sd > date:
-            factor *= ratio
-    return factor
-
-
 def fetch_stock_eps_data(tickers: List[str]) -> Dict[str, Any]:
     """Fetch EPS data for stocks with caching and manual patches.
 
