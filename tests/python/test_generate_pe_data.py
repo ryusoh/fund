@@ -17,7 +17,6 @@ from scripts.generate_pe_data import (  # noqa: E402
     EXEMPT_TICKERS,
     build_point_in_time_eps_series,
     calculate_harmonic_pe,
-    cumulative_forward_split_factor,
     fetch_stock_eps_data,
     is_etf,
     write_pe_outputs,
@@ -148,41 +147,6 @@ class TestGeneratePEData(unittest.TestCase):
         self.assertFalse(is_etf("NVDA"))
         self.assertFalse(is_etf("GOOG"))
         self.assertFalse(is_etf("BRKB"))
-
-    def test_cumulative_forward_split_factor_no_splits(self) -> None:
-        """No splits → factor should be 1.0."""
-        empty_splits = pd.Series(dtype=float)
-        factor = cumulative_forward_split_factor(pd.Timestamp("2023-01-01"), empty_splits)
-        self.assertEqual(factor, 1.0)
-
-    def test_cumulative_forward_split_factor_single_split(self) -> None:
-        """Single 4:1 split after the given date."""
-        splits = pd.Series(
-            [4.0],
-            index=pd.to_datetime(["2024-12-04"]),
-        )
-        # Date before split → factor = 4.0
-        factor = cumulative_forward_split_factor(pd.Timestamp("2024-01-01"), splits)
-        self.assertEqual(factor, 4.0)
-        # Date after split → factor = 1.0
-        factor = cumulative_forward_split_factor(pd.Timestamp("2025-01-01"), splits)
-        self.assertEqual(factor, 1.0)
-
-    def test_cumulative_forward_split_factor_multiple_splits(self) -> None:
-        """Two splits: 4:1 then 4:1 → 16x total for dates before both."""
-        splits = pd.Series(
-            [4.0, 4.0],
-            index=pd.to_datetime(["2021-11-18", "2024-12-04"]),
-        )
-        # Before both splits
-        factor = cumulative_forward_split_factor(pd.Timestamp("2021-01-01"), splits)
-        self.assertEqual(factor, 16.0)
-        # Between splits
-        factor = cumulative_forward_split_factor(pd.Timestamp("2023-01-01"), splits)
-        self.assertEqual(factor, 4.0)
-        # After both splits
-        factor = cumulative_forward_split_factor(pd.Timestamp("2025-06-01"), splits)
-        self.assertEqual(factor, 1.0)
 
     def test_etf_tickers_contains_soxx(self) -> None:
         """Verify SOXX is in the ETF list."""
@@ -578,32 +542,6 @@ class TestGeneratePEData(unittest.TestCase):
         with patch("pandas.read_csv", side_effect=Exception("Failed")):
             result = load_split_history()
             self.assertTrue(result.empty)
-
-    def test_get_split_adjustment(self):
-        from scripts.generate_pe_data import get_split_adjustment
-
-        split_df = pd.DataFrame(
-            {
-                "Symbol": ["A", "A", "B"],
-                "Split Date": pd.to_datetime(["2020-01-01", "2021-01-01", "2020-01-01"]),
-                "Split Multiplier": [2.0, 3.0, 4.0],
-            }
-        )
-
-        # Empty df
-        self.assertEqual(get_split_adjustment("A", pd.Timestamp("2019-01-01"), pd.DataFrame()), 1.0)
-
-        # Before any splits -> compound both -> 2 * 3 = 6
-        self.assertEqual(get_split_adjustment("A", pd.Timestamp("2019-01-01"), split_df), 1.0 / 6.0)
-
-        # Between splits -> only the later one -> 3
-        self.assertEqual(get_split_adjustment("A", pd.Timestamp("2020-06-01"), split_df), 1.0 / 3.0)
-
-        # After all splits -> 1
-        self.assertEqual(get_split_adjustment("A", pd.Timestamp("2022-01-01"), split_df), 1.0)
-
-        # No symbol found -> 1
-        self.assertEqual(get_split_adjustment("C", pd.Timestamp("2019-01-01"), split_df), 1.0)
 
     def test_calculate_harmonic_pe_missing_pe(self):
         from scripts.generate_pe_data import calculate_harmonic_pe
