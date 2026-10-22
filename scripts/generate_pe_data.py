@@ -949,64 +949,59 @@ def fetch_benchmark_pe_daily(
         return None
 
 
-def fetch_etf_pe(ticker: str, dates: pd.DatetimeIndex) -> Optional[pd.Series]:
-    symbol = yf_symbol(ticker)
-    if ticker in MANUAL_TICKER_PE_CURVES:
-        points = MANUAL_TICKER_PE_CURVES[ticker].copy()  # Copy to avoid mutating global constant
+def _update_benchmark_history(ticker: str, proxy: str, points: dict) -> None:
+    try:
+        # Load existing history
+        history = {}
+        if BENCHMARK_HISTORY_PATH.exists():
+            with open(BENCHMARK_HISTORY_PATH, "r") as f:
+                try:
+                    history = json.load(f)
+                except json.JSONDecodeError:
+                    history = {}
 
-        # Auto-append current PE for benchmarks to history file
-        if ticker in BENCHMARK_PE_TICKERS:
-            proxy = BENCHMARK_PE_TICKERS[ticker]
-            try:
-                # Load existing history
-                history = {}
-                if BENCHMARK_HISTORY_PATH.exists():
-                    with open(BENCHMARK_HISTORY_PATH, "r") as f:
-                        try:
-                            history = json.load(f)
-                        except json.JSONDecodeError:
-                            history = {}
+        # Fetch current proxy PE
+        info = yf.Ticker(proxy).info
+        current_pe = info.get("trailingPE") if info else None
 
-                # Fetch current proxy PE
-                info = yf.Ticker(proxy).info
-                current_pe = info.get("trailingPE") if info else None
+        if current_pe and current_pe > 0:
+            today_str = datetime.now().strftime("%Y-%m-%d")
+            if ticker not in history:
+                history[ticker] = {}
 
-                if current_pe and current_pe > 0:
-                    today_str = datetime.now().strftime("%Y-%m-%d")
-                    if ticker not in history:
-                        history[ticker] = {}
+            # Update history
+            history[ticker][today_str] = float(current_pe)
 
-                    # Update history
-                    history[ticker][today_str] = float(current_pe)
+            # Save updated history
+            with open(BENCHMARK_HISTORY_PATH, "w") as f:
+                json.dump(history, f, indent=4, sort_keys=True)
 
-                    # Save updated history
-                    with open(BENCHMARK_HISTORY_PATH, "w") as f:
-                        json.dump(history, f, indent=4, sort_keys=True)
+            print(f"  Updated history for {ticker}: {today_str}={current_pe}")
 
-                    print(f"  Updated history for {ticker}: {today_str}={current_pe}")
+        # Merge history into points (live data overrides manual if duplicate date)
+        if ticker in history:
+            points.update(history[ticker])
 
-                # Merge history into points (live data overrides manual if duplicate date)
-                if ticker in history:
-                    points.update(history[ticker])
+    except Exception as e:
+        print(f"Warning: Failed to update benchmark history for {ticker}: {e}")
 
-            except Exception as e:
-                print(f"Warning: Failed to update benchmark history for {ticker}: {e}")
+def _build_etf_pe_series(points: dict, dates: pd.DatetimeIndex) -> pd.Series:
+    s = pd.Series(index=dates, dtype=float)
+    # Convert keys to timestamps and sort
+    ts_points = {pd.Timestamp(k).tz_localize(None): v for k, v in points.items()}
 
-        s = pd.Series(index=dates, dtype=float)
-        # Convert keys to timestamps and sort
-        ts_points = {pd.Timestamp(k).tz_localize(None): v for k, v in points.items()}
+    for dt, val in ts_points.items():
+        if dt in dates:
+            s.loc[dt] = float(val)  # type: ignore[call-overload]
+        else:
+            # Map to nearest date in index
+            idx = dates.get_indexer([dt], method="nearest")[0]
+            if idx != -1:
+                s.iloc[idx] = val
 
-        for dt, val in ts_points.items():
-            if dt in dates:
-                s.loc[dt] = float(val)  # type: ignore[call-overload]
-            else:
-                # Map to nearest date in index
-                idx = dates.get_indexer([dt], method="nearest")[0]
-                if idx != -1:
-                    s.iloc[idx] = val
+    return s.interpolate(method="time").ffill().bfill()
 
-        return s.interpolate(method="time").ffill().bfill()
-
+def _fetch_fallback_trailing_pe(ticker: str, symbol: str, dates: pd.DatetimeIndex) -> Optional[pd.Series]:
     try:
         t_obj = yf.Ticker(symbol)
         # Some yf versions return None for .info on failure
@@ -1022,6 +1017,19 @@ def fetch_etf_pe(ticker: str, dates: pd.DatetimeIndex) -> Optional[pd.Series]:
             file=sys.stderr,
         )
     return None
+
+def fetch_etf_pe(ticker: str, dates: pd.DatetimeIndex) -> Optional[pd.Series]:
+    symbol = yf_symbol(ticker)
+    if ticker in MANUAL_TICKER_PE_CURVES:
+        points = MANUAL_TICKER_PE_CURVES[ticker].copy()  # Copy to avoid mutating global constant
+
+        # Auto-append current PE for benchmarks to history file
+        if ticker in BENCHMARK_PE_TICKERS:
+            _update_benchmark_history(ticker, BENCHMARK_PE_TICKERS[ticker], points)
+
+        return _build_etf_pe_series(points, dates)
+
+    return _fetch_fallback_trailing_pe(ticker, symbol, dates)
 
 
 def build_point_in_time_eps_series(
