@@ -985,6 +985,7 @@ def _update_benchmark_history(ticker: str, proxy: str, points: dict) -> None:
     except Exception as e:
         print(f"Warning: Failed to update benchmark history for {ticker}: {e}")
 
+
 def _build_etf_pe_series(points: dict, dates: pd.DatetimeIndex) -> pd.Series:
     s = pd.Series(index=dates, dtype=float)
     # Convert keys to timestamps and sort
@@ -1001,7 +1002,10 @@ def _build_etf_pe_series(points: dict, dates: pd.DatetimeIndex) -> pd.Series:
 
     return s.interpolate(method="time").ffill().bfill()
 
-def _fetch_fallback_trailing_pe(ticker: str, symbol: str, dates: pd.DatetimeIndex) -> Optional[pd.Series]:
+
+def _fetch_fallback_trailing_pe(
+    ticker: str, symbol: str, dates: pd.DatetimeIndex
+) -> Optional[pd.Series]:
     try:
         t_obj = yf.Ticker(symbol)
         # Some yf versions return None for .info on failure
@@ -1017,6 +1021,7 @@ def _fetch_fallback_trailing_pe(ticker: str, symbol: str, dates: pd.DatetimeInde
             file=sys.stderr,
         )
     return None
+
 
 def fetch_etf_pe(ticker: str, dates: pd.DatetimeIndex) -> Optional[pd.Series]:
     symbol = yf_symbol(ticker)
