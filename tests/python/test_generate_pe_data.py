@@ -2,11 +2,19 @@ import json
 import sys
 import tempfile
 import unittest
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, mock_open, patch
 
 import pandas as pd
+
+from scripts.generate_pe_data import (
+    _build_etf_pe_series,
+    _fetch_fallback_trailing_pe,
+    _update_benchmark_history,
+    fetch_etf_pe,
+)
 
 # Add project root to path
 project_root = Path(__file__).parent.parent.parent
@@ -1265,3 +1273,119 @@ class TestWritePeOutputs(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestFetchEtfPeExtract(unittest.TestCase):
+    @patch("scripts.generate_pe_data.BENCHMARK_HISTORY_PATH")
+    @patch("scripts.generate_pe_data.yf.Ticker")
+    def test_update_benchmark_history(self, mock_ticker, mock_path):
+        mock_path.exists.return_value = True
+        mock_info = {"trailingPE": 15.5}
+        mock_ticker.return_value.info = mock_info
+
+        m_open = mock_open(read_data='{"TEST": {"2023-01-01": 10.0}}')
+
+        with patch("scripts.generate_pe_data.open", m_open):
+            points = {}
+            _update_benchmark_history("TEST", "PROXY", points)
+
+            today_str = datetime.now().strftime("%Y-%m-%d")
+            self.assertEqual(points[today_str], 15.5)
+
+    def test_build_etf_pe_series(self):
+        dates = pd.date_range("2023-01-01", "2023-01-05")
+        points = {"2023-01-01": 10.0, "2023-01-05": 20.0}
+
+        s = _build_etf_pe_series(points, dates)
+
+        self.assertEqual(s.loc["2023-01-01"], 10.0)
+        self.assertEqual(s.loc["2023-01-05"], 20.0)
+        self.assertEqual(s.loc["2023-01-03"], 15.0)  # check interpolation
+
+    @patch("scripts.generate_pe_data.yf.Ticker")
+    def test_fetch_fallback_trailing_pe(self, mock_ticker):
+        dates = pd.date_range("2023-01-01", "2023-01-02")
+        mock_info = {"trailingPE": 25.0}
+        mock_ticker.return_value.info = mock_info
+
+        s = _fetch_fallback_trailing_pe("TEST", "TEST", dates)
+
+        self.assertEqual(len(s), 2)
+        self.assertEqual(s.loc["2023-01-01"], 25.0)
+
+    @patch("scripts.generate_pe_data.BENCHMARK_HISTORY_PATH")
+    @patch("scripts.generate_pe_data.yf.Ticker")
+    def test_update_benchmark_history_invalid_json(self, mock_ticker, mock_path):
+        mock_path.exists.return_value = True
+        mock_info = {"trailingPE": 15.5}
+        mock_ticker.return_value.info = mock_info
+
+        m_open = mock_open(read_data='INVALID JSON')
+
+        with patch("scripts.generate_pe_data.open", m_open):
+            points = {}
+            _update_benchmark_history("TEST", "PROXY", points)
+
+            today_str = datetime.now().strftime("%Y-%m-%d")
+            self.assertEqual(points[today_str], 15.5)
+
+    @patch("scripts.generate_pe_data.yf.Ticker")
+    def test_fetch_fallback_trailing_pe_exception(self, mock_ticker):
+        dates = pd.date_range("2023-01-01", "2023-01-02")
+        mock_ticker.return_value.info = property(lambda self: Exception("Test"))
+
+        with patch('sys.stderr'):
+            s = _fetch_fallback_trailing_pe("TEST", "TEST", dates)
+
+        self.assertIsNone(s)
+
+    def test_build_etf_pe_series_no_match(self):
+        dates = pd.date_range("2023-01-01", "2023-01-02")
+        points = {"2024-01-01": 10.0}
+
+        s = _build_etf_pe_series(points, dates)
+
+        self.assertEqual(s.loc["2023-01-01"], 10.0)
+
+    @patch("scripts.generate_pe_data.BENCHMARK_HISTORY_PATH")
+    @patch("scripts.generate_pe_data.yf.Ticker")
+    def test_update_benchmark_history_no_file(self, mock_ticker, mock_path):
+        mock_path.exists.return_value = False
+        mock_info = {"trailingPE": 15.5}
+        mock_ticker.return_value.info = mock_info
+
+        m_open = mock_open()
+
+        with patch("scripts.generate_pe_data.open", m_open):
+            points = {}
+            _update_benchmark_history("TEST", "PROXY", points)
+
+            today_str = datetime.now().strftime("%Y-%m-%d")
+            self.assertEqual(points[today_str], 15.5)
+
+    @patch("scripts.generate_pe_data.BENCHMARK_HISTORY_PATH")
+    @patch("scripts.generate_pe_data.yf.Ticker")
+    def test_update_benchmark_history_exception(self, mock_ticker, mock_path):
+        mock_path.exists.return_value = True
+        mock_ticker.return_value.info = property(lambda self: Exception("Test"))
+
+        m_open = mock_open(read_data='{"TEST": {"2023-01-01": 10.0}}')
+
+        with patch("scripts.generate_pe_data.open", m_open):
+            with patch('builtins.print') as mock_print:
+                points = {}
+                _update_benchmark_history("TEST", "PROXY", points)
+
+                mock_print.assert_called()
+
+    @patch("scripts.generate_pe_data.BENCHMARK_HISTORY_PATH")
+    @patch("scripts.generate_pe_data.yf.Ticker")
+    def test_fetch_etf_pe(self, mock_ticker, mock_path):
+        dates = pd.date_range("2023-01-01", "2023-01-02")
+        mock_path.exists.return_value = False
+
+        with patch("scripts.generate_pe_data.BENCHMARK_PE_TICKERS", {"TEST_TICKER": "PROXY"}):
+            with patch("scripts.generate_pe_data.MANUAL_TICKER_PE_CURVES", {"TEST_TICKER": {}}):
+                s = fetch_etf_pe("TEST_TICKER", dates)
+
+        self.assertIsNotNone(s)
