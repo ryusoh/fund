@@ -52,6 +52,8 @@ For the given research question `$ARGUMENTS`:
    Every quantitative claim or thesis assertion must carry its exact locator or cited URL.
 
 3. **Confirm pass:**
+    - Run in a **fresh context** (a new subagent or a cleared session): the agent that
+      synthesized the claims never verifies its own synthesis.
     - Verify every quantitative claim against SEC filings using
       `venv/bin/python -m scripts.analysis.filings_adapter verify --ticker <T> --claim "<claim>"`.
       Enforce confidence ≥ 0.60.
