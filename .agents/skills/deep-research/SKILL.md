@@ -41,8 +41,15 @@ For the given research question `{{args}}`:
     - **Web subagent:** Investigates primary external sources only: regulatory disclosures,
       investor relations presentations, earnings call transcripts, and industry standards bodies.
       Secondary blog posts and unverified aggregators are excluded.
+    - **Red-team subagent:** Same question, adversarial stance. Argue the strongest case
+      AGAINST the thesis's current position (`data/analysis/<TICKER>.json` belief_state is
+      its target), attack the load-bearing claims the other subagents' outputs rest on,
+      and enumerate falsifiers — what specific evidence would flip the conclusion.
+      Reports disconfirming evidence first, ranked by thesis-killing potential.
 
-2. **Synthesis pass:** Consolidate subagent outputs into a coherent claim-to-source mapping.
+2. **Synthesis pass:** Consolidate all four subagent outputs into a coherent claim-to-source
+   mapping. The red team's disconfirming case must survive into the findings doc as its
+   own section — do not average it away.
    Every quantitative claim or thesis assertion must carry its exact locator or cited URL.
 
 3. **Confirm pass:**
