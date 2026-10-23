@@ -236,13 +236,21 @@ def test_json_out_dump(
     fake_downloader: type[_FakeDownloader], analysis_dir: Path, tmp_path: Path
 ) -> None:
     fake_downloader.payload = _submissions([("8-K", "2026-06-10", "0000320193-26-000001", "a.htm")])
-    _write_ticker(analysis_dir, "AAPL", "2027-01-01")
+    _write_ticker(analysis_dir, "AAPL", "2026-06-20")
     out_path = tmp_path / "event_flags.json"
     code = main(
         ["--data-dir", str(analysis_dir), "--as-of", "2026-06-15", "--json-out", str(out_path)]
     )
     assert code == 0
     dumped = json.loads(out_path.read_text(encoding="utf-8"))
-    assert dumped[0]["ticker"] == "AAPL"
-    assert dumped[0]["form"] == "8-K"
-    assert dumped[0]["type"] == "filing"
+    assert isinstance(dumped["generatedAt"], str) and dumped["generatedAt"]
+    filing = dumped["flags"][0]
+    assert filing == {
+        "ticker": "AAPL",
+        "kind": "filing",
+        "form": "8-K",
+        "date": "2026-06-10",
+        "url": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000001/a.htm",
+    }
+    review = dumped["flags"][1]
+    assert review == {"ticker": "AAPL", "kind": "review-date", "date": "2026-06-20"}

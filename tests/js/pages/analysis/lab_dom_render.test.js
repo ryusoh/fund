@@ -312,4 +312,54 @@ describe('analysis lab pane rendering', () => {
         expect(errEl).not.toBeNull();
         expect(errEl.textContent).toContain('Error: network down');
     });
+
+    it('renders the event-flags badge with canned flags data', async () => {
+        const { lab } = await setupPane(jest.fn(), { autoLoad: false });
+        const { renderPredictions, state } = lab.__analysisLabTesting;
+
+        state.eventFlags = {
+            generatedAt: '2026-10-23T13:00:00+00:00',
+            flags: [
+                {
+                    ticker: 'ANET',
+                    kind: 'filing',
+                    form: '8-K',
+                    date: '2026-10-20',
+                    url: 'https://www.sec.gov/Archives/edgar/data/1/x/a.htm',
+                },
+                { ticker: 'ANET', kind: 'review-date', date: '2026-10-29' },
+                { ticker: 'AAPL', kind: 'filing', form: '10-Q', date: '2026-10-22', url: 'u' },
+            ],
+        };
+
+        renderPredictions({ symbol: 'ANET', predictions: [] });
+
+        const badge = document.querySelector('.prediction-flags-badge');
+        expect(badge).not.toBeNull();
+        expect(badge.textContent).toBe('2 flags');
+        expect(badge.title).toContain('8-K filed 2026-10-20');
+        expect(badge.title).toContain('review date 2026-10-29');
+    });
+
+    it('hides the event-flags badge for a zero-flag ticker', async () => {
+        const { lab } = await setupPane(jest.fn(), { autoLoad: false });
+        const { renderPredictions, state } = lab.__analysisLabTesting;
+
+        state.eventFlags = {
+            generatedAt: '2026-10-23T13:00:00+00:00',
+            flags: [{ ticker: 'ANET', kind: 'review-date', date: '2026-10-29' }],
+        };
+        renderPredictions({ symbol: 'AAPL', predictions: [] });
+
+        expect(document.querySelector('.prediction-flags-badge')).toBeNull();
+    });
+
+    it('renders no event-flags badge when flags data is null (404 path)', async () => {
+        const { lab } = await setupPane(jest.fn(), { autoLoad: false });
+        const { renderPredictions, state } = lab.__analysisLabTesting;
+
+        state.eventFlags = null;
+        expect(() => renderPredictions({ symbol: 'ANET', predictions: [] })).not.toThrow();
+        expect(document.querySelector('.prediction-flags-badge')).toBeNull();
+    });
 });

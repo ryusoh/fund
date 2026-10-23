@@ -34,6 +34,9 @@ const state = {
     activeSection: 'overview',
     bayesEngine: null,
     evidenceCache: new Map(),
+    // Event flags from data/analysis/event_flags.json (WO-5c). Null when the
+    // file is absent (no sweep has run with --json-out yet) or fetch failed.
+    eventFlags: null,
     // Created lazily on the first Monte Carlo run — spawning the module
     // worker at import time would run it even when the pane never opens.
     monteCarloWorker: null,
@@ -1716,6 +1719,23 @@ function computeStalePredictions(predictions, asOf) {
     });
 }
 
+function computeTickerFlags(flagsData, symbol) {
+    if (!flagsData || !Array.isArray(flagsData.flags)) {
+        return [];
+    }
+    return flagsData.flags.filter((flag) => flag && flag.ticker === symbol);
+}
+
+function formatFlagLabel(flag) {
+    if (flag.kind === 'filing') {
+        return `${flag.form} filed ${flag.date}`;
+    }
+    if (flag.kind === 'review-date') {
+        return `review date ${flag.date}`;
+    }
+    return flag.date || 'event';
+}
+
 function renderPredictions(config) {
     if (!predictionsCardEl) {
         return;
@@ -1748,6 +1768,15 @@ function renderPredictions(config) {
         staleBadge.className = 'prediction-stale-badge';
         staleBadge.textContent = `${stalePredictions.length} Overdue`;
         badgesContainer.appendChild(staleBadge);
+    }
+
+    const tickerFlags = computeTickerFlags(state.eventFlags, config.symbol);
+    if (tickerFlags.length > 0) {
+        const flagsBadge = document.createElement('span');
+        flagsBadge.className = 'prediction-flags-badge';
+        flagsBadge.textContent = `${tickerFlags.length} flags`;
+        flagsBadge.title = tickerFlags.map(formatFlagLabel).join('\n');
+        badgesContainer.appendChild(flagsBadge);
     }
 
     titleDiv.append(h4, badgesContainer);
@@ -2682,10 +2711,14 @@ function buildPortfolioConfig(configs) {
 }
 
 async function buildConfigs() {
-    const [analysisIndex, holdingsData] = await Promise.all([
+    const [analysisIndex, holdingsData, eventFlags] = await Promise.all([
         fetchJson('../data/analysis/index.json'),
         fetchJson('../data/holdings_details.json'),
+        // Absent event_flags.json means no sweep has run with --json-out yet —
+        // fail-open to null, never block ticker rendering on it.
+        fetchJson('../data/analysis/event_flags.json').catch(() => null),
     ]);
+    state.eventFlags = eventFlags;
 
     const configs = await Promise.all(
         (analysisIndex.tickers || []).map(async (entry) => {
@@ -3033,6 +3066,7 @@ export const __analysisLabTesting = {
     renderEvidenceTimeline,
     renderPredictions,
     computeStalePredictions,
+    computeTickerFlags,
     renderDecisionJournal,
     renderMonteCarloResults,
     renderContextStrip,

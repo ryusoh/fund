@@ -205,6 +205,31 @@ def _format_flag(flag: dict[str, Any]) -> str:
     )
 
 
+def _contract_flags(flags: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Map internal flags to the WO-5c JSON schema consumed by the Lab surface."""
+    contract: list[dict[str, Any]] = []
+    for flag in flags:
+        if flag["type"] == "filing":
+            contract.append(
+                {
+                    "ticker": flag["ticker"],
+                    "kind": "filing",
+                    "form": flag["form"],
+                    "date": flag["filing_date"],
+                    "url": flag["url"],
+                }
+            )
+        else:
+            contract.append(
+                {
+                    "ticker": flag["ticker"],
+                    "kind": "review-date",
+                    "date": flag["review_date"],
+                }
+            )
+    return contract
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Scan data/analysis/*.json for new filings and upcoming review dates."
@@ -265,8 +290,12 @@ def main(argv: list[str] | None = None) -> int:
         print("Summary: 0 event flags found.")
 
     if args.json_out is not None:
+        payload = {
+            "generatedAt": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "flags": _contract_flags(flags),
+        }
         args.json_out.write_text(
-            json.dumps(flags, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+            json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
         )
 
     if args.fail_on_flag and flags:

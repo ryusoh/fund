@@ -601,6 +601,17 @@
     white-space: nowrap;
 }
 
+.analysis-pane .prediction-flags-badge {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 1px 6px;
+    border: 1px solid var(--primary-color);
+    border-radius: 2px;
+    color: var(--primary-color);
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
 /* Decision journal */
 .analysis-pane .decision-box {
     background: transparent;
