@@ -1,13 +1,37 @@
 from pathlib import Path
 from unittest.mock import MagicMock, mock_open, patch
 
+import pytest
+
 from scripts.update_vt_hhi import fetch_vt_hhi_from_etfrc, main, update_etf_hhi_json
+
+CURRENT_PAGE_ROW = (
+    '<tr><td>Herfindahl-Hirschman Index '
+    '<i class="pe pe-7s-help1" style="font-size: 15px; font-weight: bold"></i></td>'
+    '<td align="right">78</td></tr>'
+)
 
 
 @patch('os.environ.get')
 @patch('requests.get')
-def test_fetch_vt_hhi_from_etfrc_with_api_key(mock_get, mock_environ_get):
+def test_fetch_vt_hhi_direct_success_current_label(mock_get, mock_environ_get):
     mock_environ_get.return_value = 'test_key'
+    mock_response = MagicMock()
+    mock_response.text = CURRENT_PAGE_ROW
+    mock_get.return_value = mock_response
+
+    result = fetch_vt_hhi_from_etfrc()
+
+    assert result == 78
+    mock_get.assert_called_once()
+    args, kwargs = mock_get.call_args
+    assert 'https://www.etfrc.com/VT' == args[0]
+
+
+@patch('os.environ.get')
+@patch('requests.get')
+def test_fetch_vt_hhi_direct_success_legacy_label(mock_get, mock_environ_get):
+    mock_environ_get.return_value = None
     mock_response = MagicMock()
     mock_response.text = '<td>HHI</td><td>62</td>'
     mock_get.return_value = mock_response
@@ -17,24 +41,24 @@ def test_fetch_vt_hhi_from_etfrc_with_api_key(mock_get, mock_environ_get):
     assert result == 62
     mock_get.assert_called_once()
     args, kwargs = mock_get.call_args
-    assert 'https://api.scraperapi.com/?' in args[0]
-    assert 'api_key=test_key' in args[0]
+    assert 'https://www.etfrc.com/VT' == args[0]
 
 
 @patch('os.environ.get')
 @patch('requests.get')
-def test_fetch_vt_hhi_from_etfrc_no_api_key(mock_get, mock_environ_get):
-    mock_environ_get.return_value = None
-    mock_response = MagicMock()
-    mock_response.text = 'HHI: 63'
-    mock_get.return_value = mock_response
+def test_fetch_vt_hhi_scraperapi_fallback(mock_get, mock_environ_get):
+    mock_environ_get.return_value = 'test_key'
+    ok_response = MagicMock()
+    ok_response.text = CURRENT_PAGE_ROW
+    mock_get.side_effect = [Exception("blocked"), ok_response]
 
     result = fetch_vt_hhi_from_etfrc()
 
-    assert result == 63
-    mock_get.assert_called_once()
+    assert result == 78
+    assert mock_get.call_count == 2
     args, kwargs = mock_get.call_args
-    assert 'https://www.etfrc.com/VT' == args[0]
+    assert 'https://api.scraperapi.com/?' in args[0]
+    assert 'api_key=test_key' in args[0]
 
 
 @patch('os.environ.get')
@@ -42,7 +66,7 @@ def test_fetch_vt_hhi_from_etfrc_no_api_key(mock_get, mock_environ_get):
 def test_fetch_vt_hhi_from_etfrc_no_match(mock_get, mock_environ_get):
     mock_environ_get.return_value = None
     mock_response = MagicMock()
-    mock_response.text = 'Some random text without HHI'
+    mock_response.text = 'Some random text without the index label'
     mock_get.return_value = mock_response
 
     result = fetch_vt_hhi_from_etfrc()
@@ -97,7 +121,9 @@ def test_main_success_high_hhi(mock_update, mock_fetch):
     mock_fetch.return_value = 600
     mock_update.return_value = True
 
-    main()
+    with pytest.raises(SystemExit) as exc_info:
+        main()
+    assert exc_info.value.code == 1
     mock_update.assert_not_called()
 
 
@@ -106,7 +132,9 @@ def test_main_success_high_hhi(mock_update, mock_fetch):
 def test_main_fetch_failure(mock_update, mock_fetch):
     mock_fetch.return_value = None
 
-    main()
+    with pytest.raises(SystemExit) as exc_info:
+        main()
+    assert exc_info.value.code == 1
     mock_update.assert_not_called()
 
 
@@ -116,7 +144,9 @@ def test_main_update_failure(mock_update, mock_fetch):
     mock_fetch.return_value = 62
     mock_update.return_value = False
 
-    main()
+    with pytest.raises(SystemExit) as exc_info:
+        main()
+    assert exc_info.value.code == 1
     mock_update.assert_called_once_with(62)
 
 

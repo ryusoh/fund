@@ -17,58 +17,70 @@ import requests
 sys.path.append(str(Path(__file__).resolve().parent))
 from utils.security_utils import scrub_secrets
 
+ETFRC_URL = "https://www.etfrc.com/VT"
+
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+}
+
+# ETFRC labels the metric "Herfindahl-Hirschman Index" (the old "HHI" label is
+# gone from the page). The value sits in the following <td> of the same row.
+HHI_PATTERNS = [
+    r'Herfindahl-Hirschman Index.*?</td>\s*<td[^>]*>\s*(\d+)',
+    r'<td[^>]*>HHI</td>\s*<td[^>]*>(\d+)</td>',
+]
+
+
+def _extract_hhi(content: str) -> int | None:
+    for pattern in HHI_PATTERNS:
+        match = re.search(pattern, content, re.IGNORECASE | re.DOTALL)
+        if match:
+            return int(match.group(1))
+    return None
+
+
+def _fetch(url: str, timeout: int, secrets_to_scrub: list[str] | None = None) -> str | None:
+    try:
+        response = requests.get(url, headers=HEADERS, timeout=timeout)
+        response.raise_for_status()
+        return response.text
+    except Exception as e:
+        error_msg = str(e)
+        if secrets_to_scrub:
+            error_msg = scrub_secrets(error_msg, secrets_to_scrub)
+        print(f"Error fetching {ETFRC_URL}: {error_msg}")
+        return None
+
 
 def fetch_vt_hhi_from_etfrc() -> int | None:
     """
     Fetch VT HHI value from ETFRC.com.
     Returns HHI on 0-10000 scale.
-    """
-    url = "https://www.etfrc.com/VT"
-    scraper_api_key = os.environ.get("SCRAPER_API_KEY")
 
-    if scraper_api_key:
+    The page is static HTML, so a direct fetch is tried first; ScraperAPI
+    (without JS rendering) is the fallback for datacenter-IP blocks. The
+    previous ScraperAPI-first strategy with render=true timed out every
+    weekly run while the plain page served fine.
+    """
+    content = _fetch(ETFRC_URL, timeout=30)
+
+    if content is None:
+        scraper_api_key = os.environ.get("SCRAPER_API_KEY")
+        if not scraper_api_key:
+            return None
         payload = {
             'api_key': scraper_api_key,
-            'url': url,
+            'url': ETFRC_URL,
             'country_code': 'us',
-            'render': 'true',
         }
         # Security fix: use HTTPS to prevent insecure transmission of API keys
         fetch_url = 'https://api.scraperapi.com/?' + urllib.parse.urlencode(payload)
-    else:
-        print("Warning: SCRAPER_API_KEY not set, fetching directly (may be blocked)")
-        fetch_url = url
+        content = _fetch(fetch_url, timeout=60, secrets_to_scrub=[scraper_api_key])
 
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
-    }
-
-    try:
-        response = requests.get(fetch_url, headers=headers, timeout=30)
-        response.raise_for_status()
-        content = response.text
-    except Exception as e:
-        error_msg = str(e)
-        if scraper_api_key:
-            error_msg = scrub_secrets(error_msg, [scraper_api_key])
-        print(f"Error fetching from ETFRC: {error_msg}")
+    if content is None:
         return None
 
-    # ETFRC shows HHI in the fund overview section
-    # Pattern: <td>HHI</td><td>62</td>
-    pattern = r'<td[^>]*>HHI</td>\s*<td[^>]*>(\d+)</td>'
-    match = re.search(pattern, content, re.IGNORECASE)
-
-    if match:
-        return int(match.group(1))
-
-    # Alternative pattern
-    pattern2 = r'HHI[^0-9]*(\d+)'
-    match2 = re.search(pattern2, content, re.IGNORECASE)
-    if match2:
-        return int(match2.group(1))
-
-    return None
+    return _extract_hhi(content)
 
 
 def update_etf_hhi_json(hhi_value: int):
@@ -112,14 +124,18 @@ def main():
 
             if update_etf_hhi_json(hhi):
                 print("✓ Successfully updated data/etf_hhi.json")
-            else:
-                print("✗ Failed to update JSON file")
+                return
+            print("✗ Failed to update JSON file")
+            sys.exit(1)
         else:
             print(f"⚠ Warning: HHI={hhi} seems high for VT (expected < 100)")
             print("  This may indicate a parsing error or fund composition change")
+            sys.exit(1)
     else:
         print("✗ Failed to fetch VT HHI from ETFRC.com")
-        print("  Keeping existing value in data/etf_hhi.json")
+        # Fail loud: this fetch stayed silently broken for 8 months because the
+        # workflow step is continue-on-error and the script used to exit 0.
+        sys.exit(1)
 
 
 if __name__ == '__main__':
