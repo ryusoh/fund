@@ -37,11 +37,13 @@ class TestScraperAPIHTTPS(unittest.TestCase):
         mock_env_get.return_value = 'fake_api_key'
         mock_response = MagicMock()
         mock_response.text = '<td>HHI</td><td>62</td>'
-        mock_get.return_value = mock_response
+        # Direct fetch fails, forcing the ScraperAPI fallback — the API key
+        # must still travel over HTTPS.
+        mock_get.side_effect = [Exception('blocked'), mock_response]
 
         fetch_vt_hhi_from_etfrc()
 
-        url_called = mock_get.call_args[0][0]
+        url_called = mock_get.call_args_list[-1][0][0]
         self.assertTrue(
             url_called.startswith('https://api.scraperapi.com'),
             f"URL should start with https, got {url_called}",
