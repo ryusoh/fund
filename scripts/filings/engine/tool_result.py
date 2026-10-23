@@ -103,6 +103,35 @@ def build_error(
 # ---------------------------------------------------------------------------
 
 
+def _validate_common_fields(result: dict[str, Any]) -> Optional[str]:
+    meta = result.get("meta")
+    if meta is not None and not isinstance(meta, dict):
+        return 'tool result field "meta" must be dict'
+    truncation = result.get("truncation")
+    if truncation is not None and not isinstance(truncation, dict):
+        return 'tool result field "truncation" must be dict'
+    return None
+
+
+def _validate_success_fields(result: dict[str, Any]) -> Optional[str]:
+    if "value" not in result:
+        return 'successful tool result must contain field "value"'
+    return None
+
+
+def _validate_failure_fields(result: dict[str, Any]) -> Optional[str]:
+    error = result.get("error")
+    if not isinstance(error, str) or not error.strip():
+        return 'failed tool result must contain non-empty string field "error"'
+    message = result.get("message")
+    if not isinstance(message, str) or not message.strip():
+        return 'failed tool result must contain non-empty string field "message"'
+    hint = result.get("hint")
+    if hint is not None and not isinstance(hint, str):
+        return 'tool result field "hint" must be string'
+    return None
+
+
 def validate_tool_result_contract(result: Any) -> Optional[str]:
     """Validate that a tool result matches the Engine's sole legal envelope format.
 
@@ -118,29 +147,14 @@ def validate_tool_result_contract(result: Any) -> Optional[str]:
     if not isinstance(ok, bool):
         return 'tool result must contain boolean field "ok"'
 
-    meta = result.get("meta")
-    if meta is not None and not isinstance(meta, dict):
-        return 'tool result field "meta" must be dict'
-
-    truncation = result.get("truncation")
-    if truncation is not None and not isinstance(truncation, dict):
-        return 'tool result field "truncation" must be dict'
+    common_error = _validate_common_fields(result)
+    if common_error:
+        return common_error
 
     if ok:
-        if "value" not in result:
-            return 'successful tool result must contain field "value"'
-        return None
+        return _validate_success_fields(result)
 
-    error = result.get("error")
-    if not isinstance(error, str) or not error.strip():
-        return 'failed tool result must contain non-empty string field "error"'
-    message = result.get("message")
-    if not isinstance(message, str) or not message.strip():
-        return 'failed tool result must contain non-empty string field "message"'
-    hint = result.get("hint")
-    if hint is not None and not isinstance(hint, str):
-        return 'tool result field "hint" must be string'
-    return None
+    return _validate_failure_fields(result)
 
 
 # ---------------------------------------------------------------------------
