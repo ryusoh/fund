@@ -11,7 +11,7 @@
 - **Benchmark (annual)**: 6.5%
 - **Target CAGR (Hurdle)**: 12%
 - **Industry Layer**: none yet (candidate: merchant AI accelerators / inference; overlaps [cloud-ai-ecosystem](industry/cloud-ai-ecosystem.md) and the Ethernet-vs-alternatives battle in [ai-networking](industry/ai-networking.md))
-- **Findings doc**: [docs/research/cerebras-systems.md](../research/cerebras-systems.md) (deep-research run, 2026-10-13; confirm pass 6/6 PASS @ 0.80 vs Q2 2026 10-Q + 3 S-1 claims verbatim-confirmed); [docs/research/cerebras-customer-economics.md](../research/cerebras-customer-economics.md) (customer-economics deep dive, 2026-10-23)
+- **Findings doc**: [docs/research/tickers/cerebras-systems.md](../research/tickers/cerebras-systems.md) (deep-research run, 2026-10-13; confirm pass 6/6 PASS @ 0.80 vs Q2 2026 10-Q + 3 S-1 claims verbatim-confirmed); [docs/research/tickers/cerebras-customer-economics.md](../research/tickers/cerebras-customer-economics.md) (customer-economics deep dive, 2026-10-23)
 
 - **Model Settings**
     - Engine: fermat-pascal-v1
@@ -254,7 +254,7 @@ Append-only log. Machine-readable records: `data/analysis/CBRS.evidence.jsonl`. 
 #### 2026-10-23 – Customer-economics deep dive + price-drop decomposition
 
 - What happened:
-    - Three-subagent deep research on the three-sided customer-financing structure; findings doc: `docs/research/cerebras-customer-economics.md` (confirm pass 6/6 PASS @ 0.60 floor + direct extraction from cached 10-Q/S-1 HTML). Key new verified facts: OpenAI warrant tranche structure (4.46M on loan funding + 5.57M on $40B-market-cap/fee trigger + 23.4M delivery-contingent deemed not probable; FV $82.02/sh); G42's two warrants (3.51M sh @ $0.01, ~$302M, no performance conditions, fully exercised); AWS warrant 90% conditional on undisclosed AWS payment thresholds (10%, ~$50M, vested at issuance); Q2 GAAP GM 14% with hardware at 2%; H1 FCF ≈ $(596)M; Q2's GAAP revenue suppression was mostly G42-linked ($41.8M), not OpenAI ($2.5M); full dilution inventory (~76M anti-dilutive + 25.8M unvested customer warrants + 91.5M plan/ESPP reserves vs 112.2M Class A). Corrections: filings describe Trainium3/CS-3 workload partitioning without a prefill/decode role split; "Bedrock Q1 2027" is press/IR-only.
+    - Three-subagent deep research on the three-sided customer-financing structure; findings doc: `docs/research/tickers/cerebras-customer-economics.md` (confirm pass 6/6 PASS @ 0.60 floor + direct extraction from cached 10-Q/S-1 HTML). Key new verified facts: OpenAI warrant tranche structure (4.46M on loan funding + 5.57M on $40B-market-cap/fee trigger + 23.4M delivery-contingent deemed not probable; FV $82.02/sh); G42's two warrants (3.51M sh @ $0.01, ~$302M, no performance conditions, fully exercised); AWS warrant 90% conditional on undisclosed AWS payment thresholds (10%, ~$50M, vested at issuance); Q2 GAAP GM 14% with hardware at 2%; H1 FCF ≈ $(596)M; Q2's GAAP revenue suppression was mostly G42-linked ($41.8M), not OpenAI ($2.5M); full dilution inventory (~76M anti-dilutive + 25.8M unvested customer warrants + 91.5M plan/ESPP reserves vs 112.2M Class A). Corrections: filings describe Trainium3/CS-3 workload partitioning without a prefill/decode role split; "Bedrock Q1 2027" is press/IR-only.
     - Price fell $146.62 → $117.98 (Oct 22) → $108.94 (Oct 23; 52wk low $107.90) with **no company-originated catalyst** — zero SEC filings since Aug 12. Decomposition: Microsoft Maia 300 reveal (Oct 12), Oct 14 lockup tranche, TD Cowen (bookrunner) target cut $275→$175 (Oct 19), pre-Oct-28/Nov-9 positioning; SemiAnalysis claim still only X posts, Altman's "close partner" post neither confirms nor denies. Q3 earnings confirmed for **Nov 12 AMC**.
 - Impact on scenarios:
     - Unchanged: Bull 0.25 / Base 0.40 / Bear 0.35. The drop is supply + unresolved anchor-customer doubt, not new primary information; the deep dive confirmed the structure the scenarios already price.
@@ -281,7 +281,7 @@ Append-only log. Machine-readable records: `data/analysis/CBRS.evidence.jsonl`. 
 #### 2026-10-14 – Initial thesis from deep-research run
 
 - What happened:
-    - First coverage. Findings doc: `docs/research/cerebras-systems.md` (3-subagent deep research; confirm pass 6/6 PASS @ 0.80 vs Q2 2026 10-Q `fil_0001628280-26-056357`; 3 S-1 claims verbatim-confirmed by direct extraction after reproducing the S-1 processor failure).
+    - First coverage. Findings doc: `docs/research/tickers/cerebras-systems.md` (3-subagent deep research; confirm pass 6/6 PASS @ 0.80 vs Q2 2026 10-Q `fil_0001628280-26-056357`; 3 S-1 claims verbatim-confirmed by direct extraction after reproducing the S-1 processor failure).
 - Impact on scenarios:
     - Initial probabilities set: Bull 0.25 / Base 0.40 / Bear 0.35.
 - Impact on assumptions:

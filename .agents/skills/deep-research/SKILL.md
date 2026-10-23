@@ -52,7 +52,9 @@ For the given research question `{{args}}`:
     - Re-verify critical web claims by direct source inspection.
 
 4. **Persist findings:**
-    - Write the cited findings doc to `docs/research/<topic>.md`.
+    - Write the cited findings doc to `docs/research/tickers/<topic>.md` for company/security-specific
+      research (keeps ticker findings separate from general engineering research at the
+      `docs/research/` top level).
     - Structure: executive summary, baseline vs new evidence, claim-by-claim breakdown with
       source anchors, open questions / unverified claims, and action items.
     - Only after findings are committed may `docs/thesis/<TICKER>.md` or `data/analysis/*.json`

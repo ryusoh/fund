@@ -1,6 +1,6 @@
 # CBRS – Base Evidence
 
-Initial seed from `docs/research/cerebras-systems.md` (2026-10-13/14). Append new material below with dates and sources.
+Initial seed from `docs/research/tickers/cerebras-systems.md` (2026-10-13/14). Append new material below with dates and sources.
 
 ## 2026-10-14 — Initial seed
 

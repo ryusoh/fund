@@ -11,7 +11,7 @@
 - **Benchmark (annual)**: 6.5%
 - **Target CAGR (Hurdle)**: 12%
 - **Industry Layer**: none yet (candidate: semiconductor test / SiC–GaN power; AI angle overlaps [cloud-ai-ecosystem](industry/cloud-ai-ecosystem.md))
-- **Findings doc**: [docs/research/aehr-initial-thesis.md](../research/aehr-initial-thesis.md) (deep-research run, 2026-10-12; confirm pass 6/6 PASS ≥ 0.80)
+- **Findings doc**: [docs/research/tickers/aehr-initial-thesis.md](../research/tickers/aehr-initial-thesis.md) (deep-research run, 2026-10-12; confirm pass 6/6 PASS ≥ 0.80)
 
 - **Model Settings**
     - Engine: fermat-pascal-v1
@@ -274,7 +274,7 @@ Append-only log. Machine-readable records: `data/analysis/AEHR.evidence.jsonl`. 
 #### 2026-10-12 – Initial thesis from deep-research run
 
 - What happened:
-    - First coverage. Findings doc: `docs/research/aehr-initial-thesis.md` (3-subagent deep research; confirm pass 6/6 PASS ≥ 0.80 vs FY2026 10-K). Fiscal calendar corrected: FY ends Friday nearest May 31, moving to June 30 from FY2027; Q1 FY2027 prints 2026-11-02.
+    - First coverage. Findings doc: `docs/research/tickers/aehr-initial-thesis.md` (3-subagent deep research; confirm pass 6/6 PASS ≥ 0.80 vs FY2026 10-K). Fiscal calendar corrected: FY ends Friday nearest May 31, moving to June 30 from FY2027; Q1 FY2027 prints 2026-11-02.
 - Impact on scenarios:
     - Initial probabilities set: Bull 0.25 / Base 0.45 / Bear 0.30.
 - Impact on assumptions:

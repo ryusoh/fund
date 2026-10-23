@@ -1,6 +1,6 @@
 # AEHR – Bear Evidence
 
-Initial seed from `docs/research/aehr-initial-thesis.md` (2026-10-12). Append new material below with dates and sources.
+Initial seed from `docs/research/tickers/aehr-initial-thesis.md` (2026-10-12). Append new material below with dates and sources.
 
 ## 2026-10-12 — Initial seed
 

@@ -3,7 +3,7 @@
 How to drive the SEC filings stack (`scripts/filings/`, Apache-2.0 — see its
 `PROVENANCE.md`) from this repo.
 Design/evaluation context: `docs/research/external-filings-agent-evaluation.md`;
-first appliance-test results: `docs/research/aehr-initial-thesis.md` (§Filings-layer
+first appliance-test results: `docs/research/tickers/aehr-initial-thesis.md` (§Filings-layer
 evaluation, 2026-10-12).
 
 ## Invocation
