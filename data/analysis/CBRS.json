@@ -3,7 +3,7 @@
     "name": "Cerebras Systems",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-10-22T13:13:07.714396+00:00",
+        "asOf": "2026-10-23T07:58:53.525759+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -28,29 +28,29 @@
         }
     },
     "market": {
-        "price": 117.98,
+        "price": 108.94,
         "eps": -5.14,
         "forwardEps": 1.2737,
         "pe": null,
-        "forwardPe": 92.6292,
+        "forwardPe": 85.5317,
         "beta": null,
-        "marketCap": 28027807744.0,
+        "marketCap": 25880227840.0,
         "currency": "USD",
-        "marketDataUpdatedAt": "2026-10-22T13:13:07.589545+00:00",
+        "marketDataUpdatedAt": "2026-10-23T07:58:52.883994+00:00",
         "pegRatio": null,
-        "enterpriseValue": 21593329664.0,
+        "enterpriseValue": 19445749760.0,
         "ebitda": -484790016.0,
         "dividendYield": 0.0,
-        "fiftyDayAverage": 185.3224,
-        "twoHundredDayAverage": 204.1861,
-        "averageVolume": 7763012.0,
-        "averageDailyVolume10Day": 10553490.0,
+        "fiftyDayAverage": 182.26,
+        "twoHundredDayAverage": 203.3357,
+        "averageVolume": 7815113.0,
+        "averageDailyVolume10Day": 10651480.0,
         "fiftyTwoWeekHigh": 386.34,
-        "fiftyTwoWeekLow": 115.13,
-        "evToEbitda": -44.5416
+        "fiftyTwoWeekLow": 107.895,
+        "evToEbitda": -40.1117
     },
     "risk": {
-        "volatility": 1.1353,
+        "volatility": 1.1351,
         "estimateSource": "historical",
         "correlations": null
     },
@@ -113,8 +113,8 @@
         }
     ],
     "derived": {
-        "expectedCagr": -0.034,
-        "expectedMultiple": 0.84,
+        "expectedCagr": 0.025,
+        "expectedMultiple": 1.13,
         "fairValueRange": [
             50.0,
             70.0
@@ -131,7 +131,7 @@
         "evidence_for": [
             "RPO $25.4B at 2026-06-30 (vs $24.6B at 2025-12-31), majority attributable to the OpenAI MRA; ~22% recognizable within 24 months [10-Q 2026-08-12; confirm pass 80%].",
             "OpenAI MRA (signed Dec 2025): 750MW committed 2026-2028, option to 2.0GW by 2030; 'valued at more than $20 billion' [S-1 2026-04-17, verbatim-confirmed].",
-            "AWS Commercial Agreement June 2026: first hyperscaler deployment, multi-year lease, exclusivity and capacity guarantees; Trainium-3 prefill + Cerebras decode; Bedrock integration targeted Q1 2027 [10-Q s_0006_c05; Q1/Q2 2026 releases].",
+            "AWS Commercial Agreement June 2026: first hyperscaler deployment, multi-year lease, exclusivity and capacity guarantees; disaggregated inference partitioning workloads across Trainium3 and CS-3 (no prefill/decode role split stated in filings); Bedrock integration targeted Q1 2027 (press/IR-only, not in filings). AWS warrant: 2,696,678 Class N @ $100.00, 10% (269,668 sh, ~$50.0M FV) vested at issuance, 90% vest on AWS aggregate payment thresholds within 5 years [10-Q s_0006_c05; Note 12 raw; Q1/Q2 2026 releases].",
             "Revenue $510.0M FY2025 (+76%); Q2 2026 $180.1M (+74% YoY); FY2026 core revenue guide raised to $880-890M; CFO plans to 'more than triple revenue in 2027' [S-1; 10-Q; Q2'26 release].",
             "Core (non-GAAP) net loss only $(6.9)M in Q2 2026 / $(9.4)M H1 — near breakeven ex-IPO SBC and warrant amortization [10-Q s_0002_c17/19].",
             "Liquidity: $7.4B cash+restricted + $1.2B securities + undrawn $850M revolver at 2026-06-30 [10-Q; confirm pass 80%].",
@@ -146,19 +146,24 @@
             "Material weaknesses in ICFR; disclosure controls 'not effective' at 2026-06-30 [10-Q s_0006_c03].",
             "Lockup overhang is staggered, not done: early releases of 6.7% of each holder's Eligible Securities on Aug 19 / Sep 2 / Sep 16 (elapsed) and 8.9% on Sep 30 / Oct 14 / Oct 28 (two windows still ahead as of 2026-10-14); up to ~171.1M shares total early-releasable incl. ~15M directors/officers; full expiry ~Nov 9 — '利空出尽' claims are premature [S-1 lock-up section, verbatim-confirmed; 424B4 via sec-api].",
             "Insider selling: 46 Forms 4 in first 4 months post-IPO, zero open-market buys, ~1.29M shares sold $161-250 [EDGAR Forms 4/144].",
-            "~$2.25B of data-center leases signed Q2+Q3 2026 not yet commenced — fixed-cost model mismatch vs consumption-priced inference [10-Q s_0001_c19/20]."
+            "~$2.25B of data-center leases signed Q2+Q3 2026 not yet commenced — fixed-cost model mismatch vs consumption-priced inference [10-Q s_0001_c19/20].",
+            "Customer-warrant economics (2026-10-23 deep dive): OpenAI 33,445,026 Class N @ $0.00001 (grant-date FV $82.02/sh; 10,033,508 vested/exercised; 23,411,518 delivery-contingent tranches deemed not probable); G42 two warrants totaling 3,513,491 @ $0.01 (~$301.8M grant value, no performance conditions, fully exercised); aggregate customer-warrant asset $1,128.4M amortizing as contra-revenue through Oct 2031 [10-Q Note 12 raw; S-1 raw; confirm pass 60% floor + direct extraction].",
+            "Cash reality H1 2026: OCF $(47.5)M, capex $(548.9)M, FCF ~$(596)M; Q2 GAAP gross margin 14% (hardware 2%, cloud 20%) vs core GP $85.2M (~47%); OpenAI loan repayments so far are $86.3M of non-cash service credits, zero cash [10-Q cash-flow/MD&A raw].",
+            "Dilution inventory vs 112.2M Class A (Aug 5 2026): 76.0M anti-dilutive (26.1M warrants, 23.8M options, 16.5M RSUs, 9.0M PRSUs) + 25.8M unvested customer warrants + 42.7M 2026-Plan reserve + 48.9M ESPP; Class N converts 1:1 into voting Class A on transfer; founder PRSUs at $75B/$150B/$250B market-cap hurdles [10-Q cover, Note 5/12 raw; S-1 raw]."
         ],
         "open_questions": [
             "GPT-6.1 Sol Ultrafast on Nvidia — which hypothesis? (a) swapped out: OpenAI found Nvidia better on cost/stability/real-workload TCO after production use; (b) sold out: Cerebras lacked capacity to serve all Ultrafast demand, market mispriced a supply problem as a technology failure; (c) heterogeneous: prefill/decode and latency/cost tiers permanently split across architectures. Read the original SemiAnalysis report to discriminate.",
             "Is Customer B (32% of Q2 2026 revenue) OpenAI? Filing does not equate them.",
             "Does CS-3/CS-4 clustering use Ethernet at scale, and whose fabric? (ANET cross-thesis hook.)",
-            "MRA delivery schedule: article claims 250MW by YE2026 / 500MW cumulative YE2027 / 750MW YE2028 — not found in 10-Q or April S-1 text; verify against the 424B4 or MRA exhibit before treating as contract terms.",
+            "MRA delivery schedule: article claims 250MW by YE2026 / 500MW cumulative YE2027 / 750MW YE2028 — not found in 10-Q or April S-1 text; the S-1's loan-amortization language ('after the delivery of the final tranche of the initial 250 MW of capacity') indirectly corroborates a 250MW initial block but does not confirm the annual schedule; verify against the 424B4 or MRA exhibit.",
+            "AWS warrant payment thresholds: the aggregate AWS payment levels that vest the remaining 2,427,010 shares are undisclosed — they encode how much AWS must spend for its equity upside.",
+            "OpenAI loan amortization vs MRA ramp: the loan amortizes over 3 years after delivery of the final tranche of the initial 250MW — if the ramp slips, the $736.0M current portion and the credit-based repayment mix become a real cash question.",
             "RPO survivability: how much of the $25.4B is exposed to OpenAI tranche-termination rights?",
             "Utilization chain: deployment → utilization → cloud revenue → gross margin — which step is the current binding constraint? Q3 print should show whether the 600MW+ contracted capacity is converting.",
             "G42 post-IPO equity stake and the G42-to-Class-N non-voting mapping (UNVERIFIED).",
             "Q3 2026 print (~mid-Nov): core revenue vs the $214-216M guide; first print after the Oct 14/28 lockup windows."
         ],
-        "as_of": "2026-10-14T00:00:00Z"
+        "as_of": "2026-10-23T00:00:00Z"
     },
     "predictions": [
         {
@@ -245,6 +250,23 @@
                 "heterogeneous split persists; ambiguity unresolved through Q3 print": 0.35
             },
             "review_date": "2026-10-29"
+        },
+        {
+            "date": "2026-10-23",
+            "action": "WATCH",
+            "shares_changed": 0,
+            "situation": "Customer-economics deep dive (findings: docs/research/cerebras-customer-economics.md; confirm pass 6/6 PASS @ 0.60 floor + direct extraction from cached 10-Q/S-1 HTML). Confirmed the three-sided structure: OpenAI got >$20B contracted capacity + a 33.4M-share $0.00001 warrant (~$2.7B grant-date FV; 23.4M delivery-contingent shares deemed not probable) + collateral/acceleration rights on the $1.0B loan funding the build-out; G42 got ~$302M of immediately-vested $0.01 warrants with no performance conditions; AWS got pricing/exclusivity/capacity guarantees plus a $100-strike warrant that is 90% payment-threshold-conditional. Cerebras's side: Q2 GAAP GM 14% (hardware 2%), core GP ~47%, H1 FCF ~$(596)M, $1.13B warrant asset amortizing through Oct 2031 (Q2 suppression mostly G42-linked, not OpenAI). Public holders carry the 750MW delivery obligation (failure = MRA termination + $918M loan acceleration) and a dilution inventory of ~76M anti-dilutive + 25.8M unvested customer warrants + 91.5M plan/ESPP reserves vs 112.2M Class A. Price fell $146.62 -> $117.98 (Oct 22) -> $108.94 (Oct 23) with NO company-originated catalyst (zero SEC filings since Aug 12): Maia 300 reveal, Oct 14 lockup tranche, TD Cowen target cut to $175, pre-Nov-9 positioning. Q3 print confirmed for 2026-11-12 AMC.",
+            "alternatives_rejected": [
+                "Move scenario probabilities on the ~20% price decline (rejected: the decomposition shows supply/sentiment, not new fundamental information; per the standing rule, probabilities move on the SemiAnalysis original or the Q3 print, and the SemiAnalysis claim remains only X posts with Altman neither confirming nor denying).",
+                "Treat the drop toward $108.94 as approaching the entry zone and prepare a starter (rejected: entry zone is $50-70; at $108.94 the scenario-weighted CAGR is only ~+2.5%, still far below the 12% hurdle; price falling does not by itself clear the bar).",
+                "Promote the 250/500/750MW per-year schedule to contract fact on the S-1 loan language (rejected: 'final tranche of the initial 250 MW' corroborates an initial 250MW block but does not establish the annual schedule; prediction cbrs-ye2026-250mw-delivery stands)."
+            ],
+            "expected_outcomes": {
+                "Q3 print (Nov 12) meets/exceeds guide and Oct 28 + Nov 9 supply is absorbed; ambiguity resolves post-print": 0.4,
+                "Guide-consistent print but continued overhang/ambiguity keeps the stock ranging toward the $50-70 zone": 0.35,
+                "Q3 miss or MRA/Ultrafast disclosure breaks the anchor; de-rating accelerates": 0.25
+            },
+            "review_date": "2026-11-13"
         }
     ]
 }

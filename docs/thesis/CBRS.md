@@ -11,7 +11,7 @@
 - **Benchmark (annual)**: 6.5%
 - **Target CAGR (Hurdle)**: 12%
 - **Industry Layer**: none yet (candidate: merchant AI accelerators / inference; overlaps [cloud-ai-ecosystem](industry/cloud-ai-ecosystem.md) and the Ethernet-vs-alternatives battle in [ai-networking](industry/ai-networking.md))
-- **Findings doc**: [docs/research/cerebras-systems.md](../research/cerebras-systems.md) (deep-research run, 2026-10-13; confirm pass 6/6 PASS @ 0.80 vs Q2 2026 10-Q + 3 S-1 claims verbatim-confirmed)
+- **Findings doc**: [docs/research/cerebras-systems.md](../research/cerebras-systems.md) (deep-research run, 2026-10-13; confirm pass 6/6 PASS @ 0.80 vs Q2 2026 10-Q + 3 S-1 claims verbatim-confirmed); [docs/research/cerebras-customer-economics.md](../research/cerebras-customer-economics.md) (customer-economics deep dive, 2026-10-23)
 
 - **Model Settings**
     - Engine: fermat-pascal-v1
@@ -43,16 +43,16 @@
 - Thesis type:
     - Watchlist: category-defining inference architecture with real backlog, currently priced past its base case, with the two decisive unknowns (SemiAnalysis Nvidia-for-decode report; ~171M-share lockup expiry ~2026-11-09) resolving within weeks.
 - My edge / variant perception vs market:
-    - The market is pricing CBRS as an OpenAI derivative. The under-priced question is architectural: whether decode disaggregation (GPU/Trainium prefill + wafer-scale decode, per the AWS and AMD deals) becomes standard — in which case Cerebras's wedge survives GPU roadmap progress — or whether GPUs absorb decode too (the bear/SemiAnalysis path).
+    - The market is pricing CBRS as an OpenAI derivative. The under-priced question is architectural: whether decode disaggregation (accelerator prefill + wafer-scale decode, per the AWS and AMD deals) becomes standard — in which case Cerebras's wedge survives GPU roadmap progress — or whether GPUs absorb decode too (the bear/SemiAnalysis path).
 
 ### 1.3 Current valuation snapshot
 
-- Price: 146.62 USD (2026-10-12 close, −10.7% that day); 21% below the $185 IPO price (2026-05-14/15)
+- Price: 108.94 USD (2026-10-23; 52wk low 107.895); 41% below the $185 IPO price (2026-05-14/15). The $146.62→$108.94 slide had **no company-originated catalyst** (zero SEC filings since 2026-08-12): Maia 300 reveal (Oct 12), Oct 14 lockup tranche, TD Cowen target cut $275→$175 (Oct 19), pre-Nov-9 positioning.
 - Trailing EPS / PE: GAAP deeply negative (IPO SBC + warrant amortization) / n.m.
-- Core (non-GAAP): Q2 2026 net loss only $(6.9)M — near breakeven; FY2026 core revenue guide $880–890M, core GM 41–43%
-- P/S: ~40x FY2026 core guide at ~$35B market cap
-- Net liquidity: $7.4B cash+restricted + $1.2B securities + undrawn $850M revolver (2026-06-30)
-- 52-week range: $145.75–$385.00 (IPO-era range); stock debuted +68% at $311
+- Core (non-GAAP): Q2 2026 net loss only $(6.9)M — near breakeven; FY2026 core revenue guide $880–890M, core GM 41–43%. GAAP GM Q2 was **14%** (hardware 2%, cloud 20%) after $44.3M warrant amortization (mostly G42-linked; OpenAI-linked only $2.5M).
+- P/S: ~32x FY2026 core guide at ~$28B market cap
+- Net liquidity: $7.4B cash+restricted + $1.2B securities + undrawn $850M revolver (2026-06-30); H1 2026 FCF ≈ $(596)M (OCF $(47.5)M − capex $548.9M)
+- 52-week range: $115.13–$386.34 (IPO-era range); stock debuted +68% at $311
 
 ---
 
@@ -72,15 +72,16 @@
 
 ### 2.2 Unit economics & returns
 
-- Core gross margin 41–47% (2026 quarters); GAAP margins optically suppressed by warrant amortization (contra-revenue through **Oct 2031**) and IPO SBC.
-- Heavy fixed-cost buildout ahead: ~$2.25B of data-center leases signed Q2+Q3 2026 not yet commenced, plus $548.9M H1 capex — the model shifts toward owned capacity ahead of RPO conversion.
+- Core gross margin 41–47% (2026 quarters); GAAP Q2 2026 GM was 14% (hardware 2%, cloud 20%), suppressed by warrant amortization ($1.13B asset remaining, contra-revenue through **Oct 2031**; Q2's $44.3M was ~$41.8M G42-linked vs only $2.5M OpenAI-linked) and IPO SBC.
+- Heavy fixed-cost buildout ahead: ~$2.25B of data-center leases signed Q2+Q3 2026 not yet commenced, plus $548.9M H1 capex — H1 2026 FCF ≈ $(596)M (OCF $(47.5)M − capex); the OpenAI loan has been repaid only in $86.3M of non-cash service credits, zero cash.
+- Dilution inventory vs 112.2M Class A: 76.0M anti-dilutive shares + 25.8M unvested customer warrants + 42.7M 2026-Plan + 48.9M ESPP reserves; Class N warrant shares auto-convert 1:1 into voting Class A on transfer.
 - TSMC single-foundry dependence, purchase-order basis, no long-term capacity commitments (10-Q risk factors); wafer supply described as "secured" for growth (Q2'26 release).
 
 ### 2.3 Management & capital allocation
 
 - Founder-CEO Andrew Feldman; Class B (20 votes) holds ~95% of votes — public holders have no say.
 - Insider behavior post-IPO is a negative tell: 46 Forms 4 in 4 months, zero open-market buys, ~1.29M shares sold at $161–$250 (incl. CEO 237,559 sh via 10b5-1).
-- Customer-warrant financing (OpenAI 33.4M shares @ $0.00001; AWS 2.7M @ $100; G42 tranches @ $0.01) buys revenue at the cost of multi-year margin suppression — rational for land-grab, corrosive to GAAP optics.
+- Customer-warrant financing (OpenAI 33.4M shares @ $0.00001, grant-date FV $82.02/sh — 10.0M vested on loan-funding/market-cap triggers, 23.4M delivery-contingent and deemed not probable; AWS 2.7M @ $100, 10% vested at issuance and 90% conditional on AWS payment thresholds; G42 two warrants totaling 3.5M @ $0.01, ~$302M grant value, no performance conditions, fully exercised) buys revenue at the cost of multi-year margin suppression — rational for land-grab, corrosive to GAAP optics.
 - Governance watch: material weaknesses in ICFR, disclosure controls "not effective" at 2026-06-30; law-firm investigation announced Jul 2026 (SECONDARY).
 
 ---
@@ -107,7 +108,7 @@
     - Fixed-cost leases (~$2.25B) vs consumption-priced contracts — model mismatch flagged in the 10-Q.
     - Warrant amortization suppresses GAAP revenue/margin through 2031; serial dilution embedded in the customer-acquisition model.
 - Market-structure risks:
-    - **Lockup is staggered, not a single expiry** (S-1 lock-up section, verbatim): early releases of 6.7% of each holder's Eligible Securities on Aug 19 / Sep 2 / Sep 16 (elapsed) and **8.9% on Sep 30 / Oct 14 / Oct 28**; up to ~171.1M shares total early-releasable (incl. ~15M directors/officers, vs 103.2M Class A outstanding); full expiry ~2026-11-09 (two days post-Q3 print). The "Sep 30 cleared the overhang" narrative is wrong — two windows remain as of 2026-10-14. Release ≠ sale, but the supply calendar is still running.
+    - **Lockup is staggered, not a single expiry** (S-1 lock-up section, verbatim): early releases of 6.7% of each holder's Eligible Securities on Aug 19 / Sep 2 / Sep 16 (elapsed) and **8.9% on Sep 30 / Oct 14 (elapsed) / Oct 28 (upcoming)**; up to ~171.1M shares total early-releasable (incl. ~15M directors/officers, vs 103.2M Class A outstanding); full expiry ~2026-11-09 (180 days post-prospectus — the Q3 print lands Nov 12, so the 180-day prong binds, not the post-earnings prong). Release ≠ sale, but the supply calendar is still running.
 - Explicit thesis-kill triggers (for the watchlist thesis itself):
     - Any filing disclosing an OpenAI MRA tranche miss, termination, or material renegotiation.
     - Q3 2026 core revenue below the $214M guide low end.
@@ -188,8 +189,8 @@
 
 ## 5. Quantitative Summary & Model Check
 
-- Expected annualized return (CAGR): **≈ −3.4%** (scenario-weighted from $146.62 / ~147× the $1.00 FY2027 core-EPS base)
-- Expected 5-year multiple: **~0.84×** (0.25 × 2.18 + 0.40 × 0.68 + 0.35 × 0.07)
+- Expected annualized return (CAGR): **≈ +2.5%** (scenario-weighted from $108.94 / ~109× the $1.00 FY2027 core-EPS base; was −3.4% at $146.62 — the price decline improves but does not clear the hurdle)
+- Expected 5-year multiple: **~1.13×** (0.25 × 2.94 + 0.40 × 0.91 + 0.35 × 0.10)
 - Fair value range today: **~50–70 USD** — the zone where the probability-weighted return clears the 12% hurdle (entry math: ~$70 clears 12%)
 
 - Kelly outputs:
@@ -198,7 +199,7 @@
 
 ### 5.1 Interpretation vs benchmark and hurdle
 
-- Benchmark: 6.5%; hurdle: 12%. Expected ≈ −3.4%: fails both.
+- Benchmark: 6.5%; hurdle: 12%. Expected ≈ +2.5% at $108.94: still fails both.
 - Same shape as AEHR: genuinely strong business evidence (RPO, guide raise, AWS/AMD validation) at a price that requires the bull case. Unlike AEHR, two near-term events (Q3 print + lockup, ~Nov 9–15) will re-price it before any long thesis needs to act.
 - Re-engagement rule: model clears the hurdle below ~$70, or at higher prices if (a) the SemiAnalysis claim is refuted at source and (b) FY2027 actuals raise the EPS base materially above $1.00.
 
@@ -225,7 +226,7 @@
 
 - Q3 2026 print (~mid-Nov 2026): core revenue vs $214–216M guide; RPO balance QoQ; any OpenAI-tranche language.
 - **The utilization chain: deployment → utilization → cloud revenue → gross margin** — contracted MW only matter if machines deploy on time, run at high utilization, convert to cloud revenue (core cloud +287% YoY in Q2), and hold core gross margin (41% Q2) as capacity scales.
-- Lockup early-release windows **Oct 14 and Oct 28** (8.9% of Eligible Securities each): watch volume vs price-decline absorption; then full expiry ~2026-11-09 and insider Form 4 cadence.
+- Lockup early-release windows **Oct 14 (elapsed — the stock fell through it, −10.5% on Oct 16 with no headline; absorption weak)** and **Oct 28** (8.9% of Eligible Securities each): watch volume vs price-decline absorption; then full expiry ~2026-11-09 and insider Form 4 cadence.
 - Customer-letter distribution each 10-Q (A/B/C/D shares; AR concentration).
 - AWS revenue emergence (Bedrock integration Q1 2027) and AMD partnership production ramp (Q4 2026).
 - Warrant amortization trajectory and core-vs-GAAP margin bridge each quarter.
@@ -249,6 +250,20 @@ Append-only log. Machine-readable records: `data/analysis/CBRS.evidence.jsonl`. 
 - Bear evidence file: `docs/thesis/CBRS/CBRS-bear-evidence.md`
 
 ### 8.2 High-level update entries (reverse chronological)
+
+#### 2026-10-23 – Customer-economics deep dive + price-drop decomposition
+
+- What happened:
+    - Three-subagent deep research on the three-sided customer-financing structure; findings doc: `docs/research/cerebras-customer-economics.md` (confirm pass 6/6 PASS @ 0.60 floor + direct extraction from cached 10-Q/S-1 HTML). Key new verified facts: OpenAI warrant tranche structure (4.46M on loan funding + 5.57M on $40B-market-cap/fee trigger + 23.4M delivery-contingent deemed not probable; FV $82.02/sh); G42's two warrants (3.51M sh @ $0.01, ~$302M, no performance conditions, fully exercised); AWS warrant 90% conditional on undisclosed AWS payment thresholds (10%, ~$50M, vested at issuance); Q2 GAAP GM 14% with hardware at 2%; H1 FCF ≈ $(596)M; Q2's GAAP revenue suppression was mostly G42-linked ($41.8M), not OpenAI ($2.5M); full dilution inventory (~76M anti-dilutive + 25.8M unvested customer warrants + 91.5M plan/ESPP reserves vs 112.2M Class A). Corrections: filings describe Trainium3/CS-3 workload partitioning without a prefill/decode role split; "Bedrock Q1 2027" is press/IR-only.
+    - Price fell $146.62 → $117.98 (Oct 22) → $108.94 (Oct 23; 52wk low $107.90) with **no company-originated catalyst** — zero SEC filings since Aug 12. Decomposition: Microsoft Maia 300 reveal (Oct 12), Oct 14 lockup tranche, TD Cowen (bookrunner) target cut $275→$175 (Oct 19), pre-Oct-28/Nov-9 positioning; SemiAnalysis claim still only X posts, Altman's "close partner" post neither confirms nor denies. Q3 earnings confirmed for **Nov 12 AMC**.
+- Impact on scenarios:
+    - Unchanged: Bull 0.25 / Base 0.40 / Bear 0.35. The drop is supply + unresolved anchor-customer doubt, not new primary information; the deep dive confirmed the structure the scenarios already price.
+- Impact on assumptions:
+    - None to scenario parameters. Derived block refreshed: at $108.94 (the decline extended from $117.98 on Oct 22) the scenario-weighted expected CAGR is ≈ +2.5% (was −3.4% at $146.62) — still far below the 12% hurdle; entry zone $50–70 unchanged.
+- Action:
+    - WATCH (no position; $117.98 still ~1.7× the top of the entry zone). Q3 print Nov 12 AMC is now the single next catalyst, landing after the Nov 9 full lockup expiry.
+- TODO:
+    - Watch Oct 28 window absorption and post-Oct-14 Form 4 cadence; Q3 10-Q: AWS revenue emergence (lease-commencement conditions were unsatisfied at Jun 30), warrant-amortization trajectory, and any OpenAI-tranche language; resolve the SemiAnalysis question at source when the Q3 print forces disclosure.
 
 #### 2026-10-14 – Third-party article review: Ultrafast hardware swap + lockup calendar
 
