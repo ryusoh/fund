@@ -66,6 +66,10 @@ Synthesize the incremental findings in the chat response:
         - Belief state (`confidence`, `evidence_for`, `evidence_against`, `open_questions`)
         - Dated falsifiable predictions (`predictions`)
         - Decision journal entry (`decision_journal`)
+        - If any scenario carries a `drivers` block: reconcile its derived values against
+          the new print (actual vs modeled revenue per driver), update driver inputs with
+          sources, and register each named falsification driver as a dated entry in
+          `predictions` so `prediction_sweeper.py` enforces resolution.
 
 ### Step 4: Apply Surgical Patches
 
