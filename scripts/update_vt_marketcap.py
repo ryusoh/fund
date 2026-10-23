@@ -1,94 +1,145 @@
 #!/usr/bin/env python3
 """
-Update VT (Vanguard Total World Stock ETF) market cap breakdown data.
+Update VT (Vanguard Total World Stock ETF) market cap breakdown from ETFRC.com.
 
-Manual maintenance only — the values below are hand-set estimates from the
-FTSE Global All Cap / Vanguard VT factsheet. The weekly workflow step was
-removed because the script rewrote identical constants and never produced a
-commit. Run by hand after reviewing the latest factsheet, then commit the
-data change.
+ETFRC publishes VT's cap-band weights on the same fund page used for HHI:
+    Large cap (>$10bn) / Mid cap ($2-10bn) / Small cap (<$2bn)
+
+The dashboard taxonomy splits Large into Mega (>= $200B) and Large ($10-200B),
+which no public source exposes for VT; the Mega:Large ratio from the previous
+file is reapplied to the freshly fetched Large total. The file is only
+rewritten when a value actually changed, so unchanged weeks produce no commit.
 """
 
 import json
+import re
 import sys
+from datetime import datetime
 from pathlib import Path
 
-# VT market cap breakdown based on FTSE Global All Cap Index methodology
-# Source: Vanguard VT holdings analysis, FTSE Russell index methodology
-# Updated quarterly based on global market cap distribution
+sys.path.append(str(Path(__file__).resolve().parent))
+from update_vt_hhi import ETFRC_URL, _fetch
 
-VT_MARKETCAP_BREAKDOWN = {
-    "_comment": "VT (Vanguard Total World Stock ETF) - FTSE Global All Cap Index",
-    "_source": "FTSE Global All Cap Index methodology, Vanguard VT factsheet",
-    "_last_updated": "manual estimate - review quarterly against the VT factsheet",
-    "_methodology": "Market cap weighted global index covering large, mid, and small cap stocks across developed and emerging markets",
-    "Mega Cap": 52,  # >= $200B (top ~70% of global market cap)
-    "Large Cap": 32,  # $10B - $200B
-    "Mid Cap": 11,  # $2B - $10B
-    "Small Cap": 4,  # $300M - $2B
-    "Bond": 0,
-    "Commodity": 0,
-    "Real Estate": 0,
-    "Cash/Other": 1,  # Cash and minor other assets
+BREAKDOWN_PATH = Path('data/fund_marketcap_breakdown.json')
+
+# Row shape: <tr><td>Large cap (&gt;$10bn)</td><td align="right">86.9%</td></tr>
+CAP_ROW_PATTERN = r'<td>\s*(Large|Mid|Small) cap\b.*?</td>\s*<td[^>]*>\s*([\d.]+)%'
+
+CATEGORIES = [
+    'Mega Cap',
+    'Large Cap',
+    'Mid Cap',
+    'Small Cap',
+    'Bond',
+    'Commodity',
+    'Real Estate',
+    'Cash/Other',
+]
+
+# Plausibility bounds for VT (a total-world equity fund)
+SANITY_BOUNDS = {
+    'large': (70.0, 95.0),
+    'mid': (2.0, 20.0),
+    'small': (0.0, 10.0),
 }
 
 
-def load_fund_breakdowns():
-    """Load existing fund market cap breakdowns."""
-    breakdown_path = Path('data/fund_marketcap_breakdown.json')
-    if breakdown_path.exists():
-        with open(breakdown_path, 'r') as f:
-            return json.load(f)
-    return {}
+def fetch_vt_cap_bands() -> dict[str, float] | None:
+    """Fetch VT's Large/Mid/Small cap weights from ETFRC. Returns percents."""
+    content = _fetch(ETFRC_URL, timeout=30)
+    if content is None:
+        return None
+
+    bands = {}
+    for label, pct in re.findall(CAP_ROW_PATTERN, content, re.IGNORECASE | re.DOTALL):
+        bands[label.lower()] = float(pct)
+
+    if not all(k in bands for k in ('large', 'mid', 'small')):
+        print(f"Error: could not parse all cap bands from ETFRC (got {sorted(bands)})")
+        return None
+
+    for name, (lo, hi) in SANITY_BOUNDS.items():
+        if not lo <= bands[name] <= hi:
+            print(f"Error: {name} cap {bands[name]}% outside sanity bounds {lo}-{hi}")
+            return None
+
+    return bands
 
 
-def save_fund_breakdowns(data):
-    """Save updated fund market cap breakdowns."""
-    breakdown_path = Path('data/fund_marketcap_breakdown.json')
-    with open(breakdown_path, 'w') as f:
-        json.dump(data, f, indent=2)
-    print(f"Updated {breakdown_path}")
-
-
-def update_vt_marketcap():
-    """Update VT market cap breakdown in fund_marketcap_breakdown.json."""
-    print("Updating VT market cap breakdown...")
-
-    # Load existing data
-    data = load_fund_breakdowns()
-
-    # Update VT entry
-    data['VT'] = VT_MARKETCAP_BREAKDOWN.copy()
-
-    # Save updated data
-    save_fund_breakdowns(data)
-
-    print("VT market cap breakdown updated successfully!")
-    print(f"  Mega Cap: {VT_MARKETCAP_BREAKDOWN['Mega Cap']}%")
-    print(f"  Large Cap: {VT_MARKETCAP_BREAKDOWN['Large Cap']}%")
-    print(f"  Mid Cap: {VT_MARKETCAP_BREAKDOWN['Mid Cap']}%")
-    print(f"  Small Cap: {VT_MARKETCAP_BREAKDOWN['Small Cap']}%")
-    print(f"  Cash/Other: {VT_MARKETCAP_BREAKDOWN['Cash/Other']}%")
-
-    return True
-
-
-def main():
-    """Main entry point with fail-open mechanism."""
+def mega_ratio(existing: dict) -> float:
+    """Mega share of the Mega+Large total in the previous breakdown."""
     try:
-        success = update_vt_marketcap()
-        if success:
-            print("\n✓ VT market cap update completed successfully")
-            sys.exit(0)
-        else:
-            print("\n✗ VT market cap update failed")
-            sys.exit(1)
-    except Exception as e:
-        # Fail-open: if update fails, keep old data and continue
-        print(f"\n⚠ VT market cap update failed: {e}")
-        print("  Keeping existing data (fail-open mechanism)")
-        sys.exit(0)  # Exit with success to keep workflow going
+        vt = existing.get('VT', {})
+        mega, large = float(vt.get('Mega Cap', 0)), float(vt.get('Large Cap', 0))
+        if mega + large > 0:
+            return mega / (mega + large)
+    except (TypeError, ValueError):
+        pass
+    return 0.62  # default split when no usable previous breakdown exists
+
+
+def build_breakdown(bands: dict[str, float], ratio: float) -> dict:
+    """Map ETFRC's 3 bands onto the dashboard's 8 categories (int percents)."""
+    large_total = round(bands['large'])
+    mega = round(large_total * ratio)
+    large = large_total - mega
+    mid = round(bands['mid'])
+    small = round(bands['small'])
+    cash = max(0, 100 - mega - large - mid - small)
+    return {
+        '_comment': 'VT (Vanguard Total World Stock ETF) - FTSE Global All Cap Index',
+        '_source': 'ETFRC.com cap bands; Mega split from Large via previous ratio',
+        '_last_updated': datetime.now().strftime('%Y-%m-%d'),
+        '_methodology': 'Market cap weighted global index covering large, mid, and small cap stocks across developed and emerging markets',
+        'Mega Cap': mega,
+        'Large Cap': large,
+        'Mid Cap': mid,
+        'Small Cap': small,
+        'Bond': 0,
+        'Commodity': 0,
+        'Real Estate': 0,
+        'Cash/Other': cash,
+    }
+
+
+def breakdown_changed(existing: dict, new: dict) -> bool:
+    """Compare only the category values, not the metadata stamps."""
+    vt = existing.get('VT', {})
+    return any(vt.get(cat) != new[cat] for cat in CATEGORIES)
+
+
+def main() -> int:
+    print("Fetching VT market cap breakdown from ETFRC.com...")
+
+    bands = fetch_vt_cap_bands()
+    if bands is None:
+        print("✗ Failed to fetch VT cap bands; keeping existing data")
+        return 1
+
+    existing = {}
+    if BREAKDOWN_PATH.exists():
+        with open(BREAKDOWN_PATH, 'r') as f:
+            existing = json.load(f)
+
+    new_vt = build_breakdown(bands, mega_ratio(existing))
+
+    if not breakdown_changed(existing, new_vt):
+        print(
+            f"✓ VT market cap breakdown unchanged (Large {bands['large']}%, "
+            f"Mid {bands['mid']}%, Small {bands['small']}%)"
+        )
+        return 0
+
+    existing['VT'] = new_vt
+    with open(BREAKDOWN_PATH, 'w') as f:
+        json.dump(existing, f, indent=2, ensure_ascii=False)
+        f.write('\n')
+
+    print(f"✓ Updated {BREAKDOWN_PATH}")
+    for cat in CATEGORIES:
+        print(f"  {cat}: {new_vt[cat]}%")
+    return 0
 
 
 if __name__ == '__main__':
-    main()  # pragma: no cover
+    sys.exit(main())

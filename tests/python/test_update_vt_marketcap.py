@@ -1,79 +1,117 @@
+import json
 import sys
 import unittest
 from pathlib import Path
-from unittest.mock import mock_open, patch
+from unittest.mock import patch
 
 # Add scripts directory to path to import update_vt_marketcap
 sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
 import scripts.update_vt_marketcap as update_vt_marketcap
 
+ETFRC_PAGE = """
+<table><tbody>
+<tr><td>Number of holdings</td><td align="right">10094</td></tr>
+<tr><td>Herfindahl-Hirschman Index <i class="pe pe-7s-help1"></i></td><td align="right">78</td></tr>
+<tr><td>Wgt avg mkt cap (mns)</td><td align="right">$1,009,676</td></tr>
+<tr><td>Large cap (&gt;$10bn)</td><td align="right">86.9%</td></tr>
+<tr><td>Mid cap ($2-10bn)</td><td align="right">7.1%</td></tr>
+<tr><td>Small cap (&lt;$2bn)</td><td align="right">1.1%</td></tr>
+</tbody></table>
+"""
 
-class TestUpdateVTMarketcap(unittest.TestCase):
+EXISTING = {
+    'VT': {
+        'Mega Cap': 52,
+        'Large Cap': 32,
+        'Mid Cap': 11,
+        'Small Cap': 4,
+        'Bond': 0,
+        'Commodity': 0,
+        'Real Estate': 0,
+        'Cash/Other': 1,
+    }
+}
 
-    @patch('pathlib.Path.exists')
-    @patch('builtins.open', new_callable=mock_open, read_data='{"existing": "data"}')
-    def test_load_fund_breakdowns_exists(self, mock_file, mock_exists):
-        mock_exists.return_value = True
-        result = update_vt_marketcap.load_fund_breakdowns()
-        self.assertEqual(result, {"existing": "data"})
-        mock_file.assert_called_once_with(Path('data/fund_marketcap_breakdown.json'), 'r')
 
-    @patch('pathlib.Path.exists')
-    def test_load_fund_breakdowns_not_exists(self, mock_exists):
-        mock_exists.return_value = False
-        result = update_vt_marketcap.load_fund_breakdowns()
-        self.assertEqual(result, {})
+class TestFetchVTCapBands(unittest.TestCase):
+    @patch('scripts.update_vt_marketcap._fetch')
+    def test_parse_success(self, mock_fetch):
+        mock_fetch.return_value = ETFRC_PAGE
+        bands = update_vt_marketcap.fetch_vt_cap_bands()
+        self.assertEqual(bands, {'large': 86.9, 'mid': 7.1, 'small': 1.1})
 
-    @patch('builtins.open', new_callable=mock_open)
-    @patch('json.dump')
-    def test_save_fund_breakdowns(self, mock_json_dump, mock_file):
-        test_data = {"test": "data"}
-        update_vt_marketcap.save_fund_breakdowns(test_data)
-        mock_file.assert_called_once_with(Path('data/fund_marketcap_breakdown.json'), 'w')
-        mock_json_dump.assert_called_once_with(test_data, mock_file(), indent=2)
+    @patch('scripts.update_vt_marketcap._fetch')
+    def test_fetch_failure(self, mock_fetch):
+        mock_fetch.return_value = None
+        self.assertIsNone(update_vt_marketcap.fetch_vt_cap_bands())
 
-    @patch('scripts.update_vt_marketcap.load_fund_breakdowns')
-    @patch('scripts.update_vt_marketcap.save_fund_breakdowns')
-    def test_update_vt_marketcap(self, mock_save, mock_load):
-        mock_load.return_value = {"other": "data"}
-        result = update_vt_marketcap.update_vt_marketcap()
-        self.assertTrue(result)
-        mock_load.assert_called_once()
-        mock_save.assert_called_once()
-        saved_data = mock_save.call_args[0][0]
-        self.assertEqual(saved_data['other'], "data")
-        self.assertIn('VT', saved_data)
-        self.assertEqual(saved_data['VT'], update_vt_marketcap.VT_MARKETCAP_BREAKDOWN)
+    @patch('scripts.update_vt_marketcap._fetch')
+    def test_missing_band(self, mock_fetch):
+        mock_fetch.return_value = '<tr><td>Large cap (&gt;$10bn)</td><td>86.9%</td></tr>'
+        self.assertIsNone(update_vt_marketcap.fetch_vt_cap_bands())
 
-    @patch('scripts.update_vt_marketcap.update_vt_marketcap')
-    @patch('sys.exit')
-    def test_main_success(self, mock_exit, mock_update):
-        mock_update.return_value = True
-        update_vt_marketcap.main()
-        mock_exit.assert_called_once_with(0)
+    @patch('scripts.update_vt_marketcap._fetch')
+    def test_sanity_bounds(self, mock_fetch):
+        page = ETFRC_PAGE.replace('86.9%', '30.0%')
+        mock_fetch.return_value = page
+        self.assertIsNone(update_vt_marketcap.fetch_vt_cap_bands())
 
-    @patch('scripts.update_vt_marketcap.update_vt_marketcap')
-    @patch('sys.exit')
-    def test_main_failure(self, mock_exit, mock_update):
-        mock_update.return_value = False
-        update_vt_marketcap.main()
-        mock_exit.assert_called_once_with(1)
 
-    @patch('scripts.update_vt_marketcap.update_vt_marketcap')
-    @patch('sys.exit')
-    def test_main_exception(self, mock_exit, mock_update):
-        mock_update.side_effect = Exception("Test Exception")
-        update_vt_marketcap.main()
-        mock_exit.assert_called_once_with(0)
+class TestBuildBreakdown(unittest.TestCase):
+    def test_split_and_cash(self):
+        bands = {'large': 86.9, 'mid': 7.1, 'small': 1.1}
+        result = update_vt_marketcap.build_breakdown(bands, 52 / 84)
+        self.assertEqual(result['Mega Cap'], 54)
+        self.assertEqual(result['Large Cap'], 33)
+        self.assertEqual(result['Mid Cap'], 7)
+        self.assertEqual(result['Small Cap'], 1)
+        self.assertEqual(result['Cash/Other'], 5)
+        self.assertEqual(result['Bond'], 0)
+        total = sum(result[c] for c in update_vt_marketcap.CATEGORIES)
+        self.assertEqual(total, 100)
 
-    def test_module_execution(self):
-        with patch('sys.exit'):
-            with open('scripts/update_vt_marketcap.py', 'r') as f:
-                code = f.read()
-            # use a local dict with mocked name and the module's actual contents
-            exec_globals = update_vt_marketcap.__dict__.copy()
-            exec_globals['__name__'] = '__main__'
-            exec(code, exec_globals)
+    def test_mega_ratio_from_existing(self):
+        self.assertAlmostEqual(update_vt_marketcap.mega_ratio(EXISTING), 52 / 84)
+
+    def test_mega_ratio_default(self):
+        self.assertEqual(update_vt_marketcap.mega_ratio({}), 0.62)
+        self.assertEqual(update_vt_marketcap.mega_ratio({'VT': {'Mega Cap': 'x'}}), 0.62)
+
+    def test_breakdown_changed(self):
+        new = update_vt_marketcap.build_breakdown({'large': 86.9, 'mid': 7.1, 'small': 1.1}, 0.62)
+        self.assertTrue(update_vt_marketcap.breakdown_changed(EXISTING, new))
+        same = dict(EXISTING['VT'], **{'_comment': 'different metadata'})
+        self.assertFalse(update_vt_marketcap.breakdown_changed({'VT': same}, EXISTING['VT']))
+
+
+class TestMain:
+    @patch('scripts.update_vt_marketcap.fetch_vt_cap_bands')
+    def test_main_fetch_failure_exits_1(self, mock_bands):
+        mock_bands.return_value = None
+        assert update_vt_marketcap.main() == 1
+
+    @patch('scripts.update_vt_marketcap.fetch_vt_cap_bands')
+    def test_main_unchanged_no_write(self, mock_bands, tmp_path):
+        out = tmp_path / 'fund_marketcap_breakdown.json'
+        # Bands that reproduce EXISTING exactly: 84 * 52/84 -> Mega 52, Large 32
+        bands = {'large': 84.0, 'mid': 11.0, 'small': 4.0}
+        out.write_text(json.dumps(EXISTING))
+        mock_bands.return_value = bands
+        with patch('scripts.update_vt_marketcap.BREAKDOWN_PATH', out):
+            assert update_vt_marketcap.main() == 0
+        # No write: no metadata stamp added
+        assert '_last_updated' not in json.loads(out.read_text())['VT']
+
+    @patch('scripts.update_vt_marketcap.fetch_vt_cap_bands')
+    def test_main_changed_writes(self, mock_bands, tmp_path):
+        out = tmp_path / 'fund_marketcap_breakdown.json'
+        out.write_text(json.dumps(EXISTING))
+        mock_bands.return_value = {'large': 86.9, 'mid': 7.1, 'small': 1.1}
+        with patch('scripts.update_vt_marketcap.BREAKDOWN_PATH', out):
+            assert update_vt_marketcap.main() == 0
+        vt = json.loads(out.read_text())['VT']
+        assert vt['Mid Cap'] == 7
+        assert '_last_updated' in vt
 
 
 if __name__ == '__main__':

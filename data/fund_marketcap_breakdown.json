@@ -3,7 +3,7 @@
   "_last_updated": "2025-02-21",
   "_methodology": "INDUSTRY STANDARD MARKET CAP CLASSIFICATION (following CRSP/MSCI methodology)",
   "_market_cap_thresholds": {
-    "Mega Cap": "\u2265 $200B (top ~70% of US market cap per CRSP)",
+    "Mega Cap": "≥ $200B (top ~70% of US market cap per CRSP)",
     "Large Cap": "$10B - $200B (next ~15% of market cap)",
     "Mid Cap": "$2B - $10B",
     "Small Cap": "$300M - $2B",
@@ -64,17 +64,17 @@
   },
   "VT": {
     "_comment": "VT (Vanguard Total World Stock ETF) - FTSE Global All Cap Index",
-    "_source": "FTSE Global All Cap Index methodology, Vanguard VT factsheet",
-    "_last_updated": "manual estimate - review quarterly against the VT factsheet",
+    "_source": "ETFRC.com cap bands; Mega split from Large via previous ratio",
+    "_last_updated": "2026-10-23",
     "_methodology": "Market cap weighted global index covering large, mid, and small cap stocks across developed and emerging markets",
-    "Mega Cap": 52,
-    "Large Cap": 32,
-    "Mid Cap": 11,
-    "Small Cap": 4,
+    "Mega Cap": 54,
+    "Large Cap": 33,
+    "Mid Cap": 7,
+    "Small Cap": 1,
     "Bond": 0,
     "Commodity": 0,
     "Real Estate": 0,
-    "Cash/Other": 1
+    "Cash/Other": 5
   },
   "VTI": {
     "_comment": "Vanguard Total Stock Market - CRSP US Total Market",
