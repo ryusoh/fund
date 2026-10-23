@@ -69,6 +69,15 @@ For the given research question `{{args}}`:
     - Only after findings are committed may `docs/thesis/<TICKER>.md` or `data/analysis/*.json`
       be updated.
 
+## Quarterly primary-source sweep
+
+Once per quarter per covered ticker — and always before a thesis-affecting run on a
+subject that has reported since the last sweep — the web subagent's source list must
+include the latest earnings-call transcript and any investor/analyst-day deck from the
+company's IR site. These are the highest-signal primary sources this pipeline otherwise
+touches only ad hoc. Management Q&A language is primary evidence for guidance intent
+and capital-allocation posture, never for hard numbers (those anchor to filings).
+
 ## Guardrails
 
 - **Reserve for thesis-affecting questions:** Multi-agent fan-out costs ~15× tokens compared
