@@ -1669,6 +1669,12 @@ def main():
         # Use daily price/EPS approach for true daily granularity
         manual_anchors = MANUAL_TICKER_PE_CURVES.get(bmk_ticker)
 
+        # Record today's proxy PE into benchmark_history.json on every run —
+        # the previous call site inside fetch_etf_pe only executed on the
+        # fallback path, so the history silently stopped growing once the
+        # primary price/EPS path started succeeding.
+        _update_benchmark_history(bmk_ticker, proxy_etf, {})
+
         # Merge benchmark_history.json entries into manual anchors
         if BENCHMARK_HISTORY_PATH.exists():
             try:
