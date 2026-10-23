@@ -482,23 +482,24 @@ def ensure_structure(symbol: str, config: dict) -> dict:
 
         notes = scenario.get('notes')
 
-        normalized.append(
-            {
-                'id': scenario_id,
-                'name': name,
-                'prob': prob,
-                'macroState': scenario.get('macroState'),
-                'growth': {
-                    'epsCagr': eps_cagr,
-                    'epsCagrSigma': eps_cagr_sigma,
-                },
-                'valuation': {
-                    'exitPe': exit_pe,
-                    'exitPeSigma': exit_pe_sigma,
-                },
-                'notes': notes,
-            }
-        )
+        entry = {
+            'id': scenario_id,
+            'name': name,
+            'prob': prob,
+            'macroState': scenario.get('macroState'),
+            'growth': {
+                'epsCagr': eps_cagr,
+                'epsCagrSigma': eps_cagr_sigma,
+            },
+            'valuation': {
+                'exitPe': exit_pe,
+                'exitPeSigma': exit_pe_sigma,
+            },
+            'notes': notes,
+        }
+        if scenario.get('drivers') is not None:
+            entry['drivers'] = scenario['drivers']
+        normalized.append(entry)
     config['scenarios'] = normalized
 
     derived = config.get('derived')
