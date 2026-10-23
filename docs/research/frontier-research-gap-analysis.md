@@ -471,12 +471,118 @@ exist. The work orders below cover what remains, re-ranked by expected impact.
 - **Guardrail:** `## Guardrails` must match exactly once in the file; if it matches
   anything else, STOP.
 
-### WO-4 [skip] — driver-based model pilot
+### WO-4 — driver-based model pilot (ANET) — designed 2026-10-23
 
-Needs a design decision (which holding, driver schema) and a full thesis session —
-route to the main agent, not a mechanical executor. Pointer: this doc's Part 3 §2
-(modeling) and original item 4; pilot on the highest-weight holding (ANET) only, and
-defer any broader build-out.
+Schema constraint discovered during design (verified against the working tree):
+`sync_configs.py:485-501` rebuilds every scenario from a **fixed key set** (`id`,
+`name`, `prob`, `macroState`, `growth`, `valuation`, `notes`) — a `drivers` key added
+to a scenario today would be **silently deleted by the nightly sync**. Same whitelist
+on `belief_state` (`:524-530`). But `predictions` passes through untouched (`:533-534`),
+and a passthrough-test precedent already exists
+(`tests/python/test_sync_configs_scenario_passthrough.py`, the `macroState` tests).
+So the pilot needs one small code change (4a) before any data change (4c) can stick.
+
+#### WO-4a [low] — pass `drivers` through the scenario whitelist
+
+- **File:** `/Users/lz/dev/fund/scripts/analysis/sync_configs.py`
+- **Find:**
+
+    ```python
+        normalized.append(
+            {
+                'id': scenario_id,
+                'name': name,
+                'prob': prob,
+                'macroState': scenario.get('macroState'),
+    ```
+
+- **Change:** make the appended dict a variable, then conditionally attach `drivers`
+  only when present (an unconditional `'drivers': scenario.get('drivers')` would add
+  `drivers: null` to every ticker's scenarios — shape churn across the repo):
+
+    ```python
+        entry = {
+            'id': scenario_id,
+            'name': name,
+            'prob': prob,
+            'macroState': scenario.get('macroState'),
+            'growth': {...},          # unchanged
+            'valuation': {...},       # unchanged
+            'notes': notes,
+        }
+        if scenario.get('drivers') is not None:
+            entry['drivers'] = scenario['drivers']
+        normalized.append(entry)
+    ```
+
+- **Tests:** add to `tests/python/test_sync_configs_scenario_passthrough.py` following
+  the `macroState` tests verbatim: (1) a scenario with a `drivers` dict survives
+  `ensure_structure` unchanged; (2) a scenario without `drivers` produces **no**
+  `drivers` key in the output.
+- **Verify:** `venv/bin/pytest tests/python/test_sync_configs_scenario_passthrough.py
+tests/python/test_sync_configs_currency.py tests/python/test_sync_configs_watchlist.py -q`
+- **Guardrail:** the sync runs nightly via `analysis-sync.yml`; without test (1) a
+  regression here silently erases the pilot's data.
+
+#### WO-4b [trivial] — reconciliation ritual in `/thesis-update`
+
+- **File:** `/Users/lz/dev/fund/.agents/skills/thesis-update/SKILL.md`
+- **Find:** the Step 3 synthesis bullet `- **Scenario Impact**:` block — append one
+  sub-bullet to its assessment list:
+
+    ```text
+        - If any scenario carries a `drivers` block: reconcile its derived values against
+          the new print (actual vs modeled revenue per driver), update driver inputs with
+          sources, and register each named falsification driver as a dated entry in
+          `predictions` so `prediction_sweeper.py` enforces resolution.
+    ```
+
+- **Verify:** `make sync-check` (second run green if the first regenerates);
+  `npm exec -- markdownlint-cli2 ".agents/skills/thesis-update/SKILL.md"`.
+- **Guardrail:** `data/` edits still happen only through the thesis-update flow; this
+  line changes the ritual, not the write path.
+
+#### WO-4c [thesis session] — the ANET pilot itself
+
+Not a mechanical work order — one thesis session with the main agent:
+
+1. In `data/analysis/ANET.json`, add to the **base** scenario only:
+
+    ```json
+    "drivers": {
+        "revenueBuild": [
+            {"id": "<driver-id>", "label": "<name>", "formula": "<units × price expression>",
+             "inputs": {"<var>": <number>}, "valueB": <number>, "sources": ["<filing locator or URL>"]}
+        ],
+        "derivedRevenueB": <sum of valueB>,
+        "netMargin": <number>,
+        "sharesM": <number>,
+        "derivedEps": <derivedRevenueB * 1000 * netMargin / sharesM>,
+        "falsifiers": ["<prediction ids>"],
+        "asOf": "<date>"
+    }
+    ```
+
+    Suggested ANET base-case drivers (labels from the gap analysis §3.2): AI back-end
+    Ethernet (hyperscaler AI capex × networking attach), classic DC growth, campus —
+    numbers come from Arista 10-K/10-Q segment disclosures and investor-day targets via
+    the filings adapter (`ingest --ticker ANET` first if `list` errors), each with a
+    confirm pass ≥ 0.60.
+
+2. Register 2–3 dated falsification-driver predictions in ANET's existing
+   `predictions` array (which the sweeper already scans).
+3. Update `docs/thesis/ANET.md` §4.3 so the base-case note presents the derivation
+   (driver build → revenue → margin → EPS) instead of the bare assertion, and append
+   the evidence to `data/analysis/ANET.evidence.jsonl`.
+4. Run `sync_configs --ticker ANET` and confirm the `drivers` block survives — the
+   end-to-end test of WO-4a.
+
+- **Verify:** `npx jest tests/js/pages/analysis/ && venv/bin/pytest
+tests/python/test_sync_configs_scenario_passthrough.py -q`.
+- **Guardrail:** pilot stays on ANET base only — do not propagate the schema to other
+  tickers or scenarios until the pilot has survived one quarterly reconciliation.
+  No Lab rendering in the pilot (unknown scenario keys are ignored by the frontend;
+  display is a later `[visual]` item).
 
 ### WO-5 [skip] — event-detection flags on the tracked universe
 
