@@ -366,38 +366,123 @@ Verdicts: **CLOSABLE** = feasible for a one-person agentic fund this quarter;
 
 ## Action items
 
-Ranked by (payoff × feasibility) / cost. Items 1–3 close the three cheapest
-institutional-grade gaps; all three have prior design work in-repo.
+**Status check (verified in the working tree on 2026-10-23):** items 1 and 5 of the
+original ranking are **already shipped** — `scripts/analysis/prediction_sweeper.py`,
+`.github/workflows/prediction-sweep.yml`, the Lab stale badge
+(`js/pages/analysis/lab.js:1727-1749`), the `/retro` ACE step
+(`.agents/skills/retro/SKILL.md:46`), and the retention bridge
+(`~/dev/networking/tools/research/anki_retention.py` + `/anki-capture` step 0b) all
+exist. The work orders below cover what remains, re-ranked by expected impact.
 
-1. **Build the prediction-resolution sweep (forecast discipline).** Implement WO-5a/5b
-   (and optionally 5c) from `docs/research/frontier-enhancements.md`:
-   `scripts/analysis/prediction_sweeper.py` + weekly `.github/workflows/prediction-sweep.yml`.
-   This converts our dated-but-manual predictions into Tetlock-grade prospective
-   scoring — the discipline frontier forecasters treat as the _only_ trustworthy
-   signal. Cost: one small stdlib script + one read-only workflow.
-2. **Add a red-team subagent to `/deep-research` (division of labor + verification).**
-   Fourth subagent with an adversarial brief (attack the load-bearing claims; enumerate
-   falsifiers), and a skill line requiring the confirm pass to run in a fresh context —
-   Anthropic's separation-of-concerns finding and Mellers-style independence, at zero
-   new code. Cost: one skill edit + `make sync-check`.
-3. **Add a transcripts step to the retrieval plane (data breadth, cheap slice).**
-   Earnings-call transcripts and investor-day decks are the highest-signal primary
-   source we currently touch only ad hoc (the CBRS run leaned on earnings releases).
-   Add a "quarterly primary-source sweep" section to the deep-research skill; no new
-   infrastructure. Cost: skill edit.
-4. **Pilot a driver-based model block on one holding (modeling).** Add a sourced
-   `drivers` build (units × price) inside one scenario of the highest-weight holding;
-   require falsification drivers in scenario notes going forward. Cost: one thesis
-   session. Defer any broader build-out — the SemiAnalysis model suite is a team, not
-   a schema.
-5. **Implement the already-specified memory work orders (compounding).** WO-1 (ACE
-   skill-distillation step in `/retro`) and WO-4a/4b (retention-gap bridge) from
-   `docs/research/frontier-enhancements.md` — procedural memory and retention feedback,
-   both specified to the diff level already.
-6. **Event-detection flags on the tracked universe (speed/cadence, narrow slice).**
-   Read-only flags for new EDGAR filings and approaching review dates on the 6 tracked
-   tickers, riding the existing nightly/weekly workflows. Explicitly _not_ a universe
-   expansion.
+### Preamble — rules for the implementer
+
+- One work order per change. `Find` strings are unique anchors copied from the current
+  file contents (verified 2026-10-23); **if one does not match exactly, STOP that item
+  and report the mismatch — do not improvise an alternative anchor.** Line numbers are
+  dated and may drift; trust the `Find` string, not the line number.
+- WO-1 through WO-3 all edit `.agents/skills/deep-research/SKILL.md`. After **each**
+  skill edit run `make sync-check` — it regenerates `.claude/commands/` and fails on
+  drift; if the first run reports drift, run it again and the second run must be green.
+  Never edit `.claude/commands/` by hand.
+- Markdown check per edit:
+  `npm exec -- markdownlint-cli2 ".agents/skills/deep-research/SKILL.md"`.
+  Skill schema check: `venv/bin/pytest tests/python/test_skills.py -q`.
+- Never edit `data/` (pipeline-generated).
+- Commit after each item; never push.
+
+### WO-1 [low] — red-team subagent in `/deep-research`
+
+- **File:** `/Users/lz/dev/fund/.agents/skills/deep-research/SKILL.md`
+- **Find:**
+
+    ```text
+        - **Web subagent:** Investigates primary external sources only: regulatory disclosures,
+          investor relations presentations, earnings call transcripts, and industry standards bodies.
+          Secondary blog posts and unverified aggregators are excluded.
+
+    2. **Synthesis pass:** Consolidate subagent outputs into a coherent claim-to-source mapping.
+    ```
+
+- **Change:** insert the red-team bullet between the web bullet and step 2, and extend
+  step 2's first sentence, so the block becomes:
+
+    ```text
+        - **Web subagent:** Investigates primary external sources only: regulatory disclosures,
+          investor relations presentations, earnings call transcripts, and industry standards bodies.
+          Secondary blog posts and unverified aggregators are excluded.
+        - **Red-team subagent:** Same question, adversarial stance. Argue the strongest case
+          AGAINST the thesis's current position (`data/analysis/<TICKER>.json` belief_state is
+          its target), attack the load-bearing claims the other subagents' outputs rest on,
+          and enumerate falsifiers — what specific evidence would flip the conclusion.
+          Reports disconfirming evidence first, ranked by thesis-killing potential.
+
+    2. **Synthesis pass:** Consolidate all four subagent outputs into a coherent claim-to-source
+       mapping. The red team's disconfirming case must survive into the findings doc as its
+       own section — do not average it away.
+    ```
+
+- **Verify:** `make sync-check` (second run green if the first regenerates);
+  `npm exec -- markdownlint-cli2 ".agents/skills/deep-research/SKILL.md"`;
+  `venv/bin/pytest tests/python/test_skills.py -q`.
+- **Guardrail:** the red team works from the question and primary sources, in parallel
+  with the other three — do not feed it the sibling subagents' outputs, or its blind
+  spots correlate with theirs.
+
+### WO-2 [trivial] — fresh-context confirm pass
+
+- **File:** `/Users/lz/dev/fund/.agents/skills/deep-research/SKILL.md`
+- **Find:**
+
+    ```text
+    3. **Confirm pass:**
+        - Verify every quantitative claim against SEC filings using
+    ```
+
+- **Change:** insert between those two lines:
+
+    ```text
+        - Run in a **fresh context** (a new subagent or a cleared session): the agent that
+          synthesized the claims never verifies its own synthesis.
+    ```
+
+- **Verify:** same as WO-1.
+- **Guardrail:** "fresh context" means the verifying context has not seen the synthesis
+  reasoning — re-running `verify` in the same session does not count.
+
+### WO-3 [trivial] — quarterly primary-source sweep section
+
+- **File:** `/Users/lz/dev/fund/.agents/skills/deep-research/SKILL.md`
+- **Find:** `## Guardrails`
+- **Change:** insert immediately before that line:
+
+    ```text
+    ## Quarterly primary-source sweep
+
+    Once per quarter per covered ticker — and always before a thesis-affecting run on a
+    subject that has reported since the last sweep — the web subagent's source list must
+    include the latest earnings-call transcript and any investor/analyst-day deck from the
+    company's IR site. These are the highest-signal primary sources this pipeline otherwise
+    touches only ad hoc. Management Q&A language is primary evidence for guidance intent
+    and capital-allocation posture, never for hard numbers (those anchor to filings).
+
+    ```
+
+- **Verify:** same as WO-1.
+- **Guardrail:** `## Guardrails` must match exactly once in the file; if it matches
+  anything else, STOP.
+
+### WO-4 [skip] — driver-based model pilot
+
+Needs a design decision (which holding, driver schema) and a full thesis session —
+route to the main agent, not a mechanical executor. Pointer: this doc's Part 3 §2
+(modeling) and original item 4; pilot on the highest-weight holding (ANET) only, and
+defer any broader build-out.
+
+### WO-5 [skip] — event-detection flags on the tracked universe
+
+Needs design (which events, where they surface, dedup against the nightly sync).
+The dated-prediction slice of this idea already shipped as `prediction-sweep.yml`.
+Pointer: this doc's Part 3 §5 (speed & coverage) and original item 6.
 
 ## Open questions / what I couldn't verify
 
