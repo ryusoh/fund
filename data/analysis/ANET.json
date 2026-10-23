@@ -3,7 +3,7 @@
     "name": "Arista Networks",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-10-23T12:52:27.460313+00:00",
+        "asOf": "2026-10-23T13:19:13.899245+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -28,9 +28,9 @@
         }
     },
     "market": {
-        "forwardEps": 5.2224,
-        "pe": 58.1871,
-        "forwardPe": 32.7571,
+        "forwardEps": 5.2169,
+        "pe": 53.9653,
+        "forwardPe": 32.7918,
         "beta": 1.605,
         "marketCap": 215757717504.0,
         "enterpriseValue": 202414407680.0,
@@ -38,9 +38,9 @@
         "currency": "USD",
         "fiftyTwoWeekHigh": 217.41,
         "fiftyTwoWeekLow": 114.52,
-        "marketDataUpdatedAt": "2026-10-23T12:52:27.324175+00:00",
+        "marketDataUpdatedAt": "2026-10-23T13:19:12.994838+00:00",
         "evToEbitda": 43.6276,
-        "eps": 2.94,
+        "eps": 3.17,
         "price": 171.07,
         "fiftyDayAverage": 197.0438,
         "twoHundredDayAverage": 163.5622,
@@ -94,7 +94,73 @@
                 "exitPe": 28.0,
                 "exitPeSigma": null
             },
-            "notes": "AI networking is large but shared among ANET/NVDA/Cisco/ODMs; classic DC grows ~10–12%; campus grows mid-teens; margins normalize slightly below peak but remain strong."
+            "notes": "AI networking is large but shared among ANET/NVDA/Cisco/ODMs; classic DC grows ~10–12%; campus grows mid-teens; margins normalize slightly below peak but remain strong.",
+            "drivers": {
+                "revenueBuild": [
+                    {
+                        "id": "ai-backend",
+                        "label": "AI fabrics (scale-out + scale-across, EtherLink)",
+                        "formula": "aiTam2030B * aristaShare",
+                        "inputs": {
+                            "aiTam2030B": 45.0,
+                            "aristaShare": 0.2
+                        },
+                        "valueB": 9.0,
+                        "sources": [
+                            "TAM $40-50B 2030 (thesis, secondary forecasts); cross-check: FY2026 AI fabrics goal >=$3.5B (Q2'26 call, CFO Breithaupt) => 27% CAGR to 2030; scale-across TAM alone $15-20B by 2030 (Q2'26 call, Ullal)"
+                        ]
+                    },
+                    {
+                        "id": "classic-dc",
+                        "label": "Core DC frontend + routing adjacencies",
+                        "formula": "fy2026BaseB * (1 + cagr)^4",
+                        "inputs": {
+                            "fy2026BaseB": 6.2,
+                            "cagr": 0.11
+                        },
+                        "valueB": 9.4,
+                        "sources": [
+                            "FY2026 base derived: $12.6B guide (Q2'26 call) - $3.5B AI - $1.25B campus - ~$1.65B service; FY2025 product $7,576.9M (10-K s_0012_c09)"
+                        ]
+                    },
+                    {
+                        "id": "campus",
+                        "label": "Campus & enterprise",
+                        "formula": "fy2026GoalB * (1 + cagr)^4",
+                        "inputs": {
+                            "fy2026GoalB": 1.25,
+                            "cagr": 0.15
+                        },
+                        "valueB": 2.2,
+                        "sources": [
+                            "FY2026 campus goal >=$1.25B (Q2'26 call, CFO)"
+                        ]
+                    },
+                    {
+                        "id": "service",
+                        "label": "Services (PCS + subscriptions)",
+                        "formula": "fy2025ActualB * (1 + cagr)^5",
+                        "inputs": {
+                            "fy2025ActualB": 1.43,
+                            "cagr": 0.15
+                        },
+                        "valueB": 2.9,
+                        "sources": [
+                            "FY2025 service revenue $1,428.8M (10-K s_0012_c09)"
+                        ]
+                    }
+                ],
+                "derivedRevenueB": 23.5,
+                "netMargin": 0.39,
+                "sharesM": 1276.0,
+                "derivedEps": 7.18,
+                "falsifiers": [
+                    "anet-ai-fabrics-fy26",
+                    "anet-campus-fy26",
+                    "anet-fy26-revenue-guide"
+                ],
+                "asOf": "2026-10-23"
+            }
         },
         {
             "id": "bear",
@@ -129,20 +195,25 @@
         "probability": 0.4,
         "confidence": 0.7,
         "evidence_for": [
-            "Arista AI revenue target $750M exceeded; guidance raised to $1.5B for FY2025/2026.",
+            "FY2026 revenue guide raised three times in 2026 to $12.6B (+40%); within it AI fabrics goal >=$3.5B and campus goal >=$1.25B [Q2'26 earnings call 2026-08-04, primary].",
+            "Q2 2026: revenue $3,035.7M (+37.7% YoY, first $3B quarter); GAAP H1'26 op margin 44.1%, net margin 38.9%; gross margin 63.4% Q2 within 62-64% FY guide [10-Q income statement, confirm pass 80%].",
+            "Demand backlog visible: deferred revenue ~$6.9B (product deferrals +$600M QoQ on customer acceptance clauses = AI deployments in flight); $875.1M binding future-shipment obligations; RPO $6.1B at FY25 with ~90% recognizable in 2 years [10-Q s_0002_c11/12; 10-K s_0012_c43].",
+            "Supply secured: purchase commitments ~$9.7B (~3x YoY), memory secured for 2026 with visibility into 2027, liquid-cooling supply chain established [Q2'26 call, Ullal/Nightingale].",
+            "AI customer breadth: EtherLink AI fabrics >100 cumulative customers (from 4-5 in 2024); scale-across TAM forecast $15-20B by 2030 vs ~$3-4B in 2026, Arista capturing ~$1.2B in 2026 [Q2'26 call, Ullal].",
             "EOS NetDL software stickiness demonstrated across top tier-1 cloud titans.",
             "Ultra Ethernet Consortium (UEC) standardization solidifies multi-vendor Ethernet fabric traction."
         ],
         "evidence_against": [
-            "Customer concentration remains high: top two hyperscalers represent ~42% of revenue in 10-K.",
+            "Customer concentration ROSE: top-2 end customers 42% of FY2025 revenue (16% + 26%), up from 35% in FY2024 — the diversification thesis is not yet delivering [10-K s_0003_c09; confirm pass 80%].",
             "Nvidia Spectrum-X bundling aggressively pushes full-stack networking alongside GPUs.",
-            "High trailing P/E multiple (~64x) limits margin of safety on capex digestion shocks."
+            "High trailing P/E (~58x) limits margin of safety on capex digestion shocks.",
+            "Guidance is supply-constrained, not demand-constrained: ~2 quarters of visibility; industry-wide component tightness expected to persist to ~2028 [Q2'26 call] — a supply slip hits revenue directly."
         ],
         "open_questions": [
             "What is the pace of optical migration from 800G DSP to 1.6T LPO/CPO?",
             "Will enterprise/campus segment revenue diversify total revenue beyond 40% non-cloud?"
         ],
-        "as_of": "2026-09-30T10:00:00Z"
+        "as_of": "2026-10-23T00:00:00Z"
     },
     "predictions": [
         {
@@ -150,20 +221,60 @@
             "claim": "Arista reports AI-related revenue >= $1.5B in FY2025/2026 filings",
             "target_date": "2026-11-15",
             "probability": 0.75,
-            "resolved": false,
-            "outcome": null,
-            "resolved_date": null,
-            "notes": "Milestone for Ethernet capturing market share in scale-out backend AI clusters."
+            "resolved": true,
+            "outcome": false,
+            "resolved_date": "2026-10-23",
+            "notes": "Resolved FALSE on review 2026-10-23: the FY2025 10-K and FY2026 10-Qs contain no AI-revenue line item (verified via filings adapter) — Arista discloses AI goals only in earnings calls/IR. The prediction was mis-specified (it bet on disclosure behavior, not operations). Superseded by anet-ai-fabrics-fy26, which resolves against the earnings-call goal."
         },
         {
             "id": "anet-top2-cust-conc-fy25",
             "claim": "Combined revenue share of top 2 customers drops below 38% in FY2025 10-K",
             "target_date": "2026-12-31",
             "probability": 0.4,
+            "resolved": true,
+            "outcome": false,
+            "resolved_date": "2026-10-23",
+            "notes": "Resolved FALSE 2026-10-23: FY2025 10-K (filed 2026-02-17) shows the two >10% end customers at 16% and 26% = 42% combined (10-K s_0003_c09, confirm pass 80%). Concentration rose from 35% (FY2024), not fell."
+        },
+        {
+            "id": "anet-ai-fabrics-fy26",
+            "claim": "Arista reports FY2026 AI fabrics revenue >= $3.5B (the goal stated by CFO Breithaupt on the Q2 2026 earnings call)",
+            "target_date": "2027-02-28",
+            "probability": 0.7,
             "resolved": false,
             "outcome": null,
             "resolved_date": null,
-            "notes": "Tests customer base diversification into enterprise and neocloud tiers."
+            "notes": "Falsification driver for the ai-backend leg of the base-case driver build. Resolves on the Q4 2026 / FY2026 earnings call (~Feb 2027). CEO Ullal: 'we absolutely believe it will go up' — the risk is supply, not demand."
+        },
+        {
+            "id": "anet-campus-fy26",
+            "claim": "Arista reports FY2026 campus revenue >= $1.25B (Q2 2026 earnings call goal)",
+            "target_date": "2027-02-28",
+            "probability": 0.7,
+            "resolved": false,
+            "outcome": null,
+            "resolved_date": null,
+            "notes": "Falsification driver for the campus leg (15% CAGR assumption). Resolves on FY2026 reporting."
+        },
+        {
+            "id": "anet-fy26-revenue-guide",
+            "claim": "Arista FY2026 revenue lands >= $12.6B (the thrice-raised full-year guide, +40%)",
+            "target_date": "2027-02-28",
+            "probability": 0.75,
+            "resolved": false,
+            "outcome": null,
+            "resolved_date": null,
+            "notes": "Whole-build check: the guide anchors the FY2026 base from which all four drivers compound. Management says guidance is supply-constrained ('guiding based on what we are confident we can get the supply for'), so a miss signals supply failure, not demand."
+        },
+        {
+            "id": "anet-third-10pct-customer-fy26",
+            "claim": "The FY2026 10-K (filed ~Feb 2027) discloses a third >=10% end customer beyond Microsoft and Meta",
+            "target_date": "2027-03-31",
+            "probability": 0.5,
+            "resolved": false,
+            "outcome": null,
+            "resolved_date": null,
+            "notes": "CEO on Q2'26 call: 'I fully expect there to be one, maybe two 10% customers' beyond the two Ms; a potential >10% Q4 customer was flagged by analysts. Tests demand diversification beyond the top-2 (42% of FY2025 revenue)."
         }
     ],
     "decision_journal": [
@@ -181,6 +292,23 @@
                 "hyperscaler capex digestion causing multiple contraction below 30x": 0.3
             },
             "review_date": "2026-12-15"
+        },
+        {
+            "date": "2026-10-23",
+            "action": "HOLD",
+            "shares_changed": 0,
+            "situation": "Driver-model pilot (WO-4c): base scenario now carries a sourced four-driver revenue build (AI fabrics 45x0.2=9.0B + classic DC 6.2x1.11^4=9.4B + campus 1.25x1.15^4=2.2B + service 1.43x1.15^5=2.9B = $23.5B FY2030, 39% net margin, 1,276M shares -> derived EPS $7.18, ~21% CAGR from FY2025 EPS $2.74 — a cross-check ABOVE the scenario's 0.18, so the scenario params stay conservative and unchanged). Anchors verified this session: FY2025 revenue $9,005.7M (+28.6%), GM 64.1% [10-K, confirm 80%]; Q2'26 $3,035.7M (+37.7%), FY2026 guide raised 3x to $12.6B with AI fabrics >=$3.5B and campus >=$1.25B goals [Q2'26 call]. Two stale predictions resolved FALSE: anet-top2-cust-conc-fy25 (42% actual, concentration ROSE) and anet-ai-rev-fy25 (mis-specified — Arista never discloses AI revenue in SEC filings; superseded by anet-ai-fabrics-fy26 which resolves against the earnings-call goal).",
+            "alternatives_rejected": [
+                "Raise base epsCagr from 0.18 toward the driver-implied ~0.21 (rejected: the driver build is one day old and its inputs rest on guidance-era anchors; let it survive one quarterly reconciliation before promoting it into scenario parameters).",
+                "Keep anet-ai-rev-fy25 open until its 2026-11-15 target date (rejected: the evidence is already dispositive — no AI-revenue line exists in either filing; leaving it open just defers a known-false resolution).",
+                "Add drivers to bull/bear scenarios too (rejected: pilot scope is ANET base only until it survives one reconciliation cycle, per WO-4c guardrail)."
+            ],
+            "expected_outcomes": {
+                "FY2026 guide met, AI fabrics >= $3.5B reported ~Feb 2027; driver build validated at first reconciliation": 0.7,
+                "Supply slip pushes AI/campus goals out but demand intact; driver inputs revised down modestly": 0.2,
+                "Demand-side break (capex digestion) invalidates the 40% guide trajectory": 0.1
+            },
+            "review_date": "2027-02-15"
         }
     ]
 }

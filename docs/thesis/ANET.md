@@ -18,7 +18,7 @@
     - Kelly scale: 0.5
 
 - **Position**
-    - Current shares: 2413.55
+    - Current shares: 2418.36
     - Current portfolio weight: ~26%
     - Constraints: min 0%, max 30%
     - Max Kelly weight (model): mid single digits (~5–7% full Kelly; ~2.5–3.5% scaled under current assumptions)
@@ -62,13 +62,13 @@
 
 ### 1.3 Current valuation snapshot
 
-- Price: 128.84 USD
-- Trailing EPS / PE: 2.63 / 49.54
-- Forward EPS / forward PE: ~3.16 / ~40.7
-- EV / EBITDA: 41.94
-- Market cap / EV: 164.1B / 154.0B
-- 52-week range: 59.43 – 164.94
-- Volatility (used in model): 0.57
+- Price: 184.33 USD (2026-10-22)
+- Trailing EPS / PE: 3.17 / 58.1
+- Forward EPS / forward PE: ~5.22 / ~35.3
+- EV / EBITDA: 47.2
+- Market cap / EV: 232.5B / 219.1B
+- 52-week range: 114.52 – 217.41
+- Volatility (used in model): 0.54
 
 ---
 
@@ -211,9 +211,9 @@ This section documents how the JSON `scenarios` block maps to the thesis and why
 ### 4.2 Bull Case – “AI Ethernet Champion”
 
 - JSON mapping:
-    - `prob`: 0.35
-    - `growth.epsCagr`: 0.22
-    - `valuation.exitPe`: 35
+    - `prob`: 0.4
+    - `growth.epsCagr`: 0.28
+    - `valuation.exitPe`: 38
 
 #### 4.2.1 Narrative (world description)
 
@@ -268,8 +268,8 @@ This section documents how the JSON `scenarios` block maps to the thesis and why
 ### 4.3 Base Case – “Strong but Shared AI Winner”
 
 - JSON mapping:
-    - `prob`: 0.45
-    - `growth.epsCagr`: 0.15
+    - `prob`: 0.5
+    - `growth.epsCagr`: 0.18
     - `valuation.exitPe`: 28
 
 #### 4.3.1 Narrative (world description)
@@ -295,6 +295,22 @@ This section documents how the JSON `scenarios` block maps to the thesis and why
     - Buybacks + R&D.
     - Occasional small acquisitions.
 
+#### 4.3.2a Driver-based revenue build (pilot, added 2026-10-23)
+
+Machine-readable version lives in `data/analysis/ANET.json` base-scenario `drivers`
+(survives nightly sync per WO-4a). FY2025 → FY2030, four legs:
+
+| Driver                                | Formula             | Inputs         | FY2030 value | Source                                                                                                                                                  |
+| ------------------------------------- | ------------------- | -------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| AI fabrics (scale-out + scale-across) | AI TAM × share      | $45B × 20%     | **$9.0B**    | TAM 40–50B (thesis, secondary); cross-check: FY2026 AI goal ≥$3.5B (Q2'26 call, CFO) ⇒ 27% CAGR to 2030; scale-across TAM alone $15–20B by 2030 (Ullal) |
+| Core DC frontend + routing            | FY26 base × 1.11⁴   | $6.2B × 1.11⁴  | **$9.4B**    | FY26 base derived: $12.6B guide − $3.5B AI − $1.25B campus − ~$1.65B service                                                                            |
+| Campus & enterprise                   | FY26 goal × 1.15⁴   | $1.25B × 1.15⁴ | **$2.2B**    | FY2026 campus goal ≥$1.25B (Q2'26 call)                                                                                                                 |
+| Services (PCS/subscriptions)          | FY25 actual × 1.15⁵ | $1.43B × 1.15⁵ | **$2.9B**    | FY2025 service revenue $1,428.8M (10-K)                                                                                                                 |
+
+- **Derived**: revenue $23.5B (FY2030) × net margin 39% (FY2025 and H1'26 both 38.9%) ÷ 1,276M diluted shares (flat: buybacks ≈ SBC) = **EPS ~$7.18**.
+- **Reconciliation**: ~21% EPS CAGR from FY2025 ($2.74) — _above_ the scenario's `epsCagr` 0.18. The scenario stays at 0.18 (the build is one day old; promote only after it survives a quarterly reconciliation). The gap is the upside the driver model makes visible.
+- **Falsification drivers** (registered as dated predictions, swept by `prediction_sweeper.py`): `anet-ai-fabrics-fy26` (≥$3.5B), `anet-campus-fy26` (≥$1.25B), `anet-fy26-revenue-guide` (≥$12.6B), `anet-third-10pct-customer-fy26`.
+
 #### 4.3.3 Why these numbers are reasonable
 
 - Matches a “meets expectations” path:
@@ -318,8 +334,8 @@ This section documents how the JSON `scenarios` block maps to the thesis and why
 ### 4.4 Bear Case – “Capex Hangover & Competition Bite”
 
 - JSON mapping:
-    - `prob`: 0.20
-    - `growth.epsCagr`: 0.03
+    - `prob`: 0.1
+    - `growth.epsCagr`: 0.08
     - `valuation.exitPe`: 20
 
 #### 4.4.1 Narrative (world description)
@@ -479,6 +495,21 @@ Detailed notes live under `docs/thesis/ANET/`.
 - Bear evidence file: `docs/thesis/ANET/ANET-bear-evidence.md`
 
 ### 8.2 High-level update entries (reverse chronological)
+
+#### 2026-10-23 – Driver-model pilot (WO-4c) + prediction housekeeping
+
+- What happened:
+    - Ingested ANET into the filings workspace (FY2025 10-K `fil_0001596532-26-000013`, Q2 FY2026 10-Q `fil_0001596532-26-000175`) and built the base scenario's four-driver revenue model (§4.3.2a) from verified anchors: FY2025 revenue $9,005.7M (+28.6%), GM 64.1%, net income $3.5B [10-K, confirm pass 80%]; Q2'26 revenue $3,035.7M (+37.7%), H1 op margin 44.1% [10-Q]; FY2026 guide raised 3x to $12.6B with AI fabrics ≥$3.5B and campus ≥$1.25B goals [Q2'26 earnings call 2026-08-04, primary].
+    - Resolved two stale predictions FALSE: `anet-top2-cust-conc-fy25` (FY2025 top-2 = 42%, up from 35% — concentration rose, 10-K `s_0003_c09`) and `anet-ai-rev-fy25` (mis-specified: Arista never discloses AI revenue in SEC filings; superseded by `anet-ai-fabrics-fy26`).
+    - Registered four dated falsification-driver predictions; aligned the stale §4.2/4.3/4.4 JSON-mapping lines and §1.3 snapshot with `ANET.json` (bull 0.4/0.28/38, base 0.5/0.18/28, bear 0.1/0.08/20; price $184.33).
+- Impact on scenarios:
+    - Unchanged: Bull 0.4 / Base 0.5 / Bear 0.1. The driver build implies ~21% base EPS CAGR vs the scenario's 18% — held as documented upside, not promoted, until the build survives one quarterly reconciliation (Q3 print ~early Nov 2026, then FY2026 call ~Feb 2027).
+- Impact on assumptions:
+    - None to scenario parameters. Belief state refreshed (guide raises, backlog/deferred-revenue evidence, supply-securement; concentration rose to 42%).
+- Action:
+    - HOLD. Next reconciliation: Q3 FY2026 print (~early Nov 2026) — check revenue vs ~$3.3B guide, GM vs ~63%, and any AI-fabrics trajectory language.
+- TODO:
+    - Watch for the third ≥10% customer disclosure (Q4 2026 / FY2026 10-K); 1.6T trials H2 2026 → production 2027; supply-chain commentary vs the "~2028" industry-tightness framing.
 
 #### 2025-11-04 – Arista R4 family (7800R4 etc.) for AI-scale and scale-across networks
 
