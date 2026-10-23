@@ -124,6 +124,25 @@ def test_edgar_future_filings_not_flagged(
     assert flags == []
 
 
+def test_edgar_skips_non_sec_tickers(
+    monkeypatch: pytest.MonkeyPatch,
+    analysis_dir: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setenv(SEC_USER_AGENT_ENV, "event-scanner-test contact@example.com")
+
+    class _ExplodingDownloader:
+        def __init__(self, workspace: Path) -> None:
+            raise AssertionError("downloader must not be constructed for skipped tickers")
+
+    monkeypatch.setattr("scripts.analysis.event_scanner.SecDownloader", _ExplodingDownloader)
+    flags = scan_edgar_leg(
+        ["VT"], analysis_dir / "ws", pytest.importorskip("datetime").date(2026, 6, 15), 14
+    )
+    assert flags == []
+    assert capsys.readouterr().err == ""
+
+
 def test_review_dates_past_soon_future(
     fake_downloader: type[_FakeDownloader],
     analysis_dir: Path,

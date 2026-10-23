@@ -36,6 +36,10 @@ SKIP_FILES = {"index.json", "theme_timeline.json", "watchlist.json"}
 DEFAULT_LOOKBACK_DAYS = 14
 REVIEW_WARN_DAYS = 14
 EDGAR_ARCHIVES_BASE = "https://www.sec.gov/Archives/edgar/data"
+# Tracked tickers that are not SEC reporting companies (e.g. VT is an ETF) —
+# EDGAR resolution can never succeed for them, so the leg skips them outright
+# instead of emitting a permanent weekly warning.
+EDGAR_SKIP_TICKERS = {"VT"}
 
 
 def resolve_filings_workspace(override: Optional[Path | str] = None) -> Path:
@@ -127,6 +131,8 @@ def scan_edgar_leg(
         )
         return flags
     for ticker in tickers:
+        if ticker.upper() in EDGAR_SKIP_TICKERS:
+            continue
         try:
             flags.extend(asyncio.run(_recent_filings(ticker, workspace, today, lookback_days)))
         except Exception as e:
