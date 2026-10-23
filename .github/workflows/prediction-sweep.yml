@@ -21,3 +21,7 @@ jobs:
                   python-version: '3.13'
             - name: Flag stale unresolved predictions
               run: python3 scripts/analysis/prediction_sweeper.py --fail-on-stale
+            - name: Flag new filings and upcoming review dates
+              env:
+                  SEC_USER_AGENT: ${{ vars.SEC_USER_AGENT }}
+              run: python3 scripts/analysis/event_scanner.py --fail-on-flag
