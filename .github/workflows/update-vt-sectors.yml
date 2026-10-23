@@ -47,10 +47,6 @@ jobs:
               env:
                   SCRAPER_API_KEY: ${{ secrets.SCRAPER_API_KEY }}
 
-            - name: Update VT market cap breakdown
-              run: python scripts/update_vt_marketcap.py
-              continue-on-error: true # Fail-open: continue even if this step fails
-
             - name: Update VT HHI from ETFRC.com
               run: python scripts/update_vt_hhi.py
               env:
@@ -77,7 +73,7 @@ jobs:
               run: |
                   git config user.name "github-actions[bot]"
                   git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-                  git add data/fund_sector_allocations.json data/fund_country_allocations.json data/fund_marketcap_breakdown.json data/etf_hhi.json data/output/figures/composition.json data/output/figures/sectors.json data/output/figures/geography.json data/output/figures/geography_summary.txt data/output/figures/geography_aggregated.json data/output/figures/marketcap.json data/output/figures/pe_ratio.json
+                  git add data/fund_sector_allocations.json data/fund_country_allocations.json data/fund_marketcap_breakdown.json data/etf_hhi.json data/benchmark_history.json data/output/figures/composition.json data/output/figures/sectors.json data/output/figures/geography.json data/output/figures/geography_summary.txt data/output/figures/geography_aggregated.json data/output/figures/marketcap.json data/output/figures/pe_ratio.json
                   if git diff --cached --quiet; then
                     echo 'No changes to commit.'
                   else

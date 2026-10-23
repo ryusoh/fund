@@ -65,7 +65,7 @@
   "VT": {
     "_comment": "VT (Vanguard Total World Stock ETF) - FTSE Global All Cap Index",
     "_source": "FTSE Global All Cap Index methodology, Vanguard VT factsheet",
-    "_last_updated": "auto-updated weekly",
+    "_last_updated": "manual estimate - review quarterly against the VT factsheet",
     "_methodology": "Market cap weighted global index covering large, mid, and small cap stocks across developed and emerging markets",
     "Mega Cap": 52,
     "Large Cap": 32,

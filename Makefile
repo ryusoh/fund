@@ -25,6 +25,7 @@ TWRR_STEPS := scripts/twrr/step01_load_transactions.py \
 		 scripts/twrr/step03_fetch_prices.py \
 		 scripts/twrr/step04_compute_holdings.py \
 	 scripts/data/fetch_ticker_metadata.py \
+	 scripts/data/fetch_market_caps.py \
 	 scripts/generate_composition_data.py \
 	 scripts/generate_geography_data.py \
 	 scripts/generate_marketcap_from_composition.py \

@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
 """
 Update VT (Vanguard Total World Stock ETF) market cap breakdown data.
-Fetches current market cap distribution from official sources and updates fund_marketcap_breakdown.json.
+
+Manual maintenance only — the values below are hand-set estimates from the
+FTSE Global All Cap / Vanguard VT factsheet. The weekly workflow step was
+removed because the script rewrote identical constants and never produced a
+commit. Run by hand after reviewing the latest factsheet, then commit the
+data change.
 """
 
 import json
@@ -15,7 +20,7 @@ from pathlib import Path
 VT_MARKETCAP_BREAKDOWN = {
     "_comment": "VT (Vanguard Total World Stock ETF) - FTSE Global All Cap Index",
     "_source": "FTSE Global All Cap Index methodology, Vanguard VT factsheet",
-    "_last_updated": "auto-updated weekly",
+    "_last_updated": "manual estimate - review quarterly against the VT factsheet",
     "_methodology": "Market cap weighted global index covering large, mid, and small cap stocks across developed and emerging markets",
     "Mega Cap": 52,  # >= $200B (top ~70% of global market cap)
     "Large Cap": 32,  # $10B - $200B

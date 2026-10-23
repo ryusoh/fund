@@ -104,7 +104,7 @@ def update_etf_hhi_json(hhi_value: int):
 
     # Save updated data
     with open(json_path, 'w') as f:
-        json.dump(data, f, indent=2)
+        json.dump(data, f, indent=2, ensure_ascii=False)
 
     print(f"Updated VT HHI: {old_hhi} → {hhi_value}")
     return True
