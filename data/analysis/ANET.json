@@ -3,7 +3,7 @@
     "name": "Arista Networks",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-10-23T13:19:13.899245+00:00",
+        "asOf": "2026-10-23T13:22:36.768653+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -38,7 +38,7 @@
         "currency": "USD",
         "fiftyTwoWeekHigh": 217.41,
         "fiftyTwoWeekLow": 114.52,
-        "marketDataUpdatedAt": "2026-10-23T13:19:12.994838+00:00",
+        "marketDataUpdatedAt": "2026-10-23T13:22:36.146022+00:00",
         "evToEbitda": 43.6276,
         "eps": 3.17,
         "price": 171.07,
