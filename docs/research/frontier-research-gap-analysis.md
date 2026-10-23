@@ -666,12 +666,66 @@ Facts verified against the working tree during design:
   blocked); until it exists the EDGAR leg self-skips with a warning and the
   review-date leg still runs, so the step stays green without it.
 
-#### WO-5c [visual] — Lab surface for flags (deferred)
+#### WO-5c [visual] — Lab surface for flags — designed 2026-10-23
 
-Render `event_flags.json` (from `--json-out`) as a flags line beside the ticker
-header in `js/pages/analysis/lab.js`. Deferred: needs a design pass on placement
-and a human visual review; the weekly email-on-red from 5b is the actionable
-channel in the meantime.
+The Analysis Lab pane lives on **`/terminal/`** (`terminal/index.html:192-196`,
+styles in `css/terminal/analysis.css`), not a standalone `/analysis/` page.
+Verified anchors (working tree, 2026-10-23):
+
+- `fetchJson` **throws on 404** (`js/pages/analysis/lab.js:196-204`) — the flags
+  fetch must be try/catch fail-open; precedent: the evidence-log fetch handles
+  failure gracefully at `lab.js:1592-1607`.
+- Badge precedent: `renderPredictions(config)` (`lab.js:1719`) builds a
+  `prediction-badge-row` (`:1736-1737`) and conditionally appends the
+  `prediction-stale-badge` (`:1746-1751`); pure-helper precedent
+  `computeStalePredictions` (`:1710-1717`); test export `__analysisLabTesting`
+  (`:3011`).
+- Styles co-locate at `css/terminal/analysis.css:593`
+  (`.analysis-pane .prediction-stale-badge`).
+
+**Schema contract (pins WO-5a's `--json-out`):**
+
+```json
+{
+    "generatedAt": "<ISO>",
+    "flags": [
+        {
+            "ticker": "CBRS",
+            "kind": "filing",
+            "form": "8-K",
+            "date": "2026-10-20",
+            "url": "<edgar-url>"
+        },
+        { "ticker": "CBRS", "kind": "review-date", "date": "2026-10-29" }
+    ]
+}
+```
+
+- **Files:** `/Users/lz/dev/fund/js/pages/analysis/lab.js`,
+  `/Users/lz/dev/fund/css/terminal/analysis.css`,
+  `/Users/lz/dev/fund/tests/js/pages/analysis/lab_dom_render.test.js`
+- **Change:**
+    1. Load once at page init, alongside the `index.json` fetch
+       (`lab.js:2686-2695`): `state.eventFlags = await fetchJson(
+'../data/analysis/event_flags.json').catch(() => null)` — a missing file
+       means "no sweep has run with `--json-out` yet", not an error.
+    2. Pure helper `computeTickerFlags(flagsData, symbol)` → the flags for one
+       ticker, `[]` on null/malformed input; export via `__analysisLabTesting`.
+    3. In `renderPredictions`, append `span.prediction-flags-badge` to the
+       existing `prediction-badge-row` when the ticker's flag count > 0; text
+       `2 flags`, `title` attribute listing each flag's label/date.
+    4. Style `.analysis-pane .prediction-flags-badge` next to
+       `.prediction-stale-badge` (`analysis.css:593`), same visual language.
+- **Tests:** add to `lab_dom_render.test.js`: flags render with canned data,
+  zero-flag ticker hides the badge, `null` flags data (404 path) renders no
+  badge and does not throw.
+- **Verify:** `npx jest tests/js/pages/analysis`;
+  `npx stylelint css/terminal/analysis.css`; then `make screenshot
+URL=/terminal/` and **human visual review of the Analysis Lab pane**.
+- **Guardrails:** `renderPredictions` re-runs per ticker switch — filter inside
+  it, never hoist flag computation to page scope; the badge is read-only
+  display, no click-through actions in v1; do not block ticker rendering on the
+  flags fetch (parallel with the other init fetches, not in series).
 
 ## Open questions / what I couldn't verify
 
