@@ -3,7 +3,7 @@
     "name": "Aehr Test Systems",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-10-22T13:13:06.998239+00:00",
+        "asOf": "2026-10-23T12:52:27.059902+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -28,29 +28,29 @@
         }
     },
     "market": {
-        "price": 63.88,
+        "price": 55.65,
         "eps": -0.23,
         "forwardEps": 1.375,
         "pe": null,
-        "forwardPe": 46.4582,
+        "forwardPe": 40.4727,
         "beta": 3.484,
-        "marketCap": 2086291840.0,
+        "marketCap": 1817503744.0,
         "currency": "USD",
-        "marketDataUpdatedAt": "2026-10-22T13:13:06.845704+00:00",
-        "pegRatio": 0.58,
-        "enterpriseValue": 1977318400.0,
+        "marketDataUpdatedAt": "2026-10-23T12:52:26.876541+00:00",
+        "pegRatio": 0.6,
+        "enterpriseValue": 1708852096.0,
         "ebitda": -11344000.0,
         "dividendYield": 0.0,
-        "fiftyDayAverage": 92.8122,
-        "twoHundredDayAverage": 73.2304,
-        "averageVolume": 2616045.0,
-        "averageDailyVolume10Day": 2770980.0,
+        "fiftyDayAverage": 91.3406,
+        "twoHundredDayAverage": 73.385,
+        "averageVolume": 2633026.0,
+        "averageDailyVolume10Day": 2812930.0,
         "fiftyTwoWeekHigh": 147.4,
         "fiftyTwoWeekLow": 18.7,
-        "evToEbitda": -174.3052
+        "evToEbitda": -150.6393
     },
     "risk": {
-        "volatility": 1.2323,
+        "volatility": 1.2387,
         "estimateSource": "historical",
         "correlations": null
     },
