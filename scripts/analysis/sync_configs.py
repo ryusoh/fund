@@ -571,7 +571,7 @@ def main() -> None:
         raise SystemExit(f"--ticker {scoped} is not in holdings ∪ watchlist {tracked_symbols}")
 
     for path in ANALYSIS_DIR.glob('*.json'):
-        if path.name in ('index.json', 'watchlist.json'):
+        if path.name in ('index.json', 'watchlist.json', 'event_flags.json'):
             continue
         if path.stem not in tracked_symbols:
             path.unlink()

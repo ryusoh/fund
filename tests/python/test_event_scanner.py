@@ -79,7 +79,7 @@ def _write_ticker(data_dir: Path, ticker: str, review_date: str | None) -> None:
 
 def test_tracked_tickers_excludes_non_ticker_configs(analysis_dir: Path) -> None:
     _write_ticker(analysis_dir, "AAPL", "2027-01-01")
-    for name in ("index.json", "theme_timeline.json", "watchlist.json"):
+    for name in ("index.json", "theme_timeline.json", "watchlist.json", "event_flags.json"):
         (analysis_dir / name).write_text(json.dumps({"tickers": []}), encoding="utf-8")
     assert tracked_tickers(analysis_dir) == ["AAPL"]
 

@@ -32,7 +32,7 @@ from scripts.filings.fins.downloaders.sec_downloader import SecDownloader
 DEFAULT_DATA_DIR = Path(__file__).resolve().parent.parent.parent / "data" / "analysis"
 
 WATCH_FORMS = ("8-K", "10-Q", "10-K", "S-1", "424B4")
-SKIP_FILES = {"index.json", "theme_timeline.json", "watchlist.json"}
+SKIP_FILES = {"index.json", "theme_timeline.json", "watchlist.json", "event_flags.json"}
 DEFAULT_LOOKBACK_DAYS = 14
 REVIEW_WARN_DAYS = 14
 EDGAR_ARCHIVES_BASE = "https://www.sec.gov/Archives/edgar/data"

@@ -74,6 +74,16 @@ class TestMainWatchlistIntegration:
         index = json.loads((sandbox / "index.json").read_text(encoding="utf-8"))
         assert [t["symbol"] for t in index["tickers"]] == ["VT"]
 
+    def test_event_flags_file_kept_by_orphan_cleanup(self, sandbox):
+        # WO-5c Lab surface reads this artifact; without the exemption the
+        # nightly sync deletes it as an "orphan config".
+        (sandbox / "event_flags.json").write_text(
+            json.dumps({"generatedAt": "2026-10-23T00:00:00+00:00", "flags": []}),
+            encoding="utf-8",
+        )
+        main()
+        assert (sandbox / "event_flags.json").exists()
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
