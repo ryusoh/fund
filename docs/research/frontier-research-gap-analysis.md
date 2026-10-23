@@ -584,11 +584,94 @@ tests/python/test_sync_configs_scenario_passthrough.py -q`.
   No Lab rendering in the pilot (unknown scenario keys are ignored by the frontend;
   display is a later `[visual]` item).
 
-### WO-5 [skip] — event-detection flags on the tracked universe
+### WO-5 — event-detection flags on the tracked universe — designed 2026-10-23
 
-Needs design (which events, where they surface, dedup against the nightly sync).
-The dated-prediction slice of this idea already shipped as `prediction-sweep.yml`.
-Pointer: this doc's Part 3 §5 (speed & coverage) and original item 6.
+Facts verified against the working tree during design:
+
+- **EDGAR polling already exists** and is reusable: `SecDownloader` (from
+  `scripts/filings/fins/downloaders/`) exposes `normalize_ticker` →
+  `resolve_company(ticker)` → `fetch_submissions(cik10)`, returning
+  `submissions["filings"]["recent"]` as parallel arrays (`form`, `filingDate`,
+  `accessionNumber`, `primaryDocument`) — see the call pattern at
+  `scripts/analysis/filings_adapter.py:114-131`.
+- **`SEC_USER_AGENT` is required by the downloader and set NOWHERE in
+  `.github/workflows/`** — the CI leg must source it from repo variables and the
+  scanner must degrade gracefully without it.
+- The weekly `prediction-sweep.yml` (Mon 07:17, `contents: read`, actions v7,
+  python 3.13) is the ride-along host; the nightly `analysis-sync.yml` refreshes
+  market data only — no overlap to dedup against.
+- `decision_journal[].review_date` is displayed in the Lab
+  (`js/pages/analysis/lab.js:1821`) but never machine-checked — the cheapest
+  flag in this design.
+- Tracked universe = `data/analysis/*.json` minus `index.json` /
+  `theme_timeline.json` (6 tickers; CBRS included via its config, no separate
+  watchlist read needed). Prediction staleness stays with
+  `prediction_sweeper.py` — this scanner must NOT duplicate it.
+
+#### WO-5a [low] — new script `scripts/analysis/event_scanner.py`
+
+- **File (new):** `/Users/lz/dev/fund/scripts/analysis/event_scanner.py`
+- **Design:** stdlib + the vendored downloader only. Two legs, both read-only:
+
+    1. **EDGAR leg** — per tracked ticker: `asyncio.run` a fetch using the
+       verified downloader pattern above; keep forms `{8-K, 10-Q, 10-K, S-1,
+424B4}` with `filingDate` inside a **rolling 14-day lookback** (stateless
+       — no watermark file, the weekly cadence overlaps safely). Emit
+       `<TICKER> <form> filed <date>: <edgar-url>`.
+    2. **Review-date leg** — per config, the latest `decision_journal` entry's
+       `review_date`: flag if past or within 14 days. Pure JSON read, no
+       network — always runs.
+
+    Flags: `--fail-on-flag` (exit 1 when any flag, else 0), `--json-out <path>`
+    (optional dump for the future Lab surface; default stdout only).
+    **Fail-open:** EDGAR unreachable / `SEC_USER_AGENT` unset / ticker
+    resolution fails → one stderr warning per ticker, skip that ticker's EDGAR
+    leg, continue; exit code reflects flags found, never fetch errors.
+
+- **Tests (new):** `tests/python/test_event_scanner.py` — follow
+  `test_prediction_sweeper.py` conventions (`tmp_path` configs, `monkeypatch`,
+  `capsys`). Monkeypatch the downloader's `fetch_submissions` with canned
+  parallel-array payloads. Cover: form filtering, lookback boundary, review-date
+  past/soon/future, fail-open on downloader `RuntimeError`, `--fail-on-flag`
+  exit codes, index/theme_timeline exclusion.
+- **Verify:** `venv/bin/pytest tests/python/test_event_scanner.py -q`; local
+  smoke `venv/bin/python scripts/analysis/event_scanner.py` (review-date leg
+  works with no network).
+- **Guardrail:** detection ≠ ingestion — the script never calls
+  `filings_adapter ingest`; a flagged filing is a prompt for a human/agent to
+  run `/thesis-update`, not an auto-pipeline trigger.
+
+#### WO-5b [trivial] — ride the weekly sweep workflow
+
+- **File:** `/Users/lz/dev/fund/.github/workflows/prediction-sweep.yml`
+- **Find:**
+
+    ```yaml
+    - name: Flag stale unresolved predictions
+      run: python3 scripts/analysis/prediction_sweeper.py --fail-on-stale
+    ```
+
+- **Change:** append after those two lines:
+
+    ```yaml
+    - name: Flag new filings and upcoming review dates
+      env:
+          SEC_USER_AGENT: ${{ vars.SEC_USER_AGENT }}
+      run: python3 scripts/analysis/event_scanner.py --fail-on-flag
+    ```
+
+- **Verify:** `python3 -c "import yaml; yaml.safe_load(open('.github/workflows/prediction-sweep.yml'))"`.
+- **Guardrail:** `vars.SEC_USER_AGENT` must be created in repo settings (SEC
+  fair-access requires real contact info — a placeholder gets throttled or
+  blocked); until it exists the EDGAR leg self-skips with a warning and the
+  review-date leg still runs, so the step stays green without it.
+
+#### WO-5c [visual] — Lab surface for flags (deferred)
+
+Render `event_flags.json` (from `--json-out`) as a flags line beside the ticker
+header in `js/pages/analysis/lab.js`. Deferred: needs a design pass on placement
+and a human visual review; the weekly email-on-red from 5b is the actionable
+channel in the meantime.
 
 ## Open questions / what I couldn't verify
 
