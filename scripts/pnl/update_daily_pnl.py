@@ -12,7 +12,7 @@ import sys
 import tempfile
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Dict, List, Optional, Tuple, cast
 from zoneinfo import ZoneInfo
 
 import pandas as pd
@@ -220,7 +220,7 @@ def _get_ticker_closes(ticker: str, hist: Any, period: str) -> Optional[Dict[str
 
 def _extract_closes_and_shares(
     holdings: Dict, histories: Dict[str, Any], period: str
-) -> tuple[Dict[str, Dict[str, float]], Dict[str, float]]:
+) -> Tuple[Dict[str, Dict[str, float]], Dict[str, float]]:
     closes_by_ticker: Dict[str, Dict[str, float]] = {}
     shares_by_ticker: Dict[str, float] = {}
     for ticker, holding_details in holdings.items():
@@ -258,9 +258,7 @@ def calculate_daily_values_by_date(
     fx_rates["USD"] = 1.0
 
     histories = _fetch_histories_batch(list(holdings.keys()), period=period)
-    closes_by_ticker, shares_by_ticker = _extract_closes_and_shares(
-        holdings, histories, period
-    )
+    closes_by_ticker, shares_by_ticker = _extract_closes_and_shares(holdings, histories, period)
 
     values_by_date: Dict[str, Dict[str, Any]] = {}
     all_dates = sorted({day for closes in closes_by_ticker.values() for day in closes})

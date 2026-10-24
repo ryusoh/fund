@@ -1286,3 +1286,33 @@ class TestFormingSessionGuard(unittest.TestCase):
 
         self.assertEqual(ctx.exception.code, 0)
         self.assertEqual(csv_path.read_text(encoding="utf-8"), original_content)
+
+
+class TestGetTickerCloses(unittest.TestCase):
+    @patch("yfinance.Ticker")
+    def test_get_ticker_closes_empty_history(self, mock_ticker_class) -> None:
+        import pandas as pd
+
+        from scripts.pnl.update_daily_pnl import _get_ticker_closes
+
+        mock_ticker = MagicMock()
+        mock_history = pd.DataFrame()
+        mock_ticker.history.return_value = mock_history
+        mock_ticker_class.return_value = mock_ticker
+
+        result = _get_ticker_closes("AAPL", None, "1mo")
+        self.assertIsNone(result)
+
+    @patch("yfinance.Ticker")
+    def test_get_ticker_closes_all_nan_closes(self, mock_ticker_class) -> None:
+        import numpy as np
+        import pandas as pd
+
+        from scripts.pnl.update_daily_pnl import _get_ticker_closes
+
+        idx = pd.to_datetime(["2026-02-24", "2026-02-25"])
+        # DataFrame where all Close prices are NaN
+        mock_history = pd.DataFrame({"Close": [np.nan, np.nan]}, index=idx)
+
+        result = _get_ticker_closes("AAPL", mock_history, "1mo")
+        self.assertIsNone(result)
