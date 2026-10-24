@@ -199,6 +199,50 @@ def calculate_daily_values(holdings: Dict, forex: Dict) -> Dict[str, Any]:
     return values
 
 
+def _get_ticker_closes(ticker: str, hist: Any, period: str) -> Optional[Dict[str, float]]:
+    if hist is None or hist.empty:
+        hist = yf.Ticker(ticker).history(period=period)
+    if hist.empty:
+        print(
+            f"Warning: Could not get historical data for {ticker}. Skipping.",
+            file=sys.stderr,
+        )
+        return None
+    closes = hist["Close"].dropna()
+    if closes.empty:
+        print(
+            f"Warning: No valid close price found for {ticker}. Skipping.",
+            file=sys.stderr,
+        )
+        return None
+    return {idx.strftime("%Y-%m-%d"): float(price) for idx, price in closes.items()}
+
+
+def _extract_closes_and_shares(
+    holdings: Dict, histories: Dict[str, Any], period: str
+) -> tuple[Dict[str, Dict[str, float]], Dict[str, float]]:
+    closes_by_ticker: Dict[str, Dict[str, float]] = {}
+    shares_by_ticker: Dict[str, float] = {}
+    for ticker, holding_details in holdings.items():
+        try:
+            shares = float(holding_details["shares"])
+            closes = _get_ticker_closes(ticker, histories.get(ticker), period)
+            if closes is not None:
+                closes_by_ticker[ticker] = closes
+                shares_by_ticker[ticker] = shares
+        except (ValueError, TypeError) as e:
+            print(
+                f"Warning: Could not process ticker {ticker}. Details: {e}",
+                file=sys.stderr,
+            )
+        except Exception as e:
+            print(
+                f"Warning: An error occurred while fetching data for {ticker}: {e}",
+                file=sys.stderr,
+            )
+    return closes_by_ticker, shares_by_ticker
+
+
 def calculate_daily_values_by_date(
     holdings: Dict, forex: Dict, period: str = "1mo"
 ) -> Dict[str, Dict[str, Any]]:
@@ -214,41 +258,9 @@ def calculate_daily_values_by_date(
     fx_rates["USD"] = 1.0
 
     histories = _fetch_histories_batch(list(holdings.keys()), period=period)
-    closes_by_ticker: Dict[str, Dict[str, float]] = {}
-    shares_by_ticker: Dict[str, float] = {}
-    for ticker, holding_details in holdings.items():
-        try:
-            shares = float(holding_details["shares"])
-            hist = histories.get(ticker)
-            if hist is None or hist.empty:
-                hist = yf.Ticker(ticker).history(period=period)
-            if hist.empty:
-                print(
-                    f"Warning: Could not get historical data for {ticker}. Skipping.",
-                    file=sys.stderr,
-                )
-                continue
-            closes = hist["Close"].dropna()
-            if closes.empty:
-                print(
-                    f"Warning: No valid close price found for {ticker}. Skipping.",
-                    file=sys.stderr,
-                )
-                continue
-            closes_by_ticker[ticker] = {
-                idx.strftime("%Y-%m-%d"): float(price) for idx, price in closes.items()
-            }
-            shares_by_ticker[ticker] = shares
-        except (ValueError, TypeError) as e:
-            print(
-                f"Warning: Could not process ticker {ticker}. Details: {e}",
-                file=sys.stderr,
-            )
-        except Exception as e:
-            print(
-                f"Warning: An error occurred while fetching data for {ticker}: {e}",
-                file=sys.stderr,
-            )
+    closes_by_ticker, shares_by_ticker = _extract_closes_and_shares(
+        holdings, histories, period
+    )
 
     values_by_date: Dict[str, Dict[str, Any]] = {}
     all_dates = sorted({day for closes in closes_by_ticker.values() for day in closes})
