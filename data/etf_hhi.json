@@ -9,8 +9,8 @@
   "_methodology": "HHI = Σ(wᵢ²) × 10000 where wᵢ are normalized stock weights. Lower = more diversified.",
   "_usage": "For portfolio HHI: weight² × (ETF_HHI / 10000)",
   "_verification": "Each value verified from at least one primary source",
-  "VT": 78,
-  "_VT_source": "ETFRC.com - fetched weekly, HHI=78",
+  "VT": 75,
+  "_VT_source": "ETFRC.com - fetched weekly, HHI=75",
   "_VT_note": "Most diversified equity ETF - true global market coverage",
   "VOO": 650,
   "_VOO_source": "Calculated from S&P 500 top holdings concentration",
@@ -162,5 +162,5 @@
   "FNSFX": 1200,
   "_FNSFX_source": "Fidelity Freedom 2025 - target date fund",
   "_FNSFX_note": "Target date fund - mix of stocks and bonds",
-  "_last_verified": "2026-10-23"
+  "_last_verified": "2026-10-26"
 }
