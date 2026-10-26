@@ -13,4 +13,4 @@ Pillow>=12.3.0
 # Vendored SEC filings toolkit (scripts/vendor/filings)
 httpx
 beautifulsoup4
-edgartools>=5.62.0
+edgartools>=5.62.1
