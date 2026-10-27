@@ -34,7 +34,9 @@ def _build_request_url(target_url: str, scraper_api_key: str | None, etf_ticker:
     return target_url
 
 
-def _fetch_page_content(etf_ticker: str, target_url: str, scraper_api_key: str | None) -> str | None:
+def _fetch_page_content(
+    etf_ticker: str, target_url: str, scraper_api_key: str | None
+) -> str | None:
     """Fetch the HTML content of the target URL."""
     url = _build_request_url(target_url, scraper_api_key, etf_ticker)
     headers = {
