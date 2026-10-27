@@ -18,19 +18,8 @@ sys.path.append(str(Path(__file__).resolve().parent))
 from utils.security_utils import scrub_secrets
 
 
-def fetch_etf_country_allocation(etf_ticker: str) -> dict[str, float]:
-    """
-    Fetch country allocation for an ETF from stockanalysis.com.
-
-    Args:
-        etf_ticker: ETF ticker symbol (e.g., 'VT', 'VWO', 'VEA')
-
-    Returns:
-        Dictionary of {country: percentage}
-    """
-    target_url = f"https://stockanalysis.com/etf/{etf_ticker.lower()}/holdings/"
-    scraper_api_key = os.environ.get("SCRAPER_API_KEY")
-
+def _build_request_url(target_url: str, scraper_api_key: str | None, etf_ticker: str) -> str:
+    """Build the URL for the request, using ScraperAPI if a key is provided."""
     if scraper_api_key:
         print(f"  Using ScraperAPI for {etf_ticker}...")
         payload = {
@@ -39,11 +28,15 @@ def fetch_etf_country_allocation(etf_ticker: str) -> dict[str, float]:
             'country_code': 'us',
         }
         # Security fix: use HTTPS to prevent insecure transmission of API keys
-        url = 'https://api.scraperapi.com/?' + urllib.parse.urlencode(payload)
-    else:
-        print(f"  ScraperAPI key not found, fetching directly for {etf_ticker}...")
-        url = target_url
+        return 'https://api.scraperapi.com/?' + urllib.parse.urlencode(payload)
 
+    print(f"  ScraperAPI key not found, fetching directly for {etf_ticker}...")
+    return target_url
+
+
+def _fetch_page_content(etf_ticker: str, target_url: str, scraper_api_key: str | None) -> str | None:
+    """Fetch the HTML content of the target URL."""
+    url = _build_request_url(target_url, scraper_api_key, etf_ticker)
     headers = {
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     }
@@ -51,18 +44,17 @@ def fetch_etf_country_allocation(etf_ticker: str) -> dict[str, float]:
     try:
         response = requests.get(url, headers=headers, timeout=30)
         response.raise_for_status()
-        content = response.text
+        return response.text
     except Exception as e:
         error_msg = str(e)
         if scraper_api_key:
             error_msg = scrub_secrets(error_msg, [scraper_api_key])
         print(f"  Error fetching {etf_ticker}: {error_msg}")
-        return {}
+        return None
 
-    # StockAnalysis embeds country data in JavaScript
-    # Format: {code:"US",weight:62.123,country:"United States"}
-    # Look for patterns like: country:"United States" with weight values
 
+def _parse_new_pattern(content: str, etf_ticker: str) -> dict[str, float] | None:
+    """Parse the page content using the new embedded JavaScript pattern."""
     country_data = {}
 
     # New pattern for stockanalysis.com format: {code:"XX",weight:NN.NNN,country:"Name"}
@@ -76,37 +68,72 @@ def fetch_etf_country_allocation(etf_ticker: str) -> dict[str, float]:
             except ValueError:
                 continue
         print(f"  Found {len(country_data)} countries for {etf_ticker}")
-    else:
+        return country_data
+
+    return None
+
+
+def _parse_fallback_patterns(content: str, etf_ticker: str) -> dict[str, float]:
+    """Parse the page content using old/fallback embedded JavaScript patterns."""
+    country_data = {}
+
+    patterns = [
+        r'countries:\s*\[(.*?)\]',
+        r'allocationByCountry:\s*\[(.*?)\]',
+        r'countryAllocation:\s*\[(.*?)\]',
+        r'geographicAllocation:\s*\[(.*?)\]',
+    ]
+
+    for pattern in patterns:
+        match = re.search(pattern, content, re.IGNORECASE)
+        if match:
+            try:
+                js_data = '[' + match.group(1) + ']'
+                # Convert JS-like object to valid JSON
+                js_data = re.sub(r'(\w+):', r'"\1":', js_data)
+                js_data = re.sub(r"'([^']*)'", r'"\1"', js_data)
+                countries_list = json.loads(js_data)
+
+                for item in countries_list:
+                    name = item.get('name')
+                    value = item.get('y') or item.get('value')
+                    if name and value is not None:
+                        country_data[name] = float(value)
+
+                if country_data:
+                    print(f"  Found {len(country_data)} countries for {etf_ticker}")
+                    break
+            except Exception as e:
+                print(f"  Error parsing JSON for {etf_ticker}: {e}")
+                continue
+
+    return country_data
+
+
+def fetch_etf_country_allocation(etf_ticker: str) -> dict[str, float]:
+    """
+    Fetch country allocation for an ETF from stockanalysis.com.
+
+    Args:
+        etf_ticker: ETF ticker symbol (e.g., 'VT', 'VWO', 'VEA')
+
+    Returns:
+        Dictionary of {country: percentage}
+    """
+    target_url = f"https://stockanalysis.com/etf/{etf_ticker.lower()}/holdings/"
+    scraper_api_key = os.environ.get("SCRAPER_API_KEY")
+
+    content = _fetch_page_content(etf_ticker, target_url, scraper_api_key)
+    if content is None:
+        return {}
+
+    # StockAnalysis embeds country data in JavaScript
+    # Look for patterns like: country:"United States" with weight values
+    country_data = _parse_new_pattern(content, etf_ticker)
+
+    if country_data is None:
         # Fallback to old patterns
-        patterns = [
-            r'countries:\s*\[(.*?)\]',
-            r'allocationByCountry:\s*\[(.*?)\]',
-            r'countryAllocation:\s*\[(.*?)\]',
-            r'geographicAllocation:\s*\[(.*?)\]',
-        ]
-
-        for pattern in patterns:
-            match = re.search(pattern, content, re.IGNORECASE)
-            if match:
-                try:
-                    js_data = '[' + match.group(1) + ']'
-                    # Convert JS-like object to valid JSON
-                    js_data = re.sub(r'(\w+):', r'"\1":', js_data)
-                    js_data = re.sub(r"'([^']*)'", r'"\1"', js_data)
-                    countries_list = json.loads(js_data)
-
-                    for item in countries_list:
-                        name = item.get('name')
-                        value = item.get('y') or item.get('value')
-                        if name and value is not None:
-                            country_data[name] = float(value)
-
-                    if country_data:
-                        print(f"  Found {len(country_data)} countries for {etf_ticker}")
-                        break
-                except Exception as e:
-                    print(f"  Error parsing JSON for {etf_ticker}: {e}")
-                    continue
+        country_data = _parse_fallback_patterns(content, etf_ticker)
 
     if not country_data:
         print(f"  No country data found for {etf_ticker}")
