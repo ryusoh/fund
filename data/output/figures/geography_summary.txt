@@ -4,17 +4,17 @@ PORTFOLIO GEOGRAPHIC ALLOCATION - HIERARCHICAL SUMMARY
 
 CONTINENT BREAKDOWN (Ranked)
 ----------------------------------------------------------------------
-  North America              72.15%  ████████████████████████████████████
-  Asia                       22.75%  ███████████
-  Europe                      4.35%  ██
+  North America              72.47%  ████████████████████████████████████
+  Asia                       22.43%  ███████████
+  Europe                      4.34%  ██
   Oceania                     0.44%  
   South America               0.14%  
 
 SUB-REGION BREAKDOWN (Ranked)
 ----------------------------------------------------------------------
-  Northern America           72.11%  ████████████████████████████████████
-  East Asia                  22.04%  ███████████
-  Western Europe              3.41%  █
+  Northern America           72.43%  ████████████████████████████████████
+  East Asia                  21.73%  ██████████
+  Western Europe              3.40%  █
   Southern Europe             0.45%  
   Northern Europe             0.45%  
   Australasia                 0.44%  
@@ -25,9 +25,9 @@ SUB-REGION BREAKDOWN (Ranked)
 
 ALL COUNTRIES (Ranked)
 ----------------------------------------------------------------------
-   1. United States            71.25%  ███████████████████████████████████
-   2. China                    18.62%  █████████
-   3. Japan                     1.60%  
+   1. United States            71.57%  ███████████████████████████████████
+   2. China                    18.30%  █████████
+   3. Japan                     1.59%  
    4. Taiwan                    0.99%  
    5. United Kingdom            0.96%  
    6. Canada                    0.86%  
@@ -40,10 +40,10 @@ ALL COUNTRIES (Ranked)
   13. India                     0.32%  
   14. Ireland                   0.29%  
   15. Spain                     0.23%  
-  16. Sweden                    0.23%  
+  16. Sweden                    0.22%  
   17. Italy                     0.19%  
   18. Singapore                 0.16%  
-  19. Hong Kong                 0.15%  
+  19. Hong Kong                 0.14%  
   20. Brazil                    0.11%  
   21. Denmark                   0.11%  
 
