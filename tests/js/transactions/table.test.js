@@ -426,6 +426,12 @@ describe('asset class filters', () => {
         expect(securities).toContain('VT');
         expect(securities).toContain('FNSFX');
     });
+
+    it('applies exclusions through terminal table filtering', () => {
+        const controller = initTable();
+        controller.filterAndSort('-AAA -FNSFX');
+        expect(getRenderedSecurities()).toEqual(['VT']);
+    });
 });
 
 describe('sort indicator vs row order sync', () => {

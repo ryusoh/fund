@@ -24,6 +24,8 @@ describe('handleHelpCommand', () => {
         expect(appendMessage).toHaveBeenCalledWith(
             expect.stringContaining('type     - Filter by order type')
         );
+        expect(appendMessage).toHaveBeenCalledWith(expect.stringContaining('-<keyword>'));
+        expect(appendMessage).toHaveBeenCalledWith(expect.stringContaining('type:buy -MSFT'));
     });
 
     it('should handle uppercase filter subcommand', () => {

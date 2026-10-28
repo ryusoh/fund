@@ -53,6 +53,7 @@ describe('Table Parser Helpers', () => {
                     max: null,
                     assetClass: null,
                     tickers: [],
+                    excludedTerms: [],
                 },
             });
         });
@@ -96,6 +97,19 @@ describe('Table Parser Helpers', () => {
             const res = parseCommandPalette('AAPL 123 MSFT !@#');
             expect(res.commands.tickers).toEqual(['AAPL', 'MSFT']);
             expect(res.text).toBe('123 !@#');
+        });
+
+        it('should separate excluded terms from positive filters', () => {
+            const res = parseCommandPalette('AAPL -MSFT -2023 -sell');
+            expect(res.commands.tickers).toEqual(['AAPL']);
+            expect(res.commands.excludedTerms).toEqual(['msft', '2023', 'sell']);
+            expect(res.text).toBe('');
+        });
+
+        it('should preserve a bare hyphen as text', () => {
+            const res = parseCommandPalette('-');
+            expect(res.commands.excludedTerms).toEqual([]);
+            expect(res.text).toBe('-');
         });
 
         it('should handle unhandled key:value tokens', () => {

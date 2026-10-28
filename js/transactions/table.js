@@ -165,7 +165,7 @@ function applyFilters(transactions, parsedCommands, term, currentCurrency) {
         filtered = applySecurityFilter(filtered, parsedCommands, multiTickerSet);
         filtered = applyValueFilters(filtered, parsedCommands, currentCurrency);
     }
-    filtered = applyTextFilter(filtered, term);
+    filtered = applyTextFilter(filtered, term, parsedCommands.excludedTerms);
 
     return filtered;
 }

@@ -69,11 +69,16 @@ export function parseCommandPalette(value) {
         max: null,
         assetClass: null,
         tickers: [],
+        excludedTerms: [],
     };
 
     // Bolt: Replaced .forEach with an explicit for loop to reduce closure allocation overhead
     for (let i = 0; i < tokens.length; i += 1) {
         const token = tokens[i];
+        if (token.startsWith('-') && token.length > 1) {
+            commands.excludedTerms.push(token.slice(1).toLowerCase());
+            continue;
+        }
         const [key, ...valParts] = token.split(':');
         const val = valParts.join(':');
         if (!val) {

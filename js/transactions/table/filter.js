@@ -74,15 +74,23 @@ export function applyValueFilters(transactions, commands, currentCurrency) {
     return filtered;
 }
 
-export function applyTextFilter(transactions, term) {
-    if (!term) {
+function matchesText(transaction, term) {
+    return (
+        transaction.security.toLowerCase().includes(term) ||
+        transaction.orderType.toLowerCase().includes(term) ||
+        transaction.tradeDate.includes(term)
+    );
+}
+
+export function applyTextFilter(transactions, term, excludedTerms = []) {
+    if (!term && excludedTerms.length === 0) {
         return transactions;
     }
 
-    return transactions.filter(
-        (t) =>
-            t.security.toLowerCase().includes(term) ||
-            t.orderType.toLowerCase().includes(term) ||
-            t.tradeDate.includes(term)
-    );
+    return transactions.filter((transaction) => {
+        if (term && !matchesText(transaction, term)) {
+            return false;
+        }
+        return !excludedTerms.some((excludedTerm) => matchesText(transaction, excludedTerm));
+    });
 }

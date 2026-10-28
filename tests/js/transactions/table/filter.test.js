@@ -140,6 +140,24 @@ describe('Table filter logic', () => {
         it('returns empty if no match', () => {
             expect(applyTextFilter(transactions, 'tesla')).toEqual([]);
         });
+
+        it('excludes matches across security, order type, and trade date', () => {
+            expect(applyTextFilter(transactions, '', ['aapl']).map((t) => t.id)).toEqual([2, 3]);
+            expect(applyTextFilter(transactions, '', ['sell']).map((t) => t.id)).toEqual([1, 3]);
+            expect(applyTextFilter(transactions, '', ['2023-06']).map((t) => t.id)).toEqual([1, 3]);
+        });
+
+        it('excludes transactions matching any excluded term', () => {
+            expect(applyTextFilter(transactions, '', ['aapl', 'googl']).map((t) => t.id)).toEqual([
+                2,
+            ]);
+        });
+
+        it('combines positive and excluded terms', () => {
+            expect(
+                applyTextFilter(transactions, '2023', ['sell', 'dividend']).map((t) => t.id)
+            ).toEqual([1]);
+        });
     });
 
     describe('applyValueFilters', () => {
