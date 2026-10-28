@@ -540,6 +540,58 @@ def ensure_structure(symbol: str, config: dict) -> dict:
     return config
 
 
+def recompute_derived(config: dict) -> bool:
+    """Recompute derived.expectedCagr/expectedMultiple from scenarios + market data.
+
+    Ports the lab.js computeMetrics formula (scenario multiple = terminal price /
+    current price; expectedMultiple = probability-weighted multiples; expectedCagr
+    = expectedMultiple ** (1/horizon) - 1) so the JSON snapshot never goes stale.
+    fairValueRange and kelly are judgment inputs and pass through unchanged.
+    Returns True when a value changed.
+    """
+    derived = config.get('derived')
+    if not isinstance(derived, dict):
+        derived = {}
+    preferences = config.get('model', {}).get('preferences', {})
+    overrides = preferences.get('overrides', {})
+    market = config.get('market', {})
+    price = overrides.get('price', market.get('price'))
+    eps = overrides.get('eps', market.get('eps'))
+    horizon = preferences.get('horizon')
+    scenarios = config.get('scenarios') or []
+
+    expected_multiple = None
+    expected_cagr = None
+    valid_inputs = (
+        isinstance(price, (int, float))
+        and price > 0
+        and isinstance(eps, (int, float))
+        and eps > 0
+        and isinstance(horizon, (int, float))
+        and horizon > 0
+        and scenarios
+    )
+    if valid_inputs:
+        total = 0.0
+        for scenario in scenarios:
+            growth = scenario.get('growth', {})
+            valuation = scenario.get('valuation', {})
+            cagr = growth.get('epsCagr') or 0.0
+            exit_pe = valuation.get('exitPe') or 1.0
+            prob = scenario.get('prob') or 0.0
+            total += prob * eps * (1 + cagr) ** horizon * exit_pe / price
+        expected_multiple = round(total, 4)
+        expected_cagr = round(total ** (1 / horizon) - 1, 4) if total > 0 else 0.0
+
+    changed = False
+    for key, value in (('expectedCagr', expected_cagr), ('expectedMultiple', expected_multiple)):
+        if key not in derived or derived[key] != value:
+            derived[key] = value
+            changed = True
+    config['derived'] = derived
+    return changed
+
+
 def main() -> None:
     # parse_known_args (not parse_args): direct main() callers in tests run
     # under pytest's argv, which must not abort the sync.
@@ -674,6 +726,9 @@ def main() -> None:
                     changed = True
             except ValueError as e:
                 logging.warning(f"Failed to update shares for {symbol}: {e}")
+
+        if recompute_derived(config):
+            changed = True
 
         if changed:
             config['meta']['asOf'] = datetime.now(timezone.utc).isoformat()

@@ -13,6 +13,7 @@ Design context: `docs/ai_update_flow.md` and `docs/research/compounding-research
 - **The Chat Agent IS the Engine**: You (the AI coding assistant) perform all interpretation, scenario adjustment, and patch generation directly within this conversation. Never call external LLM APIs or standalone external model scripts; use local repository tools.
 - **LLM Authors, Code Gates**: You draft the synthesis and patch; local scripts (`scripts.analysis.filings_adapter`, `scripts.analysis.sync_configs`, Jest, Pytest) enforce determinism and factuality.
 - **Evidence Has an Anchor**: Any numerical or material assertion from SEC reports must be verified against primary filing text via the confirm pass before being promoted into the thesis.
+- **Pipeline Owns Volatile Data, Markdown Owns Reasoning**: Never hand-write live market data (price, P/E, market cap, shares, portfolio weight) or engine outputs (`derived.expectedCagr` / `derived.expectedMultiple`) into JSON or thesis docs. `sync_configs` owns the `market` block and `position.shares`, and auto-recomputes `derived` from scenarios + market data on every run (lab.js engine formula). Thesis docs carry durable reasoning (scenarios, beliefs, falsifiers); dated prices/valuations belong only in §8.2 log entries and `decision_journal` entries, where they are historical records.
 
 ## Usage
 
@@ -79,7 +80,10 @@ Synthesize the incremental findings in the chat response:
       `data/analysis/watchlist.json` first — `sync_configs` deletes configs outside
       holdings ∪ watchlist as orphans. See `docs/ai_update_flow.md` §1.1.
     - Run `python3 -m scripts.analysis.sync_configs --ticker <TICKER>` to normalize and
-      validate the JSON schema. The `--ticker` scope refreshes only that ticker's market
+      validate the JSON schema. The sync also refreshes the `market` block, syncs
+      `position.shares` from holdings, and recomputes `derived.expectedCagr` /
+      `derived.expectedMultiple` — never edit those by hand.
+      The `--ticker` scope refreshes only that ticker's market
       block — an unscoped run refreshes every tracked ticker and dirties their configs
       with incidental market updates (leave a full refresh for the nightly bot; if one
       happens anyway, commit those incidental refreshes separately as `chore(data)`).

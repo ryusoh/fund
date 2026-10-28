@@ -18,10 +18,9 @@
     - Kelly scale: 0.5
 
 - **Position**
-    - Current shares: 2418.36
-    - Current portfolio weight: ~26%
+    - Live shares / portfolio weight: pipeline-owned — see `data/analysis/ANET.json` (`position` block, synced from holdings by `sync_configs`) and the analysis lab. Do not hand-copy numbers here.
     - Constraints: min 0%, max 30%
-    - Max Kelly weight (model): mid single digits (~5–7% full Kelly; ~2.5–3.5% scaled under current assumptions)
+    - Max Kelly weight (model): see §5 — scaled Kelly is a model output, not a fixed number.
 
 ---
 
@@ -62,13 +61,13 @@
 
 ### 1.3 Current valuation snapshot
 
-- Price: 177.24 USD (2026-10-28)
-- Trailing EPS / PE: 3.17 / 55.9
-- Forward EPS / forward PE: ~5.22 / ~33.9
-- EV / EBITDA: 47.2
-- Market cap / EV: 232.5B / 219.1B
-- 52-week range: 114.52 – 217.41
-- Volatility (used in model): 0.54
+Live valuation data is pipeline-owned and intentionally **not transcribed into this document**:
+
+- `data/analysis/ANET.json` and the analysis lab carry the current numbers:
+    - `market` block (price, EPS, P/E, forward P/E, EV/EBITDA, market cap, 52-week range) — auto-refreshed by `sync_configs` from the realtime data pipeline.
+    - `risk.volatility` — auto-refreshed from historical prices.
+    - `derived` block (expectedCagr, expectedMultiple) — auto-recomputed by `sync_configs` from scenarios + market data using the lab.js engine formula.
+- Dated prices/valuations belong only in §8.2 log entries and `decision_journal` entries, where they are historical records of what was known at the time.
 
 ---
 
@@ -384,9 +383,9 @@ Machine-readable version lives in `data/analysis/ANET.json` base-scenario `drive
 
 ## 5. Quantitative Summary & Model Check
 
-- Expected annualized return (CAGR): ~8.0% (scenario-weighted, engine-computed on refreshed market data 2026-10-28: price $177.24, trailing EPS $3.17, horizon 5; weights bull 0.35 / base 0.5 / bear 0.15)
-- Expected exit multiple: ~30x probability-weighted across 38x / 28x / 20x (5-year expected price multiple 1.469x)
-- Fair value range today: ~100–130 USD per share (base-case band; unchanged — scenario growth/exit params unchanged, only probabilities moved)
+- Expected annualized return (CAGR): live value in `derived.expectedCagr` (`data/analysis/ANET.json`, auto-recomputed by `sync_configs`; ~8.0% as of 2026-10-28 with weights bull 0.35 / base 0.5 / bear 0.15)
+- Expected exit multiple: ~30x probability-weighted across 38x / 28x / 20x (a function of scenario parameters only — does not drift with price; the 5-year expected price multiple lives in `derived.expectedMultiple`)
+- Fair value range today: ~100–130 USD per share (base-case band; a scenario-parameter output, not a market-data echo)
 
 - Kelly outputs:
     - Full Kelly weight: mid single digits (~5–7% of portfolio).
@@ -398,7 +397,7 @@ Machine-readable version lives in `data/analysis/ANET.json` base-scenario `drive
 - Target (hurdle) CAGR: 12%
 
 - Commentary:
-    - Scenario-weighted expected return with the updated weights (bull 0.35 / base 0.5 / bear 0.15) is ~8.0% CAGR, modestly above the 6.5% benchmark but still below the 12% hurdle. This is consistent with “great business, pretty full price” from today’s ~34x forward P/E.
+    - Scenario-weighted expected return with the current weights (bull 0.35 / base 0.5 / bear 0.15) sits modestly above the 6.5% benchmark but below the 12% hurdle — see `derived.expectedCagr` for the live figure. This is consistent with “great business, pretty full price” at the prevailing forward multiple.
     - Upside depends on some combination of: (a) the bull outcome (“AI Ethernet champion”) being realised or getting repriced sooner, and/or (b) the market sustaining a structurally higher exit multiple than the probability-weighted ~30x we are using here.
     - Downside in the bear case remains meaningful (slower growth plus multiple compression toward ~20x), so the model still points to mid single‑digit full‑Kelly and low‑single‑digit scaled‑Kelly sizing; going materially above that is a discretionary conviction call rather than what the math alone would recommend.
 

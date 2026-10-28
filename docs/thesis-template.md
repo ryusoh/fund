@@ -17,10 +17,9 @@
     - Kelly scale: {{kellyScale}}
 
 - **Position**
-    - Current shares: {{position.shares}}
-    - Current portfolio weight: {{position.currentWeight}}
+    - Live shares / portfolio weight: pipeline-owned — see `data/analysis/<TICKER>.json` (`position` block, synced from holdings by `sync_configs`). Do not hand-copy numbers here.
     - Constraints: min {{position.constraints.minWeight}}, max {{position.constraints.maxWeight}}
-    - Max Kelly weight (model): {{derived.kelly.scaledKelly}}
+    - Max Kelly weight (model): see §5 — scaled Kelly is a model output, not a fixed number.
 
 ---
 
@@ -45,13 +44,13 @@
 
 ### 1.3 Current valuation snapshot
 
-- Price: {{market.price}}
-- Trailing EPS / PE: {{market.eps}} / {{market.pe}}
-- Forward EPS / forward PE: {{market.forwardEps}} / {{market.forwardPe}}
-- EV / EBITDA: {{market.evToEbitda}}
-- Market cap / EV: {{market.marketCap}} / {{market.enterpriseValue}}
-- 52-week range: {{market.fiftyTwoWeekLow}} – {{market.fiftyTwoWeekHigh}}
-- Volatility (used in model): {{risk.volatility}} (source: {{risk.estimateSource}})
+Live valuation data is pipeline-owned and intentionally **not transcribed into this document**:
+
+- `data/analysis/<TICKER>.json` and the analysis lab carry the current numbers:
+    - `market` block (price, EPS, P/E, forward P/E, EV/EBITDA, market cap, 52-week range) — auto-refreshed by `sync_configs` from the realtime data pipeline.
+    - `risk.volatility` — auto-refreshed from historical prices.
+    - `derived` block (expectedCagr, expectedMultiple) — auto-recomputed by `sync_configs` from scenarios + market data using the lab.js engine formula.
+- Dated prices/valuations belong only in §8.2 log entries and `decision_journal` entries, where they are historical records of what was known at the time.
 
 ---
 

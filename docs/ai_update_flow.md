@@ -216,8 +216,8 @@ Given the files above and the selected `mode`, do the following:
             - scenario probabilities
             - EPS CAGRs
             - exit P/Es
-            - derived expected CAGR
             - Kelly weights
+        - Note: `derived.expectedCagr` / `derived.expectedMultiple` are NOT agent-edited fields — `sync_configs` recomputes them automatically from scenarios + market data on every run. The `market` block and `position.shares` are likewise pipeline-owned.
     - If you believe numbers SHOULD change, list:
         - BEFORE → AFTER values
         - 1‑line rationale per change
@@ -244,7 +244,7 @@ Given the files above and the selected `mode`, do the following:
         +<new lines>
         ```
 
-    4b. JSON patch (data/analysis/<TICKER>.json) - Only touch the fields you recommended changing in step 3: - `scenarios[*].prob` - `scenarios[*].growth.epsCagr` - `scenarios[*].valuation.exitPe` - `derived.expectedCagr` - `derived.expectedMultiple` - `derived.kelly.fullKelly` - `derived.kelly.scaledKelly` - `position.maxKellyWeight` (if applicable) - Output as a fenced diff block:
+    4b. JSON patch (data/analysis/<TICKER>.json) - Only touch the fields you recommended changing in step 3: - `scenarios[*].prob` - `scenarios[*].growth.epsCagr` - `scenarios[*].valuation.exitPe` - `derived.kelly.fullKelly` - `derived.kelly.scaledKelly` - `position.maxKellyWeight` (if applicable) - Do NOT patch `derived.expectedCagr` / `derived.expectedMultiple`, `market.*`, or `position.shares` — those are recomputed/refreshed by `sync_configs`. - Output as a fenced diff block:
 
         ```diff
         --- a/data/analysis/<TICKER>.json
