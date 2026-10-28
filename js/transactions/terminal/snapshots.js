@@ -1037,6 +1037,16 @@ export async function getSectorsSnapshotLine({ labelPrefix = 'Sectors' } = {}) {
     return `${labelPrefix} (${dateLabel}):\n${lines.join('\n')}${hint}`;
 }
 
+function _getGeographyHint(labelPrefix) {
+    if (labelPrefix === 'Geography') {
+        return "\n(Hint: use 'abs' for absolute values, 'per' for percentages, or 'composition/sectors/marketcap' to switch charts)";
+    }
+    if (labelPrefix === 'Geography Abs') {
+        return "\n(Hint: use 'per' for percentages, 'abs' for absolute values, or 'composition/sectors/marketcap' to switch charts)";
+    }
+    return '';
+}
+
 export async function getGeographySnapshotLine({ labelPrefix = 'Geography' } = {}) {
     if (
         transactionState.activeChart !== 'geography' &&
@@ -1045,83 +1055,20 @@ export async function getGeographySnapshotLine({ labelPrefix = 'Geography' } = {
         return null;
     }
     const data = await loadGeographySnapshotData();
-    if (
-        !data ||
-        typeof data !== 'object' ||
-        !Array.isArray(data.dates) ||
-        data.dates.length === 0
-    ) {
+    if (!_isValidSnapshotData(data)) {
         return null;
     }
 
-    const dates = data.dates;
-    const { chartDateRange } = transactionState;
-    const filterFrom = parseDateSafe(chartDateRange?.from);
-    const filterTo = parseDateSafe(chartDateRange?.to);
+    const targetIndex = _getSnapshotTargetIndex(data.dates, transactionState.chartDateRange);
+    const dateLabel = data.dates[targetIndex];
 
-    const filteredIndices = [];
-    for (let i = 0; i < dates.length; i++) {
-        const date = parseDateSafe(dates[i]);
-        if (date && (!filterFrom || date >= filterFrom) && (!filterTo || date <= filterTo)) {
-            filteredIndices.push(i);
-        }
-    }
-
-    let targetIndex =
-        filteredIndices.length > 0 ? filteredIndices[filteredIndices.length - 1] : dates.length - 1;
-    if (!Number.isFinite(targetIndex) || targetIndex < 0) {
-        targetIndex = dates.length - 1;
-    }
-
-    const totalValues = Array.isArray(data.total_values) ? data.total_values : [];
-    const totalValueRaw = Number(totalValues[targetIndex] ?? 0) || 0;
-    const dateLabel = dates[targetIndex];
-    const selectedCurrency = transactionState.selectedCurrency || 'USD';
-
-    const countrySeries = data.series || {};
-    const countries = [];
-    const countryEntries = Object.entries(countrySeries);
-    for (let i = 0; i < countryEntries.length; i += 1) {
-        const [name, values] = countryEntries[i];
-        const seriesValues = Array.isArray(values) ? values : [];
-        const percentage = Number(seriesValues[targetIndex] ?? 0);
-        if (!Number.isFinite(percentage) || percentage <= 0.01) {
-            continue;
-        }
-        const baseValue = (totalValueRaw * percentage) / 100;
-        const convertedValue = convertValueToCurrency(baseValue, dateLabel, selectedCurrency);
-        countries.push({
-            name,
-            percent: percentage,
-            absolute: convertedValue,
-        });
-    }
-
-    if (!countries.length) {
+    const categories = _buildSnapshotCategories(data, targetIndex, dateLabel);
+    if (!categories.length) {
         return null;
     }
 
-    countries.sort((a, b) => b.percent - a.percent);
-
-    const formatted = countries.map((s) => {
-        const valueText = formatWithSelectedCurrency(s.absolute);
-        const percentText = `${s.percent.toFixed(2)}%`;
-        return `${s.name} ${valueText} (${percentText})`;
-    });
-
-    const lines = [];
-    for (let i = 0; i < formatted.length; i += 3) {
-        lines.push(formatted.slice(i, i + 3).join('   '));
-    }
-
-    let hint = '';
-    if (labelPrefix === 'Geography') {
-        hint =
-            "\n(Hint: use 'abs' for absolute values, 'per' for percentages, or 'composition/sectors/marketcap' to switch charts)";
-    } else if (labelPrefix === 'Geography Abs') {
-        hint =
-            "\n(Hint: use 'per' for percentages, 'abs' for absolute values, or 'composition/sectors/marketcap' to switch charts)";
-    }
+    const lines = _formatSnapshotLines(categories);
+    const hint = _getGeographyHint(labelPrefix);
 
     return `${labelPrefix} (${dateLabel}):\n${lines.join('\n')}${hint}`;
 }

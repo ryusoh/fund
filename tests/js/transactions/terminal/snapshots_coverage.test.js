@@ -451,6 +451,58 @@ describe('getMarketcapSnapshotLine empty result', () => {
     });
 });
 
+describe('getGeographySnapshotLine Helpers', () => {
+    let loadSpy;
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+        transactionState.activeChart = 'geography';
+        transactionState.chartDateRange = null;
+        loadSpy = jest.spyOn(dataLoader, 'loadGeographySnapshotData');
+    });
+
+    afterEach(() => {
+        if (loadSpy) {
+            loadSpy.mockRestore();
+        }
+    });
+
+    it('should test branches inside _getGeographyHint indirectly', async () => {
+        transactionState.chartDateRange = { from: '2023-01-01', to: '2023-12-31' };
+        loadSpy.mockResolvedValue({
+            dates: ['2023-01-01', '2023-06-01', '2023-12-31'],
+            total_values: [100, 200, 300],
+            series: {
+                US: [50, 50, 50],
+            },
+        });
+        const res = await getGeographySnapshotLine({ labelPrefix: 'Geography' });
+        expect(res).toContain('Geography');
+        const res1 = await getGeographySnapshotLine({ labelPrefix: 'Geography Abs' });
+        expect(res1).toContain('Geography Abs');
+        const res2 = await getGeographySnapshotLine({ labelPrefix: 'Unknown' });
+        expect(res2).toContain('Unknown');
+    });
+
+    it('returns null if activeChart is not geography', async () => {
+        transactionState.activeChart = 'composition';
+        const res = await getGeographySnapshotLine();
+        expect(res).toBeNull();
+    });
+
+    it('returns null if data is not valid object', async () => {
+        loadSpy.mockResolvedValue(null);
+        const res = await getGeographySnapshotLine();
+        expect(res).toBeNull();
+        loadSpy.mockResolvedValue('invalid');
+        const res2 = await getGeographySnapshotLine();
+        expect(res2).toBeNull();
+        loadSpy.mockResolvedValue({ dates: [] });
+        const res3 = await getGeographySnapshotLine();
+        expect(res3).toBeNull();
+    });
+});
+
 describe('getMarketcapSnapshotLine Helpers', () => {
     let loadSpy;
 
