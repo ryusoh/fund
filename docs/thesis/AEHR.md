@@ -19,10 +19,9 @@
     - Kelly scale: 0.5
 
 - **Position**
-    - Current shares: 0 (watchlist; tracked via `data/analysis/watchlist.json`)
-    - Current portfolio weight: 0%
+    - Watchlist: 0 shares (tracked via `data/analysis/watchlist.json`); live portfolio data is pipeline-owned — see `data/analysis/AEHR.json`.
     - Constraints: min 0%, max 5%
-    - Max Kelly weight (model): 0% — expected return is negative from the current price
+    - Max Kelly weight (model): a model output, not a fixed number — see `data/analysis/AEHR.json` `derived.kelly` and the analysis lab.
 
 ---
 
@@ -53,13 +52,13 @@
 
 ### 1.3 Current valuation snapshot
 
-- Price: 80.10 USD (2026-10-12, intraday)
-- Trailing EPS / PE: −0.23 / n.m. (GAAP loss)
-- Forward EPS / forward PE: ~0.85 (FY2027 guide midpoint, non-GAAP) / ~94. Note: yfinance analyst-consensus forward EPS is ~1.38 (forward PE ~57) — sell-side models well above the guide midpoint; this thesis deliberately models on the company's own guide, not consensus.
-- P/S: ~55 trailing, ~20 forward-guided
-- Market cap / EV: 2.61B / ~2.51B
-- Net cash: ~106M (~3.26/share), no debt — but dilution-funded via FY2026 ATM sales (+97.2M financing)
-- 52-week change: +244.8%; beta 3.48; short interest 16%
+Live valuation data is pipeline-owned and intentionally **not transcribed into this document** — see `data/analysis/AEHR.json` (`market` block auto-refreshed by `sync_configs`; `derived` block auto-recomputed from scenarios + market data) and the analysis lab. Dated prices/valuations belong only in §8.2 log entries and `decision_journal` entries as historical records.
+
+Valuation-relevant context (fundamentals as of thesis initiation, 2026-10-12):
+
+- This thesis deliberately models on the company's own FY2027 non-GAAP guide (~$0.85 EPS midpoint), not sell-side consensus (~$1.38) — sell-side models sit well above the guide.
+- Trailing GAAP EPS negative (−$0.23); P/E n.m.
+- Net cash ~$106M (~$3.26/share), no debt — but dilution-funded via FY2026 ATM sales (+$97.2M financing).
 
 ---
 

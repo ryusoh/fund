@@ -17,10 +17,9 @@
     - Kelly scale: 0.5
 
 - **Position**
-    - Current shares: (fill from portfolio)
-    - Current portfolio weight: (fill from portfolio)
+    - Live shares / portfolio weight: pipeline-owned — see `data/analysis/PDD.json` (`position` block, synced from holdings by `sync_configs`). Do not hand-copy numbers here.
     - Constraints: min 0.0, max 0.25
-    - Max Kelly weight (model): ~0.12
+    - Max Kelly weight (model): a model output, not a fixed number — see `data/analysis/PDD.json` `derived.kelly` and the analysis lab.
 
 ---
 
@@ -51,13 +50,9 @@
 
 ### 1.3 Current valuation snapshot
 
-- Price: ~130 USD
-- Trailing EPS / PE: ~10–11 / ~12–13×
-- Forward EPS / forward PE: ~11–12 / ~11–12×
-- EV / EBITDA: low-teens (large net cash position)
-- Market cap / EV: large cap; EV materially below market cap due to cash
-- 52-week range: roughly 95 – 160 USD
-- Volatility (used in model): ~0.45 (source: historical)
+Live valuation data is pipeline-owned and intentionally **not transcribed into this document** — see `data/analysis/PDD.json` (`market` block auto-refreshed by `sync_configs`; `derived` block auto-recomputed from scenarios + market data) and the analysis lab. Dated prices/valuations belong only in §8.2 log entries and `decision_journal` entries as historical records.
+
+Valuation-relevant context (as of thesis initiation): large net cash position; EV materially below market cap due to cash.
 
 ---
 

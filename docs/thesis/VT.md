@@ -17,10 +17,9 @@
     - Kelly scale: 0.5
 
 - **Position**
-    - Current shares: 2600
-    - Current portfolio weight: 0.30
+    - Live shares / portfolio weight: pipeline-owned — see `data/analysis/VT.json` (`position` block, synced from holdings by `sync_configs`). Do not hand-copy numbers here.
     - Constraints: min 0.00, max 0.30
-    - Max Kelly weight (model): 0.30
+    - Max Kelly weight (model): 0.30 (policy cap for the core global-equity allocation)
 
 ---
 
@@ -48,13 +47,12 @@
 
 ### 1.3 Current valuation snapshot
 
-- Price: ≈ $139
-- Trailing EPS / PE: EPS ≈ $6.2 / PE ≈ 22.5×
-- Forward EPS / forward PE: N/A at fund level (index-level forward EPS not consistently published) / N/A
-- EV / EBITDA: Not meaningful for a fund (no operating EV).
-- Market cap / EV: Market cap ≈ $55B / EV ≈ market cap (no debt).
-- 52-week range: ≈ $101 – $142
-- Volatility (used in model): 13% annualized (conservative, based on 3–5Y VT/ACWI vol).
+Live valuation data is pipeline-owned and intentionally **not transcribed into this document** — see `data/analysis/VT.json` (`market` block auto-refreshed by `sync_configs`; `derived` block auto-recomputed from scenarios + market data) and the analysis lab. Dated prices/valuations belong only in §8.2 log entries and `decision_journal` entries as historical records.
+
+Fund-specific valuation notes (durable):
+
+- Forward EPS / EV / EBITDA are not meaningful at fund level (index-level forward EPS not consistently published; no operating EV).
+- Volatility assumption: 13% annualized (conservative, based on 3–5Y VT/ACWI vol) — a model input, not live data.
 
 ---
 

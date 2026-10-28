@@ -19,10 +19,9 @@
     - Kelly scale: 0.5
 
 - **Position**
-    - Current shares: 0 (watchlist; tracked via `data/analysis/watchlist.json`)
-    - Current portfolio weight: 0%
+    - Watchlist: 0 shares (tracked via `data/analysis/watchlist.json`); live portfolio data is pipeline-owned — see `data/analysis/CBRS.json`.
     - Constraints: min 0%, max 5%
-    - Max Kelly weight (model): 0% — expected return is negative from the current price
+    - Max Kelly weight (model): a model output, not a fixed number — see `data/analysis/CBRS.json` `derived.kelly` and the analysis lab.
 
 ---
 
@@ -47,12 +46,14 @@
 
 ### 1.3 Current valuation snapshot
 
-- Price: 108.94 USD (2026-10-23; 52wk low 107.895); 41% below the $185 IPO price (2026-05-14/15). The $146.62→$108.94 slide had **no company-originated catalyst** (zero SEC filings since 2026-08-12): Maia 300 reveal (Oct 12), Oct 14 lockup tranche, TD Cowen target cut $275→$175 (Oct 19), pre-Nov-9 positioning.
-- Trailing EPS / PE: GAAP deeply negative (IPO SBC + warrant amortization) / n.m.
+Live valuation data is pipeline-owned and intentionally **not transcribed into this document** — see `data/analysis/CBRS.json` (`market` block auto-refreshed by `sync_configs`; `derived` block auto-recomputed from scenarios + market data) and the analysis lab. Dated prices/valuations belong only in §8.2 log entries and `decision_journal` entries as historical records.
+
+Valuation-relevant context (as of 2026-10-23; Q2 2026 10-Q fundamentals):
+
+- IPO 2026-05-14/15 at $185; debuted +68% at $311. The slide below the IPO price had **no company-originated catalyst** (zero SEC filings since 2026-08-12): Maia 300 reveal (Oct 12), Oct 14 lockup tranche, TD Cowen target cut $275→$175 (Oct 19), pre-Nov-9 positioning. ~171M-share lockup expiry ~2026-11-09.
+- Trailing GAAP EPS deeply negative (IPO SBC + warrant amortization); P/E n.m.
 - Core (non-GAAP): Q2 2026 net loss only $(6.9)M — near breakeven; FY2026 core revenue guide $880–890M, core GM 41–43%. GAAP GM Q2 was **14%** (hardware 2%, cloud 20%) after $44.3M warrant amortization (mostly G42-linked; OpenAI-linked only $2.5M).
-- P/S: ~32x FY2026 core guide at ~$28B market cap
-- Net liquidity: $7.4B cash+restricted + $1.2B securities + undrawn $850M revolver (2026-06-30); H1 2026 FCF ≈ $(596)M (OCF $(47.5)M − capex $548.9M)
-- 52-week range: $115.13–$386.34 (IPO-era range); stock debuted +68% at $311
+- Net liquidity: $7.4B cash+restricted + $1.2B securities + undrawn $850M revolver (2026-06-30); H1 2026 FCF ≈ $(596)M (OCF $(47.5)M − capex $548.9M).
 
 ---
 
