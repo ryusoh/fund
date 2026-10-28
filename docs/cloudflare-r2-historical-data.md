@@ -1,6 +1,6 @@
 # Cloudflare R2 for historical and large data files
 
-Research date: 2026-10-28  
+Research date: 2026-10-28
 Issue: [ryusoh/fund#108](https://github.com/ryusoh/fund/issues/108)
 
 ## Question
