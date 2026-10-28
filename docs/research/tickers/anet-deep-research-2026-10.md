@@ -20,7 +20,7 @@ The structural side has not: top-2 customer concentration **rose** to 42% in FY2
 (prediction resolved FALSE), gross margin is declining (GAAP 62.9% Q2'26 vs 65.2%),
 guidance is explicitly supply-constrained into ~~2028, and NVIDIA's networking business
 (~~$31B FY2026, Spectrum-X Ethernet +2.6x YoY) breaks the thesis's "Ethernet wins ⇒
-Arista wins" syllogism — Spectrum-X *is* Ethernet. The red team's strongest finding is
+Arista wins" syllogism — Spectrum-X _is_ Ethernet. The red team's strongest finding is
 internal: the thesis's own model (expected CAGR 7.28% vs 12% hurdle, fair value
 $100–130 vs price ~$175, scaled Kelly 3%) does not support the ~26% actual position.
 
