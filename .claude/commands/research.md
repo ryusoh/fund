@@ -46,6 +46,14 @@ back into the primary findings doc once implementation is complete. For
 throwaway investigation that doesn't belong in version control, use the session
 scratchpad instead.
 
+## Verify
+
+Before reporting completion, run `make precommit-fix` on the final worktree.
+Scoped Markdownlint and Prettier checks are useful during editing but are not a
+substitute for the CI gate: they omit pre-commit hooks such as
+`trailing-whitespace`. If the full gate was not run, say so explicitly rather
+than presenting scoped checks as complete verification.
+
 ## Output constraints
 
 - Quote verbatim source language sparingly — **max ~125 characters** per quote,
