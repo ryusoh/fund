@@ -62,9 +62,9 @@
 
 ### 1.3 Current valuation snapshot
 
-- Price: 184.33 USD (2026-10-22)
-- Trailing EPS / PE: 3.17 / 58.1
-- Forward EPS / forward PE: ~5.22 / ~35.3
+- Price: 177.24 USD (2026-10-28)
+- Trailing EPS / PE: 3.17 / 55.9
+- Forward EPS / forward PE: ~5.22 / ~33.9
 - EV / EBITDA: 47.2
 - Market cap / EV: 232.5B / 219.1B
 - 52-week range: 114.52 – 217.41
@@ -211,7 +211,7 @@ This section documents how the JSON `scenarios` block maps to the thesis and why
 ### 4.2 Bull Case – “AI Ethernet Champion”
 
 - JSON mapping:
-    - `prob`: 0.4
+    - `prob`: 0.35
     - `growth.epsCagr`: 0.28
     - `valuation.exitPe`: 38
 
@@ -248,7 +248,7 @@ This section documents how the JSON `scenarios` block maps to the thesis and why
 - AI build-out and networking intensity are very large.
 - Arista is already winning fast-port and AI share.
 - Campus is a big market; single-digit share is enough for multi-billion revenue.
-- Combined, revenue and margin assumptions support EPS CAGR around 22%.
+- Combined, revenue and margin assumptions support EPS CAGR around 28% (matching the JSON bull scenario).
 
 #### 4.2.4 Evidence & supporting material (Bull)
 
@@ -317,7 +317,7 @@ Machine-readable version lives in `data/analysis/ANET.json` base-scenario `drive
     - AI tailwind, but competitive.
     - Campus accretive, not explosive.
     - Some pricing pressure but margins remain above peers.
-- This yields EPS CAGR around 15%.
+- This yields EPS CAGR around 18% (matching the JSON base scenario).
 
 #### 4.3.4 Evidence & supporting material (Base)
 
@@ -334,7 +334,7 @@ Machine-readable version lives in `data/analysis/ANET.json` base-scenario `drive
 ### 4.4 Bear Case – “Capex Hangover & Competition Bite”
 
 - JSON mapping:
-    - `prob`: 0.1
+    - `prob`: 0.15
     - `growth.epsCagr`: 0.08
     - `valuation.exitPe`: 20
 
@@ -384,9 +384,9 @@ Machine-readable version lives in `data/analysis/ANET.json` base-scenario `drive
 
 ## 5. Quantitative Summary & Model Check
 
-- Expected annualized return (CAGR): ~7–7.5% (scenario-weighted, from today’s ~40x forward P/E and the updated bull/base/bear set above)
-- Expected exit multiple: ~28–29x (probability-weighted across 35x / 28x / 20x)
-- Fair value range today: ~100–130 USD per share (base-case band; bull/bear still much wider, but now with slightly better odds of upside vs downside)
+- Expected annualized return (CAGR): ~8.0% (scenario-weighted, engine-computed on refreshed market data 2026-10-28: price $177.24, trailing EPS $3.17, horizon 5; weights bull 0.35 / base 0.5 / bear 0.15)
+- Expected exit multiple: ~30x probability-weighted across 38x / 28x / 20x (5-year expected price multiple 1.469x)
+- Fair value range today: ~100–130 USD per share (base-case band; unchanged — scenario growth/exit params unchanged, only probabilities moved)
 
 - Kelly outputs:
     - Full Kelly weight: mid single digits (~5–7% of portfolio).
@@ -398,8 +398,8 @@ Machine-readable version lives in `data/analysis/ANET.json` base-scenario `drive
 - Target (hurdle) CAGR: 12%
 
 - Commentary:
-    - Scenario-weighted expected return with the updated assumptions is now in the ~7–7.5% CAGR range, modestly above the 6.5% benchmark but still below the 12% hurdle. This is consistent with “great business, pretty full price” from today’s ~40x forward P/E.
-    - Upside depends on some combination of: (a) the bull outcome (“AI Ethernet champion”) being realised or getting repriced sooner, and/or (b) the market sustaining a structurally higher exit multiple than the probability-weighted ~28–29x we are using here.
+    - Scenario-weighted expected return with the updated weights (bull 0.35 / base 0.5 / bear 0.15) is ~8.0% CAGR, modestly above the 6.5% benchmark but still below the 12% hurdle. This is consistent with “great business, pretty full price” from today’s ~34x forward P/E.
+    - Upside depends on some combination of: (a) the bull outcome (“AI Ethernet champion”) being realised or getting repriced sooner, and/or (b) the market sustaining a structurally higher exit multiple than the probability-weighted ~30x we are using here.
     - Downside in the bear case remains meaningful (slower growth plus multiple compression toward ~20x), so the model still points to mid single‑digit full‑Kelly and low‑single‑digit scaled‑Kelly sizing; going materially above that is a discretionary conviction call rather than what the math alone would recommend.
 
 ---
@@ -495,6 +495,25 @@ Detailed notes live under `docs/thesis/ANET/`.
 - Bear evidence file: `docs/thesis/ANET/ANET-bear-evidence.md`
 
 ### 8.2 High-level update entries (reverse chronological)
+
+#### 2026-10-28 – Deep-research synthesis: bear weight raised, sizing override documented
+
+- What happened:
+    - Full multi-agent deep-research run ([findings doc](../research/tickers/anet-deep-research-2026-10.md)); confirm pass verified 12/12 load-bearing claims (7 via filings adapter at 0.80 confidence, 5 via direct source fetch).
+    - Operations confirmed: Q2'26 $3,035.7M (+37.7%), RPO **$8.4B** at 2026-06-30 (belief_state corrected — the $6.1B it carried was the FY25 year-end figure), deferred revenue $6.87B, Q3 guide ~$3.3B for the **2026-11-03** print.
+    - Red team landed structural hits: Spectrum-X **is** Ethernet (+2.6x YoY, NVDA Q2 FY27 call) — the "Ethernet wins ⇒ Arista wins" bull syllogism is broken; GAAP GM 62.9% vs 65.2% on large-customer mix + memory/silicon inflation; zero buybacks H1'26; top-2 at 42% with Meta-Broadcom custom silicon extended through 2029 and Microsoft SONiC at 800GbE.
+    - Log hygiene: two evidence-log entries marked superseded (`valid_to` 2026-10-28): the 2026-02-15 "$850M AI revenue" entry (irreconcilable with filings — Arista discloses no AI revenue line) and the 2026-07-20 "Spectrum-X launch" entry (launched 2024, misdated).
+- Impact on scenarios:
+    - **Bull 0.40 → 0.35, Bear 0.10 → 0.15** (Base 0.50 unchanged). Two resolved predictions went bear-direction and the 0.10 bear weight contradicted this thesis's own evidence_against list; evidence-weighted honesty argues for moving now rather than waiting for the Q3 print. Not raised higher: no bear leg is yet _confirmed_ (GM declining within guide; no observed Arista share loss; credit-financing fear is sentiment, not orders).
+    - `epsCagr` / `exitPe` unchanged in all scenarios — the driver build's first reconciliation is the Q3 print.
+- Impact on assumptions:
+    - Derived block recomputed (lab.js engine: trailing EPS $3.17, price $177.24, horizon 5): expectedMultiple 1.469, expectedCagr **8.0%** (stored 7.28% was stale — old weights on refreshed market data would have read 9.29%), weighted exit P/E 30.3x. Kelly ≈ unchanged (full 6% / scaled 3%).
+    - New predictions registered: `anet-q3-fy26-print` (Q3 ≥ $3.3B, resolves ~2026-11-03) and `anet-fy26-gm-guide` (FY26 GM inside 62–64%).
+- Action:
+    - **HOLD.** The ~26% position vs ~3% scaled Kelly is now explicitly documented in the decision journal as a discretionary override with kill conditions, not silently carried. Bear evidence file (`ANET-bear-evidence.md`) populated — it was an empty stub.
+- TODO:
+    - Q3 print 2026-11-03 after close: revenue vs ~$3.3B, GAAP GM vs 62–64% guide, deferred-revenue trajectory, purchase commitments, 4th FY raise?, third ≥10% customer language → reconcile against decision-journal expected outcomes (review date 2026-11-04).
+    - Get third-party AI-Ethernet share data (Dell'Oro/Crehan/IDC) for Spectrum-X vs EtherLink in 2026 builds.
 
 #### 2026-10-23 – Driver-model pilot (WO-4c) + prediction housekeeping
 

@@ -3,7 +3,7 @@
     "name": "Arista Networks",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-10-27T13:36:59.973310+00:00",
+        "asOf": "2026-10-28T09:13:45.516912+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -41,7 +41,7 @@
         "marketDataUpdatedAt": "2026-10-27T13:36:59.824160+00:00",
         "evToEbitda": 45.3048,
         "eps": 3.17,
-        "price": 181.445,
+        "price": 177.24,
         "fiftyDayAverage": 195.9872,
         "twoHundredDayAverage": 164.0412,
         "averageVolume": 6119645.0,
@@ -69,7 +69,7 @@
         {
             "id": "bull",
             "name": "Bull – AI Ethernet Champion",
-            "prob": 0.4,
+            "prob": 0.35,
             "macroState": null,
             "growth": {
                 "epsCagr": 0.28,
@@ -165,7 +165,7 @@
         {
             "id": "bear",
             "name": "Bear – Capex Hangover & Competition Bite",
-            "prob": 0.1,
+            "prob": 0.15,
             "macroState": null,
             "growth": {
                 "epsCagr": 0.08,
@@ -179,8 +179,8 @@
         }
     ],
     "derived": {
-        "expectedCagr": 0.0728,
-        "expectedMultiple": 28.85,
+        "expectedCagr": 0.08,
+        "expectedMultiple": 1.469,
         "fairValueRange": [
             100.0,
             130.0
@@ -192,12 +192,12 @@
     },
     "industry_thesis": "docs/thesis/industry/ai-networking.md",
     "belief_state": {
-        "probability": 0.4,
+        "probability": 0.35,
         "confidence": 0.7,
         "evidence_for": [
             "FY2026 revenue guide raised three times in 2026 to $12.6B (+40%); within it AI fabrics goal >=$3.5B and campus goal >=$1.25B [Q2'26 earnings call 2026-08-04, primary].",
-            "Q2 2026: revenue $3,035.7M (+37.7% YoY, first $3B quarter); GAAP H1'26 op margin 44.1%, net margin 38.9%; gross margin 63.4% Q2 within 62-64% FY guide [10-Q income statement, confirm pass 80%].",
-            "Demand backlog visible: deferred revenue ~$6.9B (product deferrals +$600M QoQ on customer acceptance clauses = AI deployments in flight); $875.1M binding future-shipment obligations; RPO $6.1B at FY25 with ~90% recognizable in 2 years [10-Q s_0002_c11/12; 10-K s_0012_c43].",
+            "Q2 2026: revenue $3,035.7M (+37.7% YoY, first $3B quarter); GAAP H1'26 op margin 44.1%, net margin 38.9%; gross margin 62.9% GAAP / 63.4% non-GAAP in Q2, within 62-64% FY guide [10-Q income statement + 8-K reconciliation, confirm pass 80%].",
+            "Demand backlog visible: deferred revenue ~$6.9B (product deferrals +$600M QoQ on customer acceptance clauses = AI deployments in flight); $875.1M binding future-shipment obligations; RPO $8.4B at 2026-06-30 (up from $6.1B at FY25 year-end) with ~91% recognizable in 2 years [10-Q s_0002_c11/13; 10-K s_0012_c43].",
             "Supply secured: purchase commitments ~$9.7B (~3x YoY), memory secured for 2026 with visibility into 2027, liquid-cooling supply chain established [Q2'26 call, Ullal/Nightingale].",
             "AI customer breadth: EtherLink AI fabrics >100 cumulative customers (from 4-5 in 2024); scale-across TAM forecast $15-20B by 2030 vs ~$3-4B in 2026, Arista capturing ~$1.2B in 2026 [Q2'26 call, Ullal].",
             "EOS NetDL software stickiness demonstrated across top tier-1 cloud titans.",
@@ -205,15 +205,21 @@
         ],
         "evidence_against": [
             "Customer concentration ROSE: top-2 end customers 42% of FY2025 revenue (16% + 26%), up from 35% in FY2024 — the diversification thesis is not yet delivering [10-K s_0003_c09; confirm pass 80%].",
-            "Nvidia Spectrum-X bundling aggressively pushes full-stack networking alongside GPUs.",
-            "High trailing P/E (~58x) limits margin of safety on capex digestion shocks.",
-            "Guidance is supply-constrained, not demand-constrained: ~2 quarters of visibility; industry-wide component tightness expected to persist to ~2028 [Q2'26 call] — a supply slip hits revenue directly."
+            "Nvidia Spectrum-X bundling aggressively pushes full-stack networking alongside GPUs — and Spectrum-X IS Ethernet: +2.6x YoY per NVDA Q2 FY27 call (2026-08-26), with NVIDIA networking ~$31B in FY2026 (>3x Arista's entire revenue). The 'Ethernet wins therefore Arista wins' syllogism is broken; NVLink Fusion opening to third-party XPUs (incl. AWS Trainium) undercuts the non-NVDA-accelerator optionality.",
+            "Gross margin eroding at the gross line: GAAP 62.9% in Q2'26 vs 65.2% a year earlier (non-GAAP 63.4% vs 65.6%), driven by large-customer discount mix plus memory/silicon cost inflation that management expects industry-wide to ~2028 [10-Q s_0003_c04; Q2'26 call].",
+            "High trailing P/E (~58x) limits margin of safety on capex digestion shocks; ANET drew down ~18% from its 2026-10-09 high in October on AI-infrastructure-financing fears while the decision journal carried only 0.1 on a demand-side break.",
+            "Guidance is supply-constrained, not demand-constrained: ~2 quarters of visibility; industry-wide component tightness expected to persist to ~2028 [Q2'26 call] — a supply slip hits revenue directly.",
+            "Bullwhip convexity: product deferrals (+$600M QoQ on customer acceptance clauses) let hyperscalers stall recognition in a capex pause, while Arista locks in ~$9.7B (~3x YoY) of purchase commitments against the same demand.",
+            "Anchor customers are building exit ramps: Meta extended its Broadcom custom-silicon partnership through 2029; Microsoft-authored SONiC added 800GbE; white-box market growing ~18.5% CAGR.",
+            "Capital-return pause: zero buybacks in H1 2026 despite $817.9M remaining authorization (FY2025 saw ~$1.6B repurchased) [10-Q Part II Item 2; confirm pass]."
         ],
         "open_questions": [
             "What is the pace of optical migration from 800G DSP to 1.6T LPO/CPO?",
-            "Will enterprise/campus segment revenue diversify total revenue beyond 40% non-cloud?"
+            "Will enterprise/campus segment revenue diversify total revenue beyond 40% non-cloud?",
+            "What do third-party share data (Dell'Oro/Crehan/IDC) show for Spectrum-X vs EtherLink ports in 2026 AI back-end builds?",
+            "Does the FY2026 10-K disclose a third >=10% customer (prediction anet-third-10pct-customer-fy26)?"
         ],
-        "as_of": "2026-10-23T00:00:00Z"
+        "as_of": "2026-10-28T00:00:00Z"
     },
     "predictions": [
         {
@@ -275,6 +281,26 @@
             "outcome": null,
             "resolved_date": null,
             "notes": "CEO on Q2'26 call: 'I fully expect there to be one, maybe two 10% customers' beyond the two Ms; a potential >10% Q4 customer was flagged by analysts. Tests demand diversification beyond the top-2 (42% of FY2025 revenue)."
+        },
+        {
+            "id": "anet-q3-fy26-print",
+            "claim": "Arista reports Q3 FY2026 revenue >= $3.3B (the guidance issued with the Q2 2026 print; earnings 2026-11-03 after close)",
+            "target_date": "2026-11-15",
+            "probability": 0.7,
+            "resolved": false,
+            "outcome": null,
+            "resolved_date": null,
+            "notes": "Near-term falsifier from the 2026-10-28 deep-research red team. Guide is supply-constrained ('guiding based on what we are confident we can get the supply for'), so a miss signals supply failure. Companion checks on the same print: GAAP gross margin within the 62-64% FY guide, deferred revenue still growing, FY guide raised a 4th time."
+        },
+        {
+            "id": "anet-fy26-gm-guide",
+            "claim": "Arista FY2026 gross margin lands within the maintained 62-64% guidance band (i.e., no structural break below 62%)",
+            "target_date": "2027-02-28",
+            "probability": 0.7,
+            "resolved": false,
+            "outcome": null,
+            "resolved_date": null,
+            "notes": "Red-team margin-erosion falsifier: GAAP GM fell to 62.9% in Q2'26 from 65.2% (non-GAAP 63.4% vs 65.6%) on large-customer mix + memory/silicon inflation. FY2026 GM below 62% or FY2027 GM guidance below 62% confirms the peak-margin bear case. The driver build holds 39% net margin flat to 2030."
         }
     ],
     "decision_journal": [
@@ -309,6 +335,23 @@
                 "Demand-side break (capex digestion) invalidates the 40% guide trajectory": 0.1
             },
             "review_date": "2027-02-15"
+        },
+        {
+            "date": "2026-10-28",
+            "action": "HOLD",
+            "shares_changed": 0,
+            "situation": "Deep-research synthesis (docs/research/tickers/anet-deep-research-2026-10.md; confirm pass 12/12 verified). Operations confirmed strong: Q2'26 $3,035.7M +37.7%, RPO $8.4B at 2026-06-30 (belief_state corrected from stale $6.1B FY25 figure), Q3 guide ~$3.3B for the 2026-11-03 print. Structural evidence turned bear-ward: NVIDIA Spectrum-X is Ethernet and grew 2.6x YoY (NVDA Q2 FY27 call), breaking the 'Ethernet wins therefore Arista wins' bull syllogism; GAAP GM fell to 62.9% from 65.2%; zero buybacks in H1'26; top-2 concentration at 42% with both anchors building exit ramps (Meta-Broadcom custom silicon through 2029, Microsoft SONiC 800GbE). Scenario weights re-weighted bull 0.40->0.35, bear 0.10->0.15 (base 0.50 unchanged); epsCagr/exitPe unchanged pending the driver build's first reconciliation. Derived block recomputed with the lab.js engine (trailing EPS $3.17, price $177.24, horizon 5): expectedMultiple 1.469 (was stale at 28.85, an old weighted-exit-PE snapshot), expectedCagr 8.0% (was 7.28% stale; note the old weights on refreshed market data would have read 9.29%), probability-weighted exit P/E 30.3x. POSITION SIZING OVERRIDE ACKNOWLEDGED: ~26% of portfolio vs ~3% scaled Kelly and $100-130 fair value vs $181 price — a deliberate discretionary override, not model-supported; the October drawdown (~-18% from the 2026-10-09 high) is the market testing exactly that gap.",
+            "alternatives_rejected": [
+                "Trim toward the model-justified ~3% scaled Kelly (rejected for now: demand evidence is verified strong and the Q3 print in 6 days is the designed reconciliation point; the override is documented here with explicit kill conditions instead of an immediate mechanical trim into a sentiment-driven drawdown).",
+                "Raise bear to 0.20+ (rejected: every bear leg is live but none is confirmed — GM is declining within guide, Spectrum-X growth has not shown up as Arista share loss, and the credit-financing crack is macro sentiment, not an observed order change).",
+                "Leave bear at 0.10 until the Q3 print (rejected: two resolved predictions already went bear-direction and the 0.10 weight contradicted the thesis's own evidence_against list; evidence-weighted honesty argues for moving now, modestly)."
+            ],
+            "expected_outcomes": {
+                "Q3 print meets/beats ~$3.3B with FY guide raised a 4th time; driver build reconciles": 0.55,
+                "Q3 in line but GM at/below 62% or deferred-revenue growth stalls (bullwhip early signal)": 0.25,
+                "Q3 miss on supply or acceptance-clause stalls; bear case confirms, re-weight toward 0.25 and cut position toward Kelly": 0.2
+            },
+            "review_date": "2026-11-04"
         }
     ]
 }
