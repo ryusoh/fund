@@ -12,11 +12,8 @@ sys.path.append(str(Path(__file__).resolve().parent))
 from utils.security_utils import scrub_secrets
 
 
-def fetch_vt_sectors():
-    """Fetch VT sector breakdown from StockAnalysis using ScraperAPI if available."""
-    target_url = "https://stockanalysis.com/etf/vt/holdings/"
-    scraper_api_key = os.environ.get("SCRAPER_API_KEY")
-
+def _build_fetch_url(target_url, scraper_api_key):
+    """Build the URL for fetching VT sectors, using ScraperAPI if available."""
     if scraper_api_key:
         print("Using ScraperAPI for fetching...")
         payload = {
@@ -25,25 +22,14 @@ def fetch_vt_sectors():
             'country_code': 'us',
         }
         # Security fix: use HTTPS to prevent insecure transmission of API keys
-        url = 'https://api.scraperapi.com/?' + urllib.parse.urlencode(payload)
-    else:
-        print("ScraperAPI key not found, fetching directly (may be blocked)...")
-        url = target_url
+        return 'https://api.scraperapi.com/?' + urllib.parse.urlencode(payload)
 
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    }
-    try:
-        response = requests.get(url, headers=headers, timeout=30)
-        response.raise_for_status()
-        content = response.text
-    except Exception as e:
-        error_msg = str(e)
-        if scraper_api_key:
-            error_msg = scrub_secrets(error_msg, [scraper_api_key])
-        print(f"Error fetching VT data: {error_msg}")
-        return None
+    print("ScraperAPI key not found, fetching directly (may be blocked)...")
+    return target_url
 
+
+def _parse_sector_json(content):
+    """Extract and parse the sector JSON from the page content."""
     # StockAnalysis embeds data in a script tag as JSON
     match = re.search(r'allocationChartData:\{sectors:(\[.*?\])', content)
     if not match:
@@ -56,11 +42,14 @@ def fetch_vt_sectors():
         js_data = match.group(1)
         # Convert JS-like object to valid JSON (keys without quotes)
         json_data = re.sub(r'(\w+):', r'"\1":', js_data)
-        sectors_list = json.loads(json_data)
+        return json.loads(json_data)
     except Exception as e:
         print(f"Error parsing sector JSON: {e}")
         return None
 
+
+def _normalize_sectors(sectors_list):
+    """Normalize sector names and aggregate 'Others' category."""
     # Normalization map to match our app's sector names
     name_map = {
         "Information Technology": "Technology",
@@ -107,6 +96,34 @@ def fetch_vt_sectors():
         sectors["Others"] = round(100.0 - current_sum, 2)
 
     return sectors
+
+
+def fetch_vt_sectors():
+    """Fetch VT sector breakdown from StockAnalysis using ScraperAPI if available."""
+    target_url = "https://stockanalysis.com/etf/vt/holdings/"
+    scraper_api_key = os.environ.get("SCRAPER_API_KEY")
+
+    url = _build_fetch_url(target_url, scraper_api_key)
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    }
+    try:
+        response = requests.get(url, headers=headers, timeout=30)
+        response.raise_for_status()
+        content = response.text
+    except Exception as e:
+        error_msg = str(e)
+        if scraper_api_key:
+            error_msg = scrub_secrets(error_msg, [scraper_api_key])
+        print(f"Error fetching VT data: {error_msg}")
+        return None
+
+    sectors_list = _parse_sector_json(content)
+    if sectors_list is None:
+        return None
+
+    return _normalize_sectors(sectors_list)
 
 
 def update_json(new_sectors):
