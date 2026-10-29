@@ -3,7 +3,7 @@
     "name": "Alphabet",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-10-28T14:31:45.374283+00:00",
+        "asOf": "2026-10-29T01:21:11.672445+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -16,7 +16,7 @@
             "useBayesianUpdate": false
         },
         "preferences": {
-            "horizon": 5,
+            "horizon": 10,
             "benchmark": {
                 "type": "annualReturn",
                 "value": 0.065,
@@ -28,29 +28,29 @@
         }
     },
     "market": {
-        "forwardEps": 15.3586,
-        "pe": 16.1144,
-        "forwardPe": 20.9107,
+        "forwardEps": 15.1882,
+        "pe": 15.8958,
+        "forwardPe": 21.1934,
         "beta": 1.211,
-        "marketCap": 3927765942272.0,
-        "enterpriseValue": 3771170816000.0,
+        "marketCap": 3936694042624.0,
+        "enterpriseValue": 3833054625792.0,
         "ebitda": 173164003328.0,
         "dividendYield": 0.28,
         "currency": "USD",
         "fiftyTwoWeekHigh": 404.47,
         "fiftyTwoWeekLow": 268.43,
-        "marketDataUpdatedAt": "2026-10-28T14:31:45.236087+00:00",
-        "evToEbitda": 21.778,
-        "eps": 19.93,
-        "price": 321.16,
+        "marketDataUpdatedAt": "2026-10-29T01:21:11.004669+00:00",
+        "evToEbitda": 22.1354,
+        "eps": 20.25,
+        "price": 321.89,
         "fiftyDayAverage": 338.5048,
         "twoHundredDayAverage": 339.3173,
         "averageVolume": 16885771.0,
         "averageDailyVolume10Day": 16702520.0,
-        "pegRatio": 1.1
+        "pegRatio": 1.11
     },
     "risk": {
-        "volatility": 0.3092,
+        "volatility": 0.3086,
         "estimateSource": "historical",
         "correlations": null
     },
@@ -62,7 +62,7 @@
         "portfolioId": null,
         "constraints": {
             "minWeight": 0.0,
-            "maxWeight": 0.3
+            "maxWeight": 0.25
         }
     },
     "scenarios": [
@@ -72,14 +72,14 @@
             "prob": 0.2,
             "macroState": null,
             "growth": {
-                "epsCagr": 0.15,
+                "epsCagr": 0.14,
                 "epsCagrSigma": null
             },
             "valuation": {
                 "exitPe": 25.0,
                 "exitPeSigma": null
             },
-            "notes": "AI powerhouse outcome: Search/YouTube monetization improves, Cloud exceeds 20%+ growth with ~30% margins, and optionality (Waymo/Other Bets) contributes meaningfully."
+            "notes": "AI powerhouse outcome: Search/YouTube monetization improves, Cloud exceeds 20% growth with ~30% margins, FCF funds renewed buybacks, and optionality contributes meaningfully."
         },
         {
             "id": "base",
@@ -87,14 +87,14 @@
             "prob": 0.6,
             "macroState": null,
             "growth": {
-                "epsCagr": 0.1,
+                "epsCagr": 0.08,
                 "epsCagrSigma": null
             },
             "valuation": {
                 "exitPe": 20.0,
                 "exitPeSigma": null
             },
-            "notes": "Steady compounder: Search/YouTube remain dominant, Cloud grows mid-teens then slows, Other Bets roughly breakeven, EPS compounds ~10% with strong buybacks."
+            "notes": "Steady compounder: Search/YouTube remain dominant, Cloud grows mid-teens then slows, and EPS compounds ~8% while heavy AI investment limits near-term buybacks."
         },
         {
             "id": "bear",
@@ -102,19 +102,19 @@
             "prob": 0.2,
             "macroState": null,
             "growth": {
-                "epsCagr": 0.04,
+                "epsCagr": 0.02,
                 "epsCagrSigma": null
             },
             "valuation": {
                 "exitPe": 15.0,
                 "exitPeSigma": null
             },
-            "notes": "Moat pressure and stagnation: AI agents erode search, YouTube growth stalls, Cloud slows to high-single digits with margin pressure, and regulation adds cost."
+            "notes": "Moat pressure and capital intensity: AI agents erode Search, Cloud slows with margin pressure, persistent capex and dilution weaken per-share compounding, and regulation adds cost."
         }
     ],
     "derived": {
-        "expectedCagr": 0.1544,
-        "expectedMultiple": 2.0499,
+        "expectedCagr": 0.1171,
+        "expectedMultiple": 3.026,
         "fairValueRange": null,
         "kelly": {
             "fullKelly": null,
@@ -124,22 +124,25 @@
     "industry_thesis": "docs/thesis/industry/cloud-ai-ecosystem.md",
     "belief_state": {
         "probability": 0.5,
-        "confidence": 0.75,
+        "confidence": 0.8,
         "evidence_for": [
-            "Google Cloud operating margins expanding consistently above 10%.",
-            "Custom TPU v5p/v6 Trillium infrastructure delivering cost leadership vs merchant GPU clouds.",
-            "Gemini integration across Google Workspace and Android providing broad consumer/enterprise distribution."
+            "Q3 2026 Google Search & other revenue grew 12% YoY to $63.350 billion; the full-year positive-growth prediction remains open.",
+            "Q3 2026 Google Cloud revenue grew 103% to $30.709 billion with a 36.214% calculated operating margin.",
+            "The Gemini app reached one billion users and first-party model APIs processed nearly 32 billion tokens per minute."
         ],
         "evidence_against": [
-            "DOJ antitrust search remedies create uncertainty around default distribution agreements.",
-            "AI search answers increase inference compute cost relative to traditional ad clicks.",
-            "Rising datacenter depreciation schedule putting pressure on near-term gross margins."
+            "Q3 2026 FCF was negative $9.065 billion and YTD FCF was negative $4.804 billion as capex exceeded operating cash flow.",
+            "YTD repurchases were zero versus $39.810 billion in the prior-year period, while Q3 diluted shares increased 1.352% YoY and Alphabet used external financing.",
+            "Q3 depreciation increased 49.153% YoY to $8.369 billion, with further returns dependent on utilization and monetization.",
+            "DOJ antitrust search remedies create uncertainty around default distribution agreements."
         ],
         "open_questions": [
-            "Will Search ad query volume and monetisation hold steady as AI Overviews scale?",
-            "Can GCP capture incremental enterprise generative AI workloads relative to Azure?"
+            "What are revenue, inference cost, and contribution profit per AI Search query relative to traditional Search?",
+            "What are ex-TPU Cloud growth, TPU-system margins, and fully loaded returns on shared AI infrastructure?",
+            "Can TTM FCF recover while capex remains high, and will fully diluted shares resume declining?",
+            "What normalized operating EPS excludes securities marks, preferred dividends, and potential conversion dilution?"
         ],
-        "as_of": "2026-09-30T10:00:00Z"
+        "as_of": "2026-10-29T00:00:00Z"
     },
     "predictions": [
         {
@@ -164,6 +167,21 @@
         }
     ],
     "decision_journal": [
+        {
+            "date": "2026-10-29",
+            "action": "HOLD",
+            "shares_changed": 0,
+            "situation": "Q3 Search and Cloud growth remained strong, but negative FCF, zero YTD repurchases, and dilution required lower EPS-growth assumptions and a ten-year model horizon aligned with the thesis.",
+            "alternatives_rejected": [
+                "Add on headline Cloud growth (rejected: ex-TPU economics and FCF returns remain unproven).",
+                "Trim on negative FCF alone (rejected: operating income and Search/Cloud growth remain strong and no thesis-kill trigger fired)."
+            ],
+            "expected_outcomes": {
+                "operating resilience offsets capital intensity": 0.55,
+                "prolonged cash deficit and dilution lower per-share returns": 0.45
+            },
+            "review_date": "2026-11-30"
+        },
         {
             "date": "2026-09-29",
             "action": "HOLD",

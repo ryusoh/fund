@@ -7,6 +7,7 @@
 
 - **Ticker / Name**: GOOG – Alphabet Inc.
 - **Date**: 2025-11-15
+- **Last updated**: 2026-10-29 (Q3 2026 earnings)
 - **Time Horizon**: 10 years
 - **Benchmark (annual)**: 6.5% (approx. long-run equity market return)
 - **Target CAGR (Hurdle)**: 12%
@@ -115,8 +116,9 @@ Valuation-relevant context (as of thesis initiation, Nov 2025): net cash >$100B.
     - Experienced finance and product leadership; DeepMind and Google Research as AI “engines.”
 
 - Capital allocation:
-    - Large, consistent **buyback program**; modest dividend initiated.
-    - Heavy but focused **R&D and capex** for AI and Cloud infra.
+    - Historically large buybacks and a modest dividend, but the 2026 AI buildout has paused repurchases and introduced common/preferred equity and debt funding.
+    - Heavy **R&D, capex, and TPU-system inventory** for AI and Cloud infra; per-share returns now depend on FCF recovery and realized infrastructure ROIC.
+    - Buybacks are a residual use of cash after investment and dividends, not a permanent assumption.
     - M&A: mostly small/tuck-in deals; large deals limited by antitrust scrutiny.
 
 - Alignment:
@@ -146,8 +148,8 @@ Valuation-relevant context (as of thesis initiation, Nov 2025): net cash >$100B.
     - Opex discipline vs 2020–22 era (headcount/cost growth controlled).
 
 - Balance sheet:
-    - Net cash; no structural leverage risk.
-    - High FCF supports sustained buybacks and dividends.
+    - Substantial liquidity remains, but “net cash” alone no longer describes the funding regime: AI investment can exceed operating cash flow and require external financing.
+    - FCF after capex, contractual commitments, depreciation, and diluted share count are the core per-share value drivers.
 
 - Optionality:
     - **Waymo**: scalable robotaxi/logistics business.
@@ -190,13 +192,14 @@ This section documents how the GOOG `scenarios` block is chosen and why.
 
 ### 4.1 Shared baseline assumptions
 
-- Starting EPS: ~8.5–9
-- Starting PE: low-30s on trailing, mid-20s on forward.
+- Starting EPS: pipeline-owned forward EPS in `data/analysis/GOOG.json`; never hard-copy it here. Trailing GAAP EPS must be normalized for equity-securities marks, preferred dividends, and potential dilution before being used as an operating baseline.
+- Starting PE: pipeline-owned live valuation; dated observations belong only in §8.2 and the decision journal.
 - Time horizon: 10 years
 - Balance sheet / share count:
-    - Net cash position persists.
-    - Base/Bull: share count falls ~1.5–2% per year via buybacks.
-    - Bear: share count roughly flat to slightly down.
+    - Liquidity remains substantial, but external financing and negative FCF can coexist with strong operating income.
+    - Bull: FCF recovery funds buybacks and share count falls ~10–15% over ten years.
+    - Base: near-term dilution gives way to a roughly flat to ~5% lower share count over ten years.
+    - Bear: persistent external funding produces net dilution.
 - Macro / regime assumptions (mid-cycle):
     - Global nominal GDP ~3–4%.
     - Digital ad share of total ad spend continues to rise.
@@ -212,7 +215,7 @@ This section documents how the GOOG `scenarios` block is chosen and why.
 
 - JSON mapping:
     - `prob`: 0.20
-    - `growth.epsCagr`: 0.15
+    - `growth.epsCagr`: 0.14
     - `valuation.exitPe`: 25
 
 #### 4.2.1 Narrative (world description)
@@ -237,8 +240,8 @@ This section documents how the GOOG `scenarios` block is chosen and why.
     - Cloud EBIT margin ~30% at mid-decade; Other Bets breakeven or slightly profitable.
 
 - Capital allocation:
-    - Buybacks retire ~20–25% of shares over 10 years.
-    - R&D and capex remain high but ROI is strong; no major value-destructive M&A.
+    - FCF recovery funds buybacks that retire ~10–15% of shares over ten years.
+    - R&D and capex remain high but realized ROIC comfortably exceeds capital cost after depreciation and infrastructure operating costs.
 
 - Optionality realized:
     - Waymo operates profitable robotaxi networks in multiple large cities or licenses its stack widely.
@@ -246,22 +249,23 @@ This section documents how the GOOG `scenarios` block is chosen and why.
 
 #### 4.2.3 Why these numbers are reasonable
 
-- EPS CAGR rationale (15%):
-    - Revenue ~11–12% CAGR, modest margin expansion, and ~2% annual share reduction → mid-teens EPS CAGR.
+- EPS CAGR rationale (14%):
+    - Revenue ~11–12% CAGR, modest margin expansion, and roughly 1–1.5% annual share reduction → ~14% EPS CAGR.
 - Exit PE rationale (25x):
     - Wide-moat, double-digit grower with diversified AI/cloud/ads streams; 25x is consistent with premium large-cap tech in strong regimes.
 
 #### 4.2.4 Evidence & supporting material (Bull)
 
 - Company:
-    - Strong recent Cloud growth and margin inflection.
-    - Heavy AI investments and rapid productization (Gemini, Vertex AI, AI in Workspace, YouTube).
+    - Q3 2026 Search revenue remained resilient while Cloud growth and margin exceeded the Bull quarterly thresholds.
+    - Gemini adoption and TPU-system sales broaden AI distribution, although their unit economics remain undisclosed.
 - Industry / macro:
     - Consensus expectations for multi-year growth in AI infra and cloud workloads.
 - My interpretation:
-    - If current AI and Cloud momentum persists and at least one moonshot hits, a “super-winner” outcome is plausible.
+    - The Bull case requires durable ex-TPU Cloud economics and FCF recovery, not merely another strong revenue quarter.
 - Links / files:
     - `docs/thesis/GOOG/GOOG-bull-evidence.md`
+    - `docs/research/tickers/goog-q3-2026-earnings.md`
 
 ---
 
@@ -269,15 +273,15 @@ This section documents how the GOOG `scenarios` block is chosen and why.
 
 - JSON mapping:
     - `prob`: 0.60
-    - `growth.epsCagr`: 0.10
+    - `growth.epsCagr`: 0.08
     - `valuation.exitPe`: 20
 
 #### 4.3.1 Narrative (world description)
 
 - Search and YouTube remain dominant but mature; AI protects the franchise more than it expands it.
 - Cloud grows mid-teens for several years, then slows to low-teens; it is an important but not dominant player (solid #3).
-- Other Bets mostly net out to small losses or small profits; no “second Google,” but also no catastrophic cash drain.
-- Alphabet becomes a stable, high-quality compounder: mid-single to high-single digit revenue growth, ~10% EPS growth, steady buybacks and modest dividend.
+- Other Bets remain a moderate cash drag before gradually narrowing; no “second Google,” but no catastrophic cash drain.
+- Alphabet becomes a stable, high-quality compounder: high-single-digit revenue growth and ~8% EPS growth while heavy investment constrains near-term buybacks.
 
 #### 4.3.2 Key assumptions
 
@@ -292,27 +296,27 @@ This section documents how the GOOG `scenarios` block is chosen and why.
     - Cloud margin improves, Other Bets’ drag diminishes but doesn’t disappear.
 
 - Capital allocation:
-    - Share count down ~15–20% over the decade.
-    - Dividend grows slowly; buybacks remain main return of capital.
+    - Near-term dilution gives way to a roughly flat to ~5% lower share count over the decade.
+    - Dividend grows slowly; buybacks resume only as FCF allows and no longer supply most of the EPS bridge.
 
 #### 4.3.3 Why these numbers are reasonable
 
-- EPS CAGR rationale (10%):
-    - Revenue ~8–9% + flat/slightly rising margins + ~1.5–2% share count reduction = ~10% EPS CAGR.
+- EPS CAGR rationale (8%):
+    - Revenue ~8–9% + flat/slightly rising margins + roughly flat share count = ~8% EPS CAGR after financing costs and mix effects.
 - Exit PE rationale (20x):
-    - Reasonable multiple for a mega-cap with ~10% EPS growth, strong moat, and net cash.
+    - Reasonable multiple for a mega-cap with high-single-digit EPS growth, a strong moat, and substantial but more capital-intensive infrastructure.
 
 #### 4.3.4 Evidence & supporting material (Base)
 
 - Company:
-    - Recent results show healthy growth across Search, YouTube, and Cloud.
-    - Operating margin has rebounded after cost discipline and infra efficiencies.
+    - Q3 2026 operating growth supports Search and Cloud resilience, but negative FCF and zero YTD repurchases contradict the former capital-allocation bridge.
 - Industry / macro:
     - Digital ad and cloud markets expected to grow mid-single to mid-teens.
 - My interpretation:
-    - This is the “no heroics” path and my anchor scenario.
+    - This remains the anchor scenario, with operating resilience offset by lower per-share compounding.
 - Links / files:
     - `docs/thesis/GOOG/GOOG-base-evidence.md`
+    - `docs/research/tickers/goog-q3-2026-earnings.md`
 
 ---
 
@@ -320,7 +324,7 @@ This section documents how the GOOG `scenarios` block is chosen and why.
 
 - JSON mapping:
     - `prob`: 0.20
-    - `growth.epsCagr`: 0.04
+    - `growth.epsCagr`: 0.02
     - `valuation.exitPe`: 15
 
 #### 4.4.1 Narrative (world description)
@@ -329,6 +333,7 @@ This section documents how the GOOG `scenarios` block is chosen and why.
 - YouTube growth slows sharply as competition intensifies and regulatory/content-cost pressures mount.
 - Cloud growth slows into high single digits with margin pressure from price competition and customer bargaining power.
 - Regulatory actions significantly constrain defaults, data use, or ad targeting; compliance costs rise.
+- Persistent infrastructure spending and external funding weaken per-share returns even while revenue grows.
 - Other Bets continue to bleed cash or are written down; no meaningful positive option.
 
 #### 4.4.2 Key assumptions
@@ -340,26 +345,27 @@ This section documents how the GOOG `scenarios` block is chosen and why.
 - Margin structure:
     - Operating margin slips into mid-20s due to competitive and regulatory pressures.
 - Capital allocation:
-    - Buybacks slower; share count nearly flat.
+    - Persistent external funding produces net dilution; buybacks do not offset new issuance.
     - Dividend grows modestly; no major M&A.
 
 #### 4.4.3 Why these numbers are reasonable
 
-- EPS CAGR rationale (4%):
-    - Revenue ~5–6% + mild margin compression + limited buyback benefit → ~4% EPS CAGR.
+- EPS CAGR rationale (2%):
+    - Revenue ~5–6% + margin compression + net dilution → ~2% EPS CAGR.
 - Exit PE rationale (15x):
-    - Reflects a mature “cash cow” with structural headwinds and higher regulatory/disruption risk.
+    - Reflects a capital-intensive, low-growth business with structural headwinds and higher regulatory/disruption risk.
 
 #### 4.4.4 Evidence & supporting material (Bear)
 
 - Company:
-    - Any signs of sustained misses on Search/YouTube growth, Cloud disappointments, or capex/AI spend not translating into revenue.
+    - Q3 2026 negative FCF, rapidly rising depreciation, zero YTD repurchases, and diluted-share growth demonstrate the capital-intensity mechanism, although Search/Cloud strength does not yet confirm the full Bear case.
 - Industry / macro:
     - Strong traction of competing AI search/agent platforms; adverse regulations limiting targeting or defaults.
 - My interpretation:
-    - Low-probability but non-trivial path; important to model explicitly.
+    - The Bear case now includes both moat erosion and the risk that strong headline growth produces weak incremental per-share returns.
 - Links / files:
     - `docs/thesis/GOOG/GOOG-bear-evidence.md`
+    - `docs/research/tickers/goog-q3-2026-earnings.md`
 
 #### 4.4.5 Tail risks beyond modeled Bear
 
@@ -371,15 +377,9 @@ This section documents how the GOOG `scenarios` block is chosen and why.
 
 ## 5. Quantitative Summary & Model Check
 
-- Expected annualized return (CAGR): ≈8% (scenario-weighted)
-- Expected exit multiple: ≈20x (probability-weighted between 25/20/15)
-- Fair value range today (rough band, not engine output):
-    - Low: price consistent with Bear/Base mix – modest upside vs current.
-    - High: price consistent with Base/Bull mix – higher multiple on better growth.
-
-- Kelly outputs (conceptual):
-    - Full Kelly weight: ~0.30 (30% of portfolio, mathematically, if scenarios perfectly calibrated).
-    - Scaled Kelly weight (×0.5): ~0.15 (15% of portfolio as a practical ceiling).
+- Scenario inputs: `data/analysis/GOOG.json` is canonical for probabilities, EPS CAGRs, exit multiples, and the ten-year horizon.
+- Expected CAGR, expected multiple, fair-value range, and Kelly outputs: pipeline-owned — see the JSON `derived` block and analysis lab after `sync_configs`; do not transcribe stale engine outputs here.
+- Valuation hygiene: use pipeline-owned forward EPS for the engine and separately normalize trailing operating EPS for equity-securities marks, preferred dividends, and potential conversion dilution.
 
 ### 5.1 Interpretation vs benchmark and hurdle
 
@@ -387,9 +387,9 @@ This section documents how the GOOG `scenarios` block is chosen and why.
 - Target (hurdle) CAGR: 12%
 
 - Commentary:
-    - Expected ~8% CAGR is above benchmark but below a 12% hurdle at current price.
-    - Upside skew: Bull adds disproportionate upside; Bear still likely positive nominal return over 10 years.
-    - Overall, attractive as a **core compounder** and “quality ballast,” not a deep value/high-octane name at today’s price.
+    - Compare the current pipeline-derived expected CAGR with the benchmark and hurdle at each decision; the former static ~8% summary was stale and has been removed.
+    - Q3 2026 lowered all three EPS-growth assumptions because buybacks no longer provide the former per-share tailwind; probabilities and exit multiples remain unchanged.
+    - Alphabet remains a **core compounder** only if Search/Cloud operating resilience ultimately translates into FCF and per-share value.
 
 ---
 
@@ -399,8 +399,8 @@ This section documents how the GOOG `scenarios` block is chosen and why.
 
 - Target weight range:
     - Normal target: 5–10% of portfolio.
-    - Max allowed (constraints): 20–25%.
-    - Model-justified max (scaled Kelly): ~15%.
+    - Max allowed (constraints): 25%.
+    - Model-justified max: pipeline-owned scaled Kelly, subject to the 25% constraint.
 
 - Entry / add rules:
     - Consider adding / overweighting when:
@@ -438,10 +438,10 @@ This section documents how the GOOG `scenarios` block is chosen and why.
     - Paid subscription counts (YouTube Premium/TV, Google One, Workspace).
 
 - Financials:
-    - Consolidated revenue and EPS growth vs guidance/Street.
-    - Operating margin trends by segment (Services, Cloud, Other Bets).
-    - FCF and capex as % of revenue; infra ROI.
-    - Share count and buyback pacing.
+    - Consolidated revenue and EPS growth vs guidance/Street; normalized operating EPS excluding equity-securities marks.
+    - Operating margin trends by segment (Services, Cloud, Other Bets), including ex-TPU Cloud growth and product margins if disclosed.
+    - TTM FCF, capex and depreciation as % of revenue, assets entering service, and realized infra ROI.
+    - Fully diluted share count, preferred/common issuance, debt funding, and buyback pacing.
 
 - Qualitative:
     - AI product progress and user adoption (Gemini, agents, AI features in Search/Workspace/Android).
@@ -452,18 +452,21 @@ This section documents how the GOOG `scenarios` block is chosen and why.
 ### 7.2 Scenario update triggers
 
 - Signals toward Bull:
-    - Cloud consistently outgrows peers with rising margins.
-    - Evidence that AI features increase user engagement and ad monetization.
+    - Cloud consistently outgrows peers with rising margins and disclosed ex-TPU services strength.
+    - Evidence that AI features increase user engagement, ad monetization, and contribution profit per query.
+    - TTM FCF rises for four consecutive quarters while operating margin remains around or above 30%.
     - Waymo or other moonshots reaching commercial scale or high-valuation external funding.
 
 - Signals toward Bear:
     - Sustained decline in search share or monetization.
     - Multi-year slowdown in Cloud to low single-digit growth; margin compression.
+    - Prolonged near-zero/negative TTM FCF, rising depreciation faster than revenue, and continued net dilution.
     - Adverse structural regulatory outcomes (e.g. forced separation, strict targeting bans).
 
 - Signals we remain in Base:
     - Search/YouTube growth roughly in line with digital ad market.
     - Cloud growing mid-teens with gradual margin improvement.
+    - FCF gradually recovers and share count stabilizes without a return to the former buyback tailwind.
     - Regulatory noise but no game-changing remedies.
 
 ---
@@ -481,35 +484,40 @@ Detailed notes can live in separate files under `docs/thesis/GOOG/`.
 
 ### 8.2 High-level update entries (reverse chronological)
 
-#### YYYY-MM-DD – Event title
+#### 2026-10-29 – Q3 2026 earnings: operating strength, weaker per-share bridge
 
 - What happened:
-    - Short description + link / source.
+    - [Q3 Exhibit 99.1](https://www.sec.gov/Archives/edgar/data/1652044/000165204426000080/googexhibit991q32026.htm) reported revenue of $127.577B, Search & other revenue of $63.350B (+12% YoY), and Cloud revenue of $30.709B (+103%). Cloud operating margin reached a calculated 36.214%.
+    - Q3 FCF was negative $9.065B and YTD FCF was negative $4.804B. YTD repurchases were zero versus $39.810B a year earlier, while Q3 weighted-average diluted shares increased 1.352% YoY.
+    - Net income declined despite higher operating income as other income (expense), net swung from +$12.759B to -$8.221B. Trailing GAAP EPS is therefore not a clean operating baseline.
+    - Full claim-by-claim evidence and the fresh-context confirm record: `docs/research/tickers/goog-q3-2026-earnings.md`.
 - Impact on scenarios:
-    - Bull: …
-    - Base: …
-    - Bear: …
+    - Bull: probability remains 20%; EPS CAGR 15% → 14%. Search/Cloud results support the operating case, but buybacks retire ~10–15% rather than ~20–25% of shares over ten years.
+    - Base: probability remains 60%; EPS CAGR 10% → 8%. Near-term dilution and FCF constraints replace the former 1.5–2% annual share-reduction assumption.
+    - Bear: probability remains 20%; EPS CAGR 4% → 2%. Capital intensity and net dilution now join moat erosion as explicit mechanisms.
 - Impact on assumptions:
-    - Any changes to epsCagr / exitPe in any scenario?
+    - Exit P/Es remain 25/20/15. Model horizon aligns from five to ten years; maximum position weight aligns to 25%.
+    - Expected CAGR, expected multiple, fair value, and Kelly outputs remain pipeline-owned and are recomputed by `sync_configs`.
 - Action:
-    - Hold / add / trim / exit / no action.
+    - HOLD; no shares changed. Do not add on headline Cloud growth before ex-TPU economics and FCF returns are clearer; do not trim solely on negative FCF while Search/Cloud operating growth remains strong.
 - TODO:
-    - Further research, data to watch next quarter.
-
-(Repeat a block like this for each new material event.)
+    - Review the Q3 10-Q for updated RPO, commitments, leases, assets entering service, TPU inventory, and legal disclosures.
+    - Build a four-quarter normalized operating-EPS bridge and monitor Search contribution economics, ex-TPU Cloud growth, TTM FCF, depreciation/revenue, and fully diluted shares.
 
 ---
 
 ## 9. Open Questions / Research To-Do
 
 - Unresolved uncertainties:
-    - Long-run impact of generative AI and agents on search behavior and ad formats.
+    - Long-run impact of generative AI and agents on search behavior, ad formats, and contribution profit per query.
+    - Ex-TPU Cloud growth, TPU-system margins, inventory conversion, and fully loaded returns on shared AI infrastructure.
+    - Whether TTM FCF can recover during the buildout and whether fully diluted shares resume declining.
+    - Normalized operating EPS after securities marks, preferred dividends, financing costs, and potential conversion dilution.
     - True economic potential and timing for Waymo and Other Bets.
-    - Sustainable Google Cloud growth and margins once the AI capex boom normalizes.
     - Magnitude and form of future regulatory remedies in the US/EU.
 
 - Planned research:
-    - Read each new 10-K/10-Q and earnings call transcript.
+    - Read each new 10-K/10-Q and official earnings call transcript; keep transcript-only claims unconfirmed until primary wording is available.
     - Track ad and cloud market reports from independent sources.
     - Follow technical analysis of AI model progress vs. peers.
     - Re-run the 10-year DCF + three-state model annually with updated inputs and probabilities.
