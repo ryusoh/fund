@@ -140,6 +140,15 @@ read the PNG. `scripts/screenshot.mjs` prints page console errors/exceptions to
 stderr; pages with an entrance fade-in (e.g. `/calendar/`) need `--wait 2500` or
 they shoot blank. (`timeout` is not on macOS — don't wrap commands in it.)
 
+## Page-smoke navigation timeouts: reproduce the single page
+
+`make smoke` loads every page, but `scripts/page_smoke.mjs` also accepts one page.
+For a page-specific navigation timeout, reproduce it with a command such as
+`node scripts/page_smoke.mjs /terminal/` before blaming product code or changing
+the timeout. A scoped pass does not erase the failed full run: report both results,
+and don't rerun the unchanged full gate or raise the timeout merely to force green.
+A persistent scoped failure needs diagnosis of the page or its environment.
+
 ## Timezone: Jest runs in UTC — and why `.toISOString()` is a footgun
 
 `package.json` sets **`TZ=UTC`** in the `test` script so all Jest tests run in

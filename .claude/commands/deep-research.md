@@ -86,6 +86,11 @@ and capital-allocation posture, never for hard numbers (those anchor to filings)
   dated resolution.
 - **Authoritative sources only:** Rely on primary sources with verified locators; speculative
   rumors or ungrounded claims must be flagged explicitly as unverified.
+- **Fallback-transcript quarantine (all workers, including red team):** When no official
+  transcript or captions are available, numeric claims and verbatim quotes from automated
+  transcripts remain UNVERIFIED. Do not mix them into confirmed fact tables or build
+  thesis-killing rankings on them; carry them only as open questions pending primary-source
+  confirmation.
 - **Repro reported tool failures before acting on them:** a subagent's "tool X is broken"
   claim needs a minimal direct repro by the orchestrator before it becomes an action item —
   field misreads present as defects (2026-10-12: `query_xbrl_facts` reported as returning

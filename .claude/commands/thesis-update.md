@@ -74,6 +74,8 @@ Synthesize the incremental findings in the chat response:
 
 ### Step 4: Apply Surgical Patches
 
+- **Small anchors only:** Patch the smallest unique block containing the requested change; never retype pipeline-owned JSON blocks or large unchanged Markdown sections. If an exact match fails, re-read and shrink the anchor rather than retrying a larger hand-copied block.
+
 1. **Update `data/analysis/<TICKER>.json`**:
     - Apply any numerical or belief-state changes.
     - If `<TICKER>` is not a current holding (watchlist/initial coverage), register it in
