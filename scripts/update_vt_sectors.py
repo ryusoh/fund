@@ -27,6 +27,7 @@ def _build_fetch_url(target_url, scraper_api_key):
     print("ScraperAPI key not found, fetching directly (may be blocked)...")
     return target_url
 
+
 def _parse_sector_json(content):
     """Extract and parse the sector JSON from the page content."""
     # StockAnalysis embeds data in a script tag as JSON
@@ -45,6 +46,7 @@ def _parse_sector_json(content):
     except Exception as e:
         print(f"Error parsing sector JSON: {e}")
         return None
+
 
 def _normalize_sectors(sectors_list):
     """Normalize sector names and aggregate 'Others' category."""
@@ -95,6 +97,7 @@ def _normalize_sectors(sectors_list):
 
     return sectors
 
+
 def fetch_vt_sectors():
     """Fetch VT sector breakdown from StockAnalysis using ScraperAPI if available."""
     target_url = "https://stockanalysis.com/etf/vt/holdings/"
@@ -121,6 +124,7 @@ def fetch_vt_sectors():
         return None
 
     return _normalize_sectors(sectors_list)
+
 
 def update_json(new_sectors):
     """Update data/fund_sector_allocations.json with new VT data."""
