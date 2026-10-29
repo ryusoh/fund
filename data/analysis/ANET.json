@@ -3,7 +3,7 @@
     "name": "Arista Networks",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-10-28T14:31:44.708397+00:00",
+        "asOf": "2026-10-29T14:40:07.738945+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -29,28 +29,28 @@
     },
     "market": {
         "forwardEps": 5.2224,
-        "pe": 58.7776,
-        "forwardPe": 35.6782,
+        "pe": 58.7334,
+        "forwardPe": 35.6514,
         "beta": 1.605,
-        "marketCap": 234997694464.0,
-        "enterpriseValue": 222505713664.0,
+        "marketCap": 234821124096.0,
+        "enterpriseValue": 222152572928.0,
         "ebitda": 4639600128.0,
         "currency": "USD",
         "fiftyTwoWeekHigh": 217.41,
         "fiftyTwoWeekLow": 114.52,
-        "marketDataUpdatedAt": "2026-10-28T14:31:44.585162+00:00",
-        "evToEbitda": 47.958,
+        "marketDataUpdatedAt": "2026-10-29T14:40:07.617556+00:00",
+        "evToEbitda": 47.8818,
         "eps": 3.17,
-        "price": 186.325,
-        "fiftyDayAverage": 195.6912,
-        "twoHundredDayAverage": 164.3618,
-        "averageVolume": 6074207.0,
-        "averageDailyVolume10Day": 6542580.0,
-        "pegRatio": 1.31,
+        "price": 186.185,
+        "fiftyDayAverage": 195.562,
+        "twoHundredDayAverage": 164.6782,
+        "averageVolume": 6024176.0,
+        "averageDailyVolume10Day": 6445140.0,
+        "pegRatio": 1.38,
         "dividendYield": 0.0
     },
     "risk": {
-        "volatility": 0.5432,
+        "volatility": 0.5423,
         "estimateSource": "historical",
         "correlations": null
     },
@@ -179,8 +179,8 @@
         }
     ],
     "derived": {
-        "expectedCagr": 0.0692,
-        "expectedMultiple": 1.3974,
+        "expectedCagr": 0.0694,
+        "expectedMultiple": 1.3984,
         "fairValueRange": [
             100.0,
             130.0
