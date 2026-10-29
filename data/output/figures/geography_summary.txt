@@ -4,20 +4,20 @@ PORTFOLIO GEOGRAPHIC ALLOCATION - HIERARCHICAL SUMMARY
 
 CONTINENT BREAKDOWN (Ranked)
 ----------------------------------------------------------------------
-  North America              72.93%  ████████████████████████████████████
-  Asia                       22.05%  ███████████
-  Europe                      4.28%  ██
-  Oceania                     0.43%  
+  North America              73.15%  ████████████████████████████████████
+  Asia                       21.82%  ██████████
+  Europe                      4.29%  ██
+  Oceania                     0.44%  
   South America               0.13%  
 
 SUB-REGION BREAKDOWN (Ranked)
 ----------------------------------------------------------------------
-  Northern America           72.89%  ████████████████████████████████████
-  East Asia                  21.35%  ██████████
-  Western Europe              3.35%  █
+  Northern America           73.11%  ████████████████████████████████████
+  East Asia                  21.12%  ██████████
+  Western Europe              3.36%  █
   Southern Europe             0.45%  
   Northern Europe             0.44%  
-  Australasia                 0.43%  
+  Australasia                 0.44%  
   South Asia                  0.32%  
   Southeast Asia              0.21%  
   Middle East                 0.16%  
@@ -25,11 +25,11 @@ SUB-REGION BREAKDOWN (Ranked)
 
 ALL COUNTRIES (Ranked)
 ----------------------------------------------------------------------
-   1. United States            72.04%  ████████████████████████████████████
-   2. China                    17.98%  ████████
+   1. United States            72.26%  ████████████████████████████████████
+   2. China                    17.74%  ████████
    3. Japan                     1.57%  
-   4. Taiwan                    0.97%  
-   5. United Kingdom            0.94%  
+   4. Taiwan                    0.98%  
+   5. United Kingdom            0.95%  
    6. Canada                    0.85%  
    7. South Korea               0.69%  
    8. Switzerland               0.65%  
