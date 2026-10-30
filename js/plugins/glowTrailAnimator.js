@@ -86,64 +86,71 @@ function hexToRgb(color) {
     };
 }
 
-function drawGlow(ctx, series, options, settings) {
-    const { coords, color, lineWidth } = series;
-    if (!coords || coords.length === 0) {
+function _drawGlowTail(ctx, coords, color, lineWidth, options, settings) {
+    const tailCount =
+        settings.tailRatio > 0 ? Math.max(2, Math.floor(coords.length * settings.tailRatio)) : 0;
+    if (tailCount <= 1) {
         return;
     }
 
-    const { isMobile = false, basePhase = 0, seriesIndex = 0 } = options;
+    const { isMobile = false } = options;
     const rgb = hexToRgb(color);
     if (!rgb) {
         return;
     }
 
-    const appliedPhase = basePhase + seriesIndex * settings.phaseOffsetStep;
-    const oscillation = 0.5 + 0.5 * Math.sin(appliedPhase * settings.oscillationSpeed);
-    const minPulseRadius = Math.max(settings.minPulseRadius, lineWidth / 2);
-    const haloBase = isMobile ? settings.mobileHaloBase : settings.desktopHaloBase;
-    const haloOscillation = isMobile
-        ? settings.mobileHaloOscillation
-        : settings.desktopHaloOscillation;
-    const haloRadius = minPulseRadius + haloBase + oscillation * haloOscillation;
+    const tailPoints = coords.slice(-tailCount);
+    const start = tailPoints[0];
+    const end = tailPoints[tailPoints.length - 1];
 
-    const tailCount =
-        settings.tailRatio > 0 ? Math.max(2, Math.floor(coords.length * settings.tailRatio)) : 0;
-    if (tailCount > 1) {
-        const tailPoints = coords.slice(-tailCount);
-        const start = tailPoints[0];
-        const end = tailPoints[tailPoints.length - 1];
+    if (start.x === end.x && start.y === end.y) {
+        return;
+    }
 
-        if (start.x !== end.x || start.y !== end.y) {
-            const gradient = ctx.createLinearGradient(start.x, start.y, end.x, end.y);
-            gradient.addColorStop(0, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0)`);
-            gradient.addColorStop(1, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${settings.tailOpacity})`);
+    const gradient = ctx.createLinearGradient(start.x, start.y, end.x, end.y);
+    gradient.addColorStop(0, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0)`);
+    gradient.addColorStop(1, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${settings.tailOpacity})`);
 
-            ctx.save();
-            ctx.lineWidth = lineWidth;
-            ctx.strokeStyle = gradient;
-            ctx.shadowColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${settings.shadowOpacity})`;
-            ctx.shadowBlur = isMobile ? settings.mobileShadowBlur : settings.desktopShadowBlur;
-            ctx.beginPath();
-            for (let i = 0; i < tailPoints.length; i++) {
-                const point = tailPoints[i];
-                if (i === 0) {
-                    ctx.moveTo(point.x, point.y);
-                } else {
-                    ctx.lineTo(point.x, point.y);
-                }
-            }
-            ctx.stroke();
-            ctx.restore();
+    ctx.save();
+    ctx.lineWidth = lineWidth;
+    ctx.strokeStyle = gradient;
+    ctx.shadowColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${settings.shadowOpacity})`;
+    ctx.shadowBlur = isMobile ? settings.mobileShadowBlur : settings.desktopShadowBlur;
+    ctx.beginPath();
+    for (let i = 0; i < tailPoints.length; i++) {
+        const point = tailPoints[i];
+        if (i === 0) {
+            ctx.moveTo(point.x, point.y);
+        } else {
+            ctx.lineTo(point.x, point.y);
         }
+    }
+    ctx.stroke();
+    ctx.restore();
+}
+
+function _drawGlowCore(
+    ctx,
+    lastPoint,
+    color,
+    minPulseRadius,
+    haloRadius,
+    oscillation,
+    options,
+    settings
+) {
+    const { isMobile = false } = options;
+    const rgb = hexToRgb(color);
+    if (!rgb) {
+        return;
     }
 
     const gradient = ctx.createRadialGradient(
-        coords[coords.length - 1].x,
-        coords[coords.length - 1].y,
+        lastPoint.x,
+        lastPoint.y,
         minPulseRadius * 0.6,
-        coords[coords.length - 1].x,
-        coords[coords.length - 1].y,
+        lastPoint.x,
+        lastPoint.y,
         haloRadius
     );
     gradient.addColorStop(0, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.96)`);
@@ -154,25 +161,19 @@ function drawGlow(ctx, series, options, settings) {
     ctx.globalCompositeOperation = 'lighter';
     ctx.fillStyle = gradient;
     ctx.beginPath();
-    ctx.arc(coords[coords.length - 1].x, coords[coords.length - 1].y, haloRadius, 0, Math.PI * 2);
+    ctx.arc(lastPoint.x, lastPoint.y, haloRadius, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.95)`;
     ctx.beginPath();
-    ctx.arc(
-        coords[coords.length - 1].x,
-        coords[coords.length - 1].y,
-        minPulseRadius,
-        0,
-        Math.PI * 2
-    );
+    ctx.arc(lastPoint.x, lastPoint.y, minPulseRadius, 0, Math.PI * 2);
     ctx.fill();
 
     const ringRadius = minPulseRadius + Math.min(minPulseRadius * 0.4, 0.5);
     ctx.strokeStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.55)`;
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.arc(coords[coords.length - 1].x, coords[coords.length - 1].y, ringRadius, 0, Math.PI * 2);
+    ctx.arc(lastPoint.x, lastPoint.y, ringRadius, 0, Math.PI * 2);
     ctx.stroke();
     ctx.restore();
 
@@ -183,15 +184,38 @@ function drawGlow(ctx, series, options, settings) {
     ctx.globalAlpha = clamp(0.6 + 0.4 * oscillation, 0.25, 1);
     ctx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.35)`;
     ctx.beginPath();
-    ctx.arc(
-        coords[coords.length - 1].x,
-        coords[coords.length - 1].y,
-        minPulseRadius + 1.8,
-        0,
-        Math.PI * 2
-    );
+    ctx.arc(lastPoint.x, lastPoint.y, minPulseRadius + 1.8, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
+}
+
+function drawGlow(ctx, series, options, settings) {
+    const { coords, color, lineWidth } = series;
+    if (!coords || coords.length === 0) {
+        return;
+    }
+
+    const { isMobile = false, basePhase = 0, seriesIndex = 0 } = options;
+    const appliedPhase = basePhase + seriesIndex * settings.phaseOffsetStep;
+    const oscillation = 0.5 + 0.5 * Math.sin(appliedPhase * settings.oscillationSpeed);
+    const minPulseRadius = Math.max(settings.minPulseRadius, lineWidth / 2);
+    const haloBase = isMobile ? settings.mobileHaloBase : settings.desktopHaloBase;
+    const haloOscillation = isMobile
+        ? settings.mobileHaloOscillation
+        : settings.desktopHaloOscillation;
+    const haloRadius = minPulseRadius + haloBase + oscillation * haloOscillation;
+
+    _drawGlowTail(ctx, coords, color, lineWidth, options, settings);
+    _drawGlowCore(
+        ctx,
+        coords[coords.length - 1],
+        color,
+        minPulseRadius,
+        haloRadius,
+        oscillation,
+        options,
+        settings
+    );
 }
 
 export function createGlowTrailAnimator(options = {}) {
