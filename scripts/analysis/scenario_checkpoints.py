@@ -37,7 +37,11 @@ def _extract_valid_scenarios(config: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def _get_existing_prediction_ids(config: dict[str, Any]) -> set[str]:
-    return {str(p.get("id")) for p in (config.get("predictions") or []) if isinstance(p, dict) and p.get("id") is not None}
+    return {
+        str(p.get("id"))
+        for p in (config.get("predictions") or [])
+        if isinstance(p, dict) and p.get("id") is not None
+    }
 
 
 def _build_scenario_proposals(
@@ -49,7 +53,7 @@ def _build_scenario_proposals(
     symbol: str,
     horizon: int,
     as_of: date,
-    existing_ids: set[str]
+    existing_ids: set[str],
 ) -> list[dict[str, Any]]:
     proposals = []
     g = float(scenario["growth"]["epsCagr"])
@@ -73,6 +77,7 @@ def _build_scenario_proposals(
             }
         )
     return proposals
+
 
 def _extract_config_params(config: dict[str, Any]) -> tuple[str, float, int]:
     symbol = str(config.get("symbol", "?")).upper()
