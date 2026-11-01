@@ -315,24 +315,87 @@ function _validateRequest(request, origin, url) {
     return null; // Valid
 }
 
+function _handleCorsPreflight(origin) {
+    return new Response(null, {
+        status: 204,
+        headers: {
+            ...corsHeaders(origin),
+            'X-Content-Type-Options': 'nosniff',
+            'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
+            'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none'",
+            'X-Frame-Options': 'DENY',
+            'Referrer-Policy': 'strict-origin-when-cross-origin',
+            'Permissions-Policy': 'geolocation=(), microphone=(), camera=(), payment=()',
+        },
+    });
+}
+
+function _parseAndValidateSymbols(symbolsParam, origin) {
+    const symbols = _parseSymbols(symbolsParam);
+    if (symbols.length === 0) {
+        return { errorResponse: jsonResponse({ error: 'No valid symbols provided' }, 400, origin) };
+    }
+    if (symbols.length > 100) {
+        return {
+            errorResponse: jsonResponse(
+                { error: 'Maximum of 100 symbols allowed per request' },
+                400,
+                origin
+            ),
+        };
+    }
+    return { symbols };
+}
+
+async function _handleFetchError(resolvedResult, env, cacheKey, origin) {
+    const stale = await env.PRICE_CACHE.get(`${cacheKey}:lkg`, { type: 'json' });
+    if (stale) {
+        return jsonResponse(stale, 200, origin, { 'X-Cache': 'STALE' });
+    }
+    return jsonResponse(resolvedResult, 502, origin);
+}
+
+async function _backfillFromLkg(prices, symbols, env, cacheKey) {
+    let complete = symbols.every((s) => prices[s] > 0);
+    if (!complete) {
+        const lkg = await env.PRICE_CACHE.get(`${cacheKey}:lkg`, { type: 'json' });
+        if (lkg) {
+            prices = { ...prices };
+            for (const s of symbols) {
+                if (!(prices[s] > 0) && lkg[s] > 0) {
+                    prices[s] = lkg[s];
+                }
+            }
+            complete = symbols.every((s) => prices[s] > 0);
+        }
+    }
+    return { prices, complete };
+}
+
+function _updateCache(ctx, env, cacheKey, prices, ttl) {
+    const pricesJson = JSON.stringify(prices);
+    const lkgKey = `${cacheKey}:lkg`;
+    ctx.waitUntil(
+        Promise.all([
+            // Short-lived cache entry (respects market-hours TTL)
+            env.PRICE_CACHE.put(cacheKey, pricesJson, { expirationTtl: ttl }),
+            // Last-known-good: only write when expired (1h TTL) — at most 24 writes/key/day
+            env.PRICE_CACHE.get(lkgKey).then((existing) => {
+                if (!existing) {
+                    return env.PRICE_CACHE.put(lkgKey, pricesJson, { expirationTtl: 3600 });
+                }
+            }),
+        ])
+    );
+}
+
 export default {
     async fetch(request, env, ctx) {
         const origin = request.headers.get('Origin') ?? '';
 
         // Handle CORS preflight
         if (request.method === 'OPTIONS') {
-            return new Response(null, {
-                status: 204,
-                headers: {
-                    ...corsHeaders(origin),
-                    'X-Content-Type-Options': 'nosniff',
-                    'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
-                    'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none'",
-                    'X-Frame-Options': 'DENY',
-                    'Referrer-Policy': 'strict-origin-when-cross-origin',
-                    'Permissions-Policy': 'geolocation=(), microphone=(), camera=(), payment=()',
-                },
-            });
+            return _handleCorsPreflight(origin);
         }
 
         const url = new URL(request.url);
@@ -343,17 +406,11 @@ export default {
 
         const symbolsParam = url.searchParams.get('symbols');
         // Normalise and deduplicate symbols
-        const symbols = _parseSymbols(symbolsParam);
-        if (symbols.length === 0) {
-            return jsonResponse({ error: 'No valid symbols provided' }, 400, origin);
+        const parsed = _parseAndValidateSymbols(symbolsParam, origin);
+        if (parsed.errorResponse) {
+            return parsed.errorResponse;
         }
-        if (symbols.length > 100) {
-            return jsonResponse(
-                { error: 'Maximum of 100 symbols allowed per request' },
-                400,
-                origin
-            );
-        }
+        const symbols = parsed.symbols;
 
         const cacheKey = `prices:${symbols.sort().join(',')}`;
         const ttl = TTL[getTradingSession()];
@@ -368,50 +425,19 @@ export default {
         const resolvedResult = await _fetchPricesWithFallback(symbols, env);
 
         if (resolvedResult && resolvedResult.error) {
-            const stale = await env.PRICE_CACHE.get(`${cacheKey}:lkg`, { type: 'json' });
-            if (stale) {
-                return jsonResponse(stale, 200, origin, { 'X-Cache': 'STALE' });
-            }
-            return jsonResponse(resolvedResult, 502, origin);
+            return _handleFetchError(resolvedResult, env, cacheKey, origin);
         }
-
-        let prices = resolvedResult;
 
         // 3. Partial map: a requested symbol missing here renders as 0
         //    downstream. Backfill gaps from the last-known-good entry —
         //    a stale real price beats an absent one.
-        let complete = symbols.every((s) => prices[s] > 0);
-        if (!complete) {
-            const lkg = await env.PRICE_CACHE.get(`${cacheKey}:lkg`, { type: 'json' });
-            if (lkg) {
-                prices = { ...prices };
-                for (const s of symbols) {
-                    if (!(prices[s] > 0) && lkg[s] > 0) {
-                        prices[s] = lkg[s];
-                    }
-                }
-                complete = symbols.every((s) => prices[s] > 0);
-            }
-        }
+        const { prices, complete } = await _backfillFromLkg(resolvedResult, symbols, env, cacheKey);
 
         // 4. Write to KV after response is sent — only when every requested
         //    symbol has a real price; a partial map must not poison the cache
         //    or the LKG entry.
         if (complete) {
-            const pricesJson = JSON.stringify(prices);
-            const lkgKey = `${cacheKey}:lkg`;
-            ctx.waitUntil(
-                Promise.all([
-                    // Short-lived cache entry (respects market-hours TTL)
-                    env.PRICE_CACHE.put(cacheKey, pricesJson, { expirationTtl: ttl }),
-                    // Last-known-good: only write when expired (1h TTL) — at most 24 writes/key/day
-                    env.PRICE_CACHE.get(lkgKey).then((existing) => {
-                        if (!existing) {
-                            return env.PRICE_CACHE.put(lkgKey, pricesJson, { expirationTtl: 3600 });
-                        }
-                    }),
-                ])
-            );
+            _updateCache(ctx, env, cacheKey, prices, ttl);
         }
 
         return jsonResponse(prices, 200, origin, { 'X-Cache': 'MISS' });
