@@ -431,12 +431,7 @@ export default {
         // 3. Partial map: a requested symbol missing here renders as 0
         //    downstream. Backfill gaps from the last-known-good entry —
         //    a stale real price beats an absent one.
-        const { prices, complete } = await _backfillFromLkg(
-            resolvedResult,
-            symbols,
-            env,
-            cacheKey
-        );
+        const { prices, complete } = await _backfillFromLkg(resolvedResult, symbols, env, cacheKey);
 
         // 4. Write to KV after response is sent — only when every requested
         //    symbol has a real price; a partial map must not poison the cache
