@@ -97,13 +97,42 @@ function handleSandbox(lab, action, appendMessage) {
     appendMessage(`Belief sandbox (${action}) — ${text}.`);
 }
 
+function _handleCloseCommand(appendMessage) {
+    const section = document.getElementById('analysisSection');
+    if (section) {
+        section.classList.add('is-hidden');
+    }
+    appendMessage('Analysis pane closed.');
+}
+
+function _handleOverviewCommand(lab, appendMessage) {
+    lab.showAnalysisSection('overview');
+    const symbols = lab.getAnalysisSymbols().join(', ');
+    appendMessage(`Analysis lab — securities: ${symbols}.\n${USAGE_LINE}`);
+}
+
+function _handleTickerCommand(lab, sub, appendMessage) {
+    const symbol = sub.toUpperCase();
+    if (lab.setActiveAnalysisSymbol(symbol)) {
+        const active = lab.getActiveAnalysisConfig();
+        const name = active && active.name ? active.name : symbol;
+        const weight =
+            active && Number.isFinite(active.weight)
+                ? `${(active.weight * 100).toFixed(1)}%`
+                : 'n/a';
+        appendMessage(`Analysis context: ${symbol} (${name} · ${weight}).`);
+        return;
+    }
+    appendMessage(
+        `Unknown analysis symbol or subcommand: ${sub}\nAvailable symbols: ${lab
+            .getAnalysisSymbols()
+            .join(', ')}\n${USAGE_LINE}`
+    );
+}
+
 export async function handleAnalysisCommand(args, { appendMessage }) {
     if (args[0] === 'close') {
-        const section = document.getElementById('analysisSection');
-        if (section) {
-            section.classList.add('is-hidden');
-        }
-        appendMessage('Analysis pane closed.');
+        _handleCloseCommand(appendMessage);
         return;
     }
 
@@ -115,9 +144,7 @@ export async function handleAnalysisCommand(args, { appendMessage }) {
     }
 
     if (args.length === 0) {
-        lab.showAnalysisSection('overview');
-        const symbols = lab.getAnalysisSymbols().join(', ');
-        appendMessage(`Analysis lab — securities: ${symbols}.\n${USAGE_LINE}`);
+        _handleOverviewCommand(lab, appendMessage);
         return;
     }
 
@@ -136,21 +163,5 @@ export async function handleAnalysisCommand(args, { appendMessage }) {
         return;
     }
 
-    // Anything else is a ticker token (args arrive lowercased from commands.js).
-    const symbol = sub.toUpperCase();
-    if (lab.setActiveAnalysisSymbol(symbol)) {
-        const active = lab.getActiveAnalysisConfig();
-        const name = active && active.name ? active.name : symbol;
-        const weight =
-            active && Number.isFinite(active.weight)
-                ? `${(active.weight * 100).toFixed(1)}%`
-                : 'n/a';
-        appendMessage(`Analysis context: ${symbol} (${name} · ${weight}).`);
-        return;
-    }
-    appendMessage(
-        `Unknown analysis symbol or subcommand: ${sub}\nAvailable symbols: ${lab
-            .getAnalysisSymbols()
-            .join(', ')}\n${USAGE_LINE}`
-    );
+    _handleTickerCommand(lab, sub, appendMessage);
 }
