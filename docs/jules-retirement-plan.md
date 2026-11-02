@@ -1,6 +1,6 @@
 # Jules retirement plan
 
-**Status:** Proposed  
+**Status:** Proposed
 **Last updated:** 2026-11-02
 
 ## Context
