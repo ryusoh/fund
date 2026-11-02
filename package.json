@@ -32,8 +32,8 @@
     "devDependencies": {
         "@babel/preset-env": "^7.29.7",
         "@popperjs/core": "^2.11.8",
-        "@stryker-mutator/core": "^10.0.0",
-        "@stryker-mutator/jest-runner": "^10.0.0",
+        "@stryker-mutator/core": "^10.1.1",
+        "@stryker-mutator/jest-runner": "^10.1.1",
         "@stylistic/stylelint-plugin": "^5.3.1",
         "@testing-library/jest-dom": "^7.0.1",
         "babel-jest": "^30.5.2",
@@ -56,7 +56,7 @@
         "sharp": "^0.35.5",
         "stylelint": "^17.16.0",
         "typescript": "^7.0.2",
-        "wrangler": "^4.152.0"
+        "wrangler": "^4.156.0"
     },
     "lint-staged": {
         "*.js": [
