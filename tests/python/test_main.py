@@ -114,6 +114,7 @@ class TestFundScripts(unittest.TestCase):
 
     # Test for update_daily_pnl.py
     @patch("scripts.pnl.update_daily_pnl.datetime")
+    @patch("scripts.pnl.update_daily_pnl.ZoneInfo")
     @patch("scripts.pnl.update_daily_pnl.calculate_daily_values_by_date")
     @patch("scripts.pnl.update_daily_pnl.calculate_daily_values_with_date")
     @patch("scripts.pnl.update_daily_pnl.load_json_data")
@@ -123,7 +124,13 @@ class TestFundScripts(unittest.TestCase):
         read_data="date,value_usd\n2023-01-01,15000.0",
     )
     def test_update_daily_pnl(
-        self, mock_open_file, mock_load_json, mock_calc_values, mock_calc_by_date, mock_datetime
+        self,
+        mock_open_file,
+        mock_load_json,
+        mock_calc_values,
+        mock_calc_by_date,
+        mock_zoneinfo,
+        mock_datetime,
     ) -> None:
         # Arrange
         mock_datetime.now.return_value = datetime(2023, 1, 2, 17, 15)  # post-close ET
@@ -139,6 +146,47 @@ class TestFundScripts(unittest.TestCase):
         handle = mock_open_file()
         all_writes = "".join(call[0][0] for call in handle.write.call_args_list)
         self.assertIn("16000.0", all_writes)
+
+    @patch("scripts.pnl.update_daily_pnl.calculate_daily_values_with_date")
+    @patch(
+        "scripts.pnl.update_daily_pnl.load_json_data", side_effect=[{"some_data": "value"}, None]
+    )
+    def test_update_daily_pnl_aborts_without_essential_data(
+        self, mock_load_json, mock_calc_values
+    ) -> None:
+        with self.assertRaises(SystemExit) as raised:
+            update_daily_pnl()
+
+        self.assertEqual(raised.exception.code, 1)
+        self.assertEqual(mock_load_json.call_count, 2)
+        mock_calc_values.assert_not_called()
+
+    @patch("scripts.pnl.update_daily_pnl.datetime")
+    @patch("scripts.pnl.update_daily_pnl.ZoneInfo")
+    @patch("scripts.pnl.update_daily_pnl.calculate_daily_values_by_date")
+    @patch("scripts.pnl.update_daily_pnl.calculate_daily_values_with_date")
+    @patch("scripts.pnl.update_daily_pnl.load_json_data")
+    @patch("pathlib.Path.open", new_callable=mock_open, read_data="")
+    def test_update_daily_pnl_initializes_empty_history(
+        self,
+        mock_open_file,
+        mock_load_json,
+        mock_calc_values,
+        mock_calc_by_date,
+        mock_zoneinfo,
+        mock_datetime,
+    ) -> None:
+        mock_datetime.now.return_value = datetime(2023, 1, 2, 17, 15)
+        mock_load_json.return_value = {"some_data": "value"}
+        mock_calc_values.return_value = ({"value_usd": 16000.0}, "2023-01-02")
+
+        update_daily_pnl()
+
+        handle = mock_open_file()
+        all_writes = "".join(call[0][0] for call in handle.write.call_args_list)
+        self.assertIn("date,value_usd", all_writes)
+        self.assertIn("2023-01-02,16000.0", all_writes)
+        mock_calc_by_date.assert_not_called()
 
     # Test for update_fund_data.py
     @patch("scripts.data.update_fund_data.get_prices")
