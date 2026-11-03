@@ -276,7 +276,123 @@ def calculate_daily_values_by_date(
     return values_by_date
 
 
+def _load_historical_data(historical_csv):
+    header = []
+    last_date = None
+    file_content = ""
+    all_rows = []
+    if historical_csv.exists():
+        with historical_csv.open("r", encoding="utf-8") as f:
+            file_content = f.read()
+            f.seek(0)
+
+            reader = csv.reader(file_content.splitlines())
+            try:
+                header = next(reader)
+                all_rows = list(reader)
+                if all_rows:
+                    last_date = all_rows[-1][0]
+            except StopIteration:
+                import logging
+
+                logging.warning("Historical CSV is empty")
+    return header, all_rows, last_date, file_content
+
+
+def _drop_corrupt_trailing_row(header, all_rows, historical_csv):
+    if header and all_rows:
+        last_row_values = all_rows[-1][1:]  # skip the date column
+        if all(v.strip().lower() == "nan" or v.strip() == "" for v in last_row_values):
+            corrupt_date = all_rows[-1][0]
+
+            print(
+                f"Dropping corrupt NaN row for {corrupt_date} from CSV.",
+                file=sys.stderr,
+            )
+            all_rows.pop()
+            # Rebuild file_content without the corrupt row
+            lines = [",".join(header)]
+            for row in all_rows:
+                lines.append(",".join(row))
+            file_content = "\n".join(lines) + "\n"
+            with historical_csv.open("w", encoding="utf-8") as f:
+                f.write(file_content)
+            return all_rows[-1][0] if all_rows else None
+    return all_rows[-1][0] if all_rows else None
+
+
+def _get_missing_dates(market_data_date, last_date, all_data, current_values, all_rows):
+    existing_dates = {row[0] for row in all_rows}
+    values_by_date = {}
+    if last_date:
+
+        gap_span = (
+            datetime.fromisoformat(market_data_date) - datetime.fromisoformat(last_date)
+        ).days
+        period = "5d" if gap_span <= 5 else "1mo" if gap_span <= 31 else "3mo"
+        values_by_date = calculate_daily_values_by_date(
+            all_data["holdings"], all_data["forex"], period=period
+        )
+    values_by_date[market_data_date] = current_values
+    missing_dates = [
+        day
+        for day in sorted(values_by_date)
+        if day <= market_data_date and day not in existing_dates
+    ]
+    return missing_dates, values_by_date
+
+
+def _validate_market_data_date(market_data_date, last_date):
+
+    if market_data_date is None:
+        print("Error: Could not determine the date of market data. Aborting.", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"Latest market data date: {market_data_date}")
+    print(f"Last date in CSV: {last_date}")
+
+    et_now = datetime.now(ZoneInfo("US/Eastern"))
+    if market_data_date == et_now.date().isoformat() and et_now.hour < 16:
+        print(
+            f"Market data for {market_data_date} is still forming (session open). "
+            "Skipping to avoid recording a partial day."
+        )
+        sys.exit(0)
+
+    if last_date and last_date > market_data_date:
+        print(
+            f"Warning: Market data ({market_data_date}) is older than last CSV entry ({last_date})."
+        )
+        print("This may indicate delayed market data. Skipping update.")
+        df_display = pd.read_csv(HISTORICAL_CSV)
+        print("\nLatest data:")
+        print(df_display.tail())
+        sys.exit(0)
+
+
+def _append_missing_dates_and_write(
+    header, all_rows, missing_dates, values_by_date, historical_csv
+):
+
+    print(f"Backfilling {len(missing_dates)} missing date(s): {missing_dates}")
+    for day in missing_dates:
+        all_rows.append([day] + [values_by_date[day].get(col, "") for col in header[1:]])
+    all_rows.sort(key=lambda row: row[0])
+
+    lines = [",".join(header)]
+    for row in all_rows:
+        lines.append(",".join(str(cell) for cell in row))
+    with historical_csv.open("w", encoding="utf-8") as f:
+        f.write("\n".join(lines) + "\n")
+
+    print(f"Successfully wrote {len(missing_dates)} row(s) to {historical_csv}")
+    df_display = pd.read_csv(historical_csv)
+    print("\nLatest data:")
+    print(df_display.tail())
+
+
 def main():
+
     print("Starting daily portfolio value update...")
 
     all_data = {
@@ -288,134 +404,36 @@ def main():
         print("One or more essential data files are missing. Aborting.", file=sys.stderr)
         sys.exit(1)
 
-    header = []
-    last_date = None
-    file_content = ""
-    all_rows = []
-    if HISTORICAL_CSV.exists():
-        with HISTORICAL_CSV.open("r", encoding="utf-8") as f:
-            file_content = f.read()
-            f.seek(0)
-            reader = csv.reader(file_content.splitlines())
-            try:
-                header = next(reader)
-                all_rows = list(reader)
-                if all_rows:
-                    last_date = all_rows[-1][0]
-            except StopIteration:
-                import logging
+    header, all_rows, last_date, file_content = _load_historical_data(HISTORICAL_CSV)
+    last_date = _drop_corrupt_trailing_row(header, all_rows, HISTORICAL_CSV)
 
-                logging.warning("Historical CSV is empty")
-
-    # Drop trailing row if all value columns are NaN (corrupt from a previous failed run)
-    if header and all_rows:
-        last_row_values = all_rows[-1][1:]  # skip the date column
-        if all(v.strip().lower() == "nan" or v.strip() == "" for v in last_row_values):
-            corrupt_date = all_rows[-1][0]
-            print(
-                f"Dropping corrupt NaN row for {corrupt_date} from CSV.",
-                file=sys.stderr,
-            )
-            all_rows.pop()
-            last_date = all_rows[-1][0] if all_rows else None
-            # Rebuild file_content without the corrupt row
-            lines = [",".join(header)]
-            for row in all_rows:
-                lines.append(",".join(row))
-            file_content = "\n".join(lines) + "\n"
-            with HISTORICAL_CSV.open("w", encoding="utf-8") as f:
-                f.write(file_content)
-
-    # Fetch market data ONCE per run: it both bootstraps the CSV header when
-    # the file is new and provides today's values plus the data date.
     print("Fetching latest market data...")
     current_values, market_data_date = calculate_daily_values_with_date(**all_data)
 
     if not header:
         print("Calculating current portfolio value...")
         header = ["date"] + list(current_values.keys())
+
         with HISTORICAL_CSV.open("w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
             writer.writerow(header)
-        with HISTORICAL_CSV.open("r", encoding="utf-8") as f:
-            file_content = f.read()
 
-    if market_data_date is None:
-        print("Error: Could not determine the date of market data. Aborting.", file=sys.stderr)
-        sys.exit(1)
+    _validate_market_data_date(market_data_date, last_date)
+    missing_dates, values_by_date = _get_missing_dates(
+        market_data_date, last_date, all_data, current_values, all_rows
+    )
 
-    print(f"Latest market data date: {market_data_date}")
-    print(f"Last date in CSV: {last_date}")
-
-    # A bar dated today is still forming until the 16:00 ET close; appending
-    # it would bake a mid-session value in as the day's close, and later runs
-    # would skip the date ("Nothing to update"), freezing it permanently.
-    et_now = datetime.now(ZoneInfo("US/Eastern"))
-    if market_data_date == et_now.date().isoformat() and et_now.hour < 16:
-        print(
-            f"Market data for {market_data_date} is still forming (session open). "
-            "Skipping to avoid recording a partial day."
-        )
-        sys.exit(0)
-
-    # If last_date exists but is different from market_data_date,
-    # we need to determine if we should update last_date or append market_data_date
-    if last_date and last_date > market_data_date:
-        # This shouldn't normally happen, but could occur if market data is delayed
-        print(
-            f"Warning: Market data ({market_data_date}) is older than last CSV entry ({last_date})."
-        )
-        print("This may indicate delayed market data. Skipping update.")
-        df_display = pd.read_csv(HISTORICAL_CSV)
-        print("\nLatest data:")
-        print(df_display.tail())
-        sys.exit(0)
-
-    # Append only the latest date never recovers days lost to failed runs
-    # (the 2026-10-07 hole: validation failures blocked two nightly commits,
-    # and the next successful run wrote 10-08 without filling 10-07). Backfill
-    # every missing trading day in the recent window, interior or tail.
-    existing_dates = {row[0] for row in all_rows}
-    values_by_date: Dict[str, Dict[str, Any]] = {}
-    if last_date:
-        gap_span = (
-            datetime.fromisoformat(market_data_date) - datetime.fromisoformat(last_date)
-        ).days
-        period = "5d" if gap_span <= 5 else "1mo" if gap_span <= 31 else "3mo"
-        values_by_date = calculate_daily_values_by_date(
-            all_data["holdings"], all_data["forex"], period=period
-        )
-    # The latest date keeps calculate_daily_values_with_date's resolution —
-    # its regularMarketPrice fallback covers a NaN last bar.
-    values_by_date[market_data_date] = current_values
-    missing_dates = [
-        day
-        for day in sorted(values_by_date)
-        if day <= market_data_date and day not in existing_dates
-    ]
     if not missing_dates:
+
         print(f"Data already exists through {market_data_date}. Nothing to update.")
         df_display = pd.read_csv(HISTORICAL_CSV)
         print("\nLatest data:")
         print(df_display.tail())
         sys.exit(0)
 
-    print(f"Backfilling {len(missing_dates)} missing date(s): {missing_dates}")
-    for day in missing_dates:
-        all_rows.append([day] + [values_by_date[day].get(col, "") for col in header[1:]])
-    all_rows.sort(key=lambda row: row[0])
-
-    lines = [",".join(header)]
-    for row in all_rows:
-        lines.append(",".join(str(cell) for cell in row))
-    with HISTORICAL_CSV.open("w", encoding="utf-8") as f:
-        f.write("\n".join(lines) + "\n")
-
-    print(f"Successfully wrote {len(missing_dates)} row(s) to {HISTORICAL_CSV}")
-    df_display = pd.read_csv(HISTORICAL_CSV)
-    print("\nLatest data:")
-    print(df_display.tail())
+    _append_missing_dates_and_write(header, all_rows, missing_dates, values_by_date, HISTORICAL_CSV)
 
 
 if __name__ == "__main__":
+
     main()
