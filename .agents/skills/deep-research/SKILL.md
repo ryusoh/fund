@@ -98,6 +98,11 @@ preserving contradictory verified/unverified labels.
   transcripts remain UNVERIFIED. Do not mix them into confirmed fact tables or build
   thesis-killing rankings on them; carry them only as open questions pending primary-source
   confirmation.
+- **Earnings 8-K exhibits:** `ingest` commonly downloads the 8-K body but not Exhibit 99.1.
+  For earnings runs, inspect the filing index and directly fetch the SEC exhibit before
+  confirming financial claims; an adapter PASS/FAIL against the body alone is not evidence
+  for or against exhibit-only claims. Require numeric anchors in the actual source and
+  record the limitation only after a minimal repro.
 - **Repro reported tool failures before acting on them:** a subagent's "tool X is broken"
   claim needs a minimal direct repro by the orchestrator before it becomes an action item —
   field misreads present as defects (2026-10-12: `query_xbrl_facts` reported as returning

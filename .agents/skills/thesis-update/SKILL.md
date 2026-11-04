@@ -15,6 +15,7 @@ Design context: `docs/ai_update_flow.md` and `docs/research/compounding-research
 - **LLM Authors, Code Gates**: You draft the synthesis and patch; local scripts (`scripts.analysis.filings_adapter`, `scripts.analysis.sync_configs`, Jest, Pytest) enforce determinism and factuality.
 - **Evidence Has an Anchor**: Any numerical or material assertion from SEC reports must be verified against primary filing text via the confirm pass before being promoted into the thesis.
 - **Pipeline Owns Volatile Data, Markdown Owns Reasoning**: Never hand-write live market data (price, P/E, market cap, shares, portfolio weight) or engine outputs (`derived.expectedCagr` / `derived.expectedMultiple`) into JSON or thesis docs. `sync_configs` owns the `market` block and `position.shares`, and auto-recomputes `derived` from scenarios + market data on every run (lab.js engine formula). Thesis docs carry durable reasoning (scenarios, beliefs, falsifiers); dated prices/valuations belong only in §8.2 log entries and `decision_journal` entries, where they are historical records.
+- **Guided EPS and volatile-field placement:** When intentionally modeling company-guided non-GAAP EPS—especially with negative trailing GAAP EPS—set `model.preferences.overrides.eps` from a sourced calculation and do not substitute vendor `market.forwardEps`. Keep live prices, valuation multiples, and engine outputs out of `belief_state`, scenario notes, and evidence arrays; dated calculations belong only in `decision_journal` and thesis §8.2.
 
 ## Usage
 
