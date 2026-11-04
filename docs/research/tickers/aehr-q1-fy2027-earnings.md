@@ -1,8 +1,8 @@
 # AEHR (Aehr Test Systems) — Q1 FY2027 Earnings Deep Research
 
-**Event date: 2026-11-02**  
-**Research date: 2026-11-04**  
-**Method:** `/deep-research` — parallel SEC-filings, internal-state, primary-web, and red-team investigations, followed by a fresh-context confirm pass.  
+**Event date: 2026-11-02**
+**Research date: 2026-11-04**
+**Method:** `/deep-research` — parallel SEC-filings, internal-state, primary-web, and red-team investigations, followed by a fresh-context confirm pass.
 **Status:** Confirmed findings. The November 1 date in the request is the effective-backlog cutoff; the earnings release and call occurred on November 2.
 
 ## Primary sources
