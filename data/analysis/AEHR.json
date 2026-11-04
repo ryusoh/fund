@@ -3,7 +3,7 @@
     "name": "Aehr Test Systems",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-11-03T15:29:51.466691+00:00",
+        "asOf": "2026-11-04T06:53:57.518288+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -24,33 +24,35 @@
             },
             "kellyScale": 0.5,
             "targetCagr": 0.12,
-            "overrides": {}
+            "overrides": {
+                "eps": 0.895
+            }
         }
     },
     "market": {
-        "price": 64.52,
+        "price": 65.11,
         "eps": -0.23,
         "forwardEps": 1.58,
         "pe": null,
-        "forwardPe": 40.8354,
+        "forwardPe": 41.2089,
         "beta": 3.33,
-        "marketCap": 2107193856.0,
+        "marketCap": 2126463104.0,
         "currency": "USD",
-        "marketDataUpdatedAt": "2026-11-03T15:29:51.336666+00:00",
-        "pegRatio": 0.52,
-        "enterpriseValue": 1572498560.0,
+        "marketDataUpdatedAt": "2026-11-04T06:53:56.895778+00:00",
+        "pegRatio": 0.48,
+        "enterpriseValue": 2017115264.0,
         "ebitda": -11344000.0,
         "dividendYield": 0.0,
         "fiftyDayAverage": 82.6624,
         "twoHundredDayAverage": 74.5306,
-        "averageVolume": 2619285.0,
-        "averageDailyVolume10Day": 2321600.0,
+        "averageVolume": 2620259.0,
+        "averageDailyVolume10Day": 2327830.0,
         "fiftyTwoWeekHigh": 147.4,
         "fiftyTwoWeekLow": 18.7,
-        "evToEbitda": -138.6194
+        "evToEbitda": -177.8134
     },
     "risk": {
-        "volatility": 1.2704,
+        "volatility": 1.2741,
         "estimateSource": "historical",
         "correlations": null
     },
@@ -84,7 +86,7 @@
         {
             "id": "base",
             "name": "Base – Guide Met, Then Deceleration",
-            "prob": 0.45,
+            "prob": 0.5,
             "macroState": null,
             "growth": {
                 "epsCagr": 0.2,
@@ -94,12 +96,12 @@
                 "exitPe": 30.0,
                 "exitPeSigma": null
             },
-            "notes": "FY2027 guide ($130-150M) met on $100M effective backlog; AI burn-in niche grows but stays concentrated in 1-2 hyperscale customers; SiC slow recovery through the 2027-28 overcapacity correction; growth decelerates to mid-teens after FY2027."
+            "notes": "Revised FY2027 guide ($150M revenue, at least 20% non-GAAP net margin) met on $109.3M effective backlog and a required $39.0M Q2-Q4 quarterly average; AI burn-in grows but stays concentrated in 1-2 hyperscale customers; SiC slow recovery through the 2027-28 correction; growth decelerates to high-teens after FY2027."
         },
         {
             "id": "bear",
             "name": "Bear – Backlog Evaporates / Burn-In Intensity Falls",
-            "prob": 0.3,
+            "prob": 0.25,
             "macroState": null,
             "growth": {
                 "epsCagr": 0.05,
@@ -109,15 +111,15 @@
                 "exitPe": 20.0,
                 "exitPeSigma": null
             },
-            "notes": "Cancellable backlog slips (10-K warns POs are cancellable with limited penalties); lead AI customer insources or qualifies a competitor; device yield improvements cut burn-in intensity; SiC glut persists past 2028. Re-rating to cyclical multiple."
+            "notes": "Most customer POs are cancellable/reschedulable with limited penalties; backlog slips or the revised $150M FY2027 guide is cut; lead AI customer insources or qualifies a competitor; device yield improvements cut burn-in intensity; negative cash conversion persists; SiC glut persists past 2028. Re-rating to cyclical multiple."
         }
     ],
     "derived": {
-        "expectedCagr": null,
-        "expectedMultiple": null,
+        "expectedCagr": 0.0529,
+        "expectedMultiple": 1.2942,
         "fairValueRange": [
-            40.0,
-            55.0
+            45.0,
+            50.0
         ],
         "kelly": {
             "fullKelly": 0.0,
@@ -126,31 +128,34 @@
     },
     "industry_thesis": null,
     "belief_state": {
-        "probability": 0.45,
-        "confidence": 0.55,
+        "probability": 0.5,
+        "confidence": 0.6,
         "evidence_for": [
-            "Backlog $80.6M at FYE2026 vs $15.2M prior year (5.3x), effective backlog $100.6M incl. post-quarter bookings [10-K FY2026; Q4 release 2026-07-14].",
-            "FY2027 guidance $130-150M revenue (~2.6-3x) with 18-22% non-GAAP net margin [Q4 FY2026 release].",
-            "Customer diversification is real: top customer 67.3% (FY2024) to 26.3% (FY2026); three customers >10% [10-K FY2026 Item 1].",
-            "AI order momentum: $41M Sonoma (Apr 2026), $22M AI WLBI (Aug 2026), ~$6M follow-on for a second AI processor (Oct 2026); two silicon photonics customers ramping.",
-            "Cash $116.4M, no debt [10-K FY2026 Item 8]."
+            "Q1 FY2027 revenue $33.007M (+200% YoY, +75% sequentially); GAAP/non-GAAP gross margin 47.5%/48.5%; GAAP EPS $0.21 and non-GAAP EPS $0.28 [Q1 FY2027 SEC Ex-99.1, 2026-11-02].",
+            "Q1 bookings $46.7M (book-to-bill ~1.4); backlog $100.9M at quarter end and effective backlog $109.3M at 2026-11-01 [Q1 FY2027 SEC Ex-99.1].",
+            "FY2027 guidance raised to $150M revenue with non-GAAP net income at least 20% of revenue, from $130-150M and 18-22% [Q1 FY2027 SEC Ex-99.1].",
+            "Customer diversification improved through FY2026: top customer 67.3% (FY2024) to 26.3% (FY2026); three customers >10% [10-K FY2026 Item 1].",
+            "Second AI supplier has decided to purchase a FOX-XP evaluation cell for Taiwan OSAT validation; lead Sonoma customer is shipping/installing >12 systems/month and qualified a second processor [Q1 FY2027 SEC Ex-99.1].",
+            "Cash, equivalents and restricted cash $105.052M at Q1; FY2026 10-K reported no debt [Q1 FY2027 SEC Ex-99.1; 10-K FY2026 Item 8]."
         ],
         "evidence_against": [
-            "Valuation ~90x guided forward non-GAAP earnings and ~55x trailing sales at $80.10; +245% over 52 weeks; 16% short interest [stockanalysis.com 2026-10-12].",
-            "GAAP-loss-making in FY2025-FY2026 (diluted EPS -$0.13, -$0.23); gross margin fell 49.1% to 35.3% over two years [10-K FY2026].",
-            "Backlog is cancellable/reschedulable with limited penalties per 10-K risk factors; the FY2027 guide rests on it.",
-            "Cash position is dilution-funded: +$97.2M FY2026 financing from ATM sales; new S-3 shelf filed Aug 2026 (terms unverified).",
+            "Valuation remains the core constraint: the conservative $0.895 guided-minimum EPS calculation and revised $150M revenue guide do not clear the 12% hurdle at the post-print pipeline price; dated valuation is preserved in the 2026-11-04 decision_journal entry.",
+            "Q1 operating cash flow was -$3.054M despite $9.357M non-GAAP net income; receivables and inventory consumed $10.686M and $9.037M of cash [Q1 FY2027 SEC Ex-99.1].",
+            "Q1 customer concentration is undisclosed; 'more than a dozen potential customers' is pipeline commentary, and the second Sonoma processor increases exposure to the same lead hyperscaler.",
+            "Most customer POs are cancellable/reschedulable with limited penalties; effective backlog includes post-quarter orders and has no fiscal-quarter delivery schedule [10-K FY2026 Item 1A; Q1 FY2027 SEC Ex-99.1].",
+            "Q1 stock compensation was $1.880M and shares outstanding rose 0.56% from FYE2026; historical cash was dilution-funded and remaining shelf capacity is unverified.",
             "Structural category risk: customer yield improvements or sampling (vs 100% burn-in) reduce demand [10-K Item 1A].",
-            "SiC overcapacity expected to persist until 2027-2028 (Yole via PCIM 2026-07-29)."
+            "SiC overcapacity expected to persist until 2027-2028 (Yole via PCIM 2026-07-29); Q1 supplied no quantified SiC, GaN, HBM, or NAND production revenue."
         ],
         "open_questions": [
-            "Does Q1 FY2027 (prints 2026-11-02) show revenue run-rate consistent with the $130-150M guide?",
-            "Identity and ownership of the lead hyperscale AI customer relationships; durability past the second processor generation.",
-            "Aug 2026 S-3 shelf size/terms and dilution intent.",
+            "Q1 FY2027 10-Q customer/product/geographic concentration, inventory composition, receivables, equity detail, subsequent events, and backlog timing.",
+            "Second AI supplier evaluation-cell purchase status, installation/validation timing, production criteria, and high-volume production decision.",
+            "Remaining S-3/ATM shelf capacity and post-quarter dilution intent.",
             "Named wafer-level burn-in competitors and whether the 'only vendor offering both' claim holds.",
+            "Official audio/caption confirmation of transcript-only consumables, margin, capacity, and market-opportunity claims.",
             "Deceased officer identity and key-person exposure (Sep 2026 proxy)."
         ],
-        "as_of": "2026-10-12T00:00:00Z"
+        "as_of": "2026-11-04T00:00:00Z"
     },
     "predictions": [
         {
@@ -158,10 +163,10 @@
             "claim": "Q1 FY2027 revenue (reported 2026-11-02) is >= $25M",
             "target_date": "2026-11-03",
             "probability": 0.55,
-            "resolved": false,
-            "outcome": null,
-            "resolved_date": null,
-            "notes": "First checkpoint against the FY2027 guide; $130M low end implies ~$32.5M quarterly average with ramp, so Q1 below $25M would signal slippage."
+            "resolved": true,
+            "outcome": true,
+            "resolved_date": "2026-11-04",
+            "notes": "Resolved TRUE on review 2026-11-04: Q1 revenue was $33.007M, exceeding the $25M checkpoint by $8.007M / 32.0% [Q1 FY2027 SEC Ex-99.1, 2026-11-02]."
         },
         {
             "id": "aehr-fy27-revenue-guide",
@@ -171,7 +176,17 @@
             "resolved": false,
             "outcome": null,
             "resolved_date": null,
-            "notes": "Backed by $100.6M effective backlog; main risk is backlog cancellation/rescheduling disclosed in the 10-K."
+            "notes": "Original prediction preserved against the original $130M low end; Q1 revenue $33.007M and $109.3M effective backlog strengthen it, but guidance is not an actual. The revised $150M guide is tracked separately."
+        },
+        {
+            "id": "aehr-fy27-revised-guide",
+            "claim": "FY2027 revenue lands >= $150M and non-GAAP net income lands >= $30M",
+            "target_date": "2027-07-31",
+            "probability": 0.7,
+            "resolved": false,
+            "outcome": null,
+            "resolved_date": null,
+            "notes": "Registered after the 2026-11-02 guide raise. Q2-Q4 must average $38.998M revenue, 18.1% above Q1; backlog cancellation/rescheduling, delivery timing, concentration, and cash conversion remain risks."
         },
         {
             "id": "aehr-fy27-concentration",
@@ -191,7 +206,7 @@
             "resolved": false,
             "outcome": null,
             "resolved_date": null,
-            "notes": "Benchmark 'exceeded expectations' per Q4 FY2026 release; conversion would de-risk single-thread AI exposure."
+            "notes": "Remain OPEN after Q1: the customer has decided to purchase one fully configured FOX-XP cell for production-environment evaluation at a Taiwan OSAT, with installation planned early CY2027 and an HVM decision several months after validation. This is not conservatively classed as a production (pilot or volume) order."
         }
     ],
     "decision_journal": [
@@ -211,6 +226,23 @@
                 "Backlog slippage or concentration break triggers a sharp de-rating": 0.3
             },
             "review_date": "2026-11-03"
+        },
+        {
+            "date": "2026-11-04",
+            "action": "WATCH",
+            "shares_changed": 0,
+            "situation": "Post-Q1 FY2027 review using SEC Exhibit 99.1 and the 2026-11-03 pipeline price of $64.52. Revenue $33.007M cleared the $25M checkpoint; bookings $46.7M, effective backlog $109.3M, GAAP/non-GAAP GM 47.5%/48.5%, and FY2027 guidance moved to $150M with non-GAAP net income at least 20%. Offsets: OCF -$3.054M, undisclosed Q1 concentration, same-customer second Sonoma processor, and only an evaluation-cell decision from the second AI supplier. Probabilities move Bull/Base/Bear 0.25/0.45/0.30 -> 0.25/0.50/0.25; starting EPS override $0.895; CAGRs and exit P/Es unchanged. Engine expectedMultiple 1.3060x and expectedCagr 5.4849%; 12%-hurdle entry $47.81; Kelly zero. Findings: docs/research/tickers/aehr-q1-fy2027-earnings.md (confirm pass 9 groups confirmed, 2 wording revisions).",
+            "alternatives_rejected": [
+                "Upgrade Bull probability or terminal multiples on the guide raise (rejected: second-supplier HVM adoption, realized diversification, durable consumables recurrence, and multi-year growth remain unproven).",
+                "Initiate or chase a position after the print (rejected: expected CAGR remains below the 6.5% benchmark and 12% hurdle; Kelly remains zero).",
+                "Treat the second supplier's evaluation-cell decision as resolving the production-order prediction (rejected: installation and validation still precede the HVM decision)."
+            ],
+            "expected_outcomes": {
+                "Revised FY2027 guide is met, with growth decelerating thereafter": 0.5,
+                "AI burn-in standardizes and the second supplier converts to high-volume production": 0.25,
+                "Backlog, concentration, cash-conversion, or burn-in-intensity risks drive a de-rating": 0.25
+            },
+            "review_date": "2027-01-31"
         }
     ]
 }
