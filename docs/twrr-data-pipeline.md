@@ -66,7 +66,13 @@ Drift between the two shows up as a jump at the seam.
    it needs `ALPACA_API_KEY`/`ALPACA_API_SECRET` in the same step env and
    only covers US-listed equities/ETFs (mutual funds and indices come back
    absent). `refresh_stale_tails` returns the post-backstop laggards, so a
-   rescued fleet does not keep polling Yahoo through the window.
+   rescued fleet does not keep polling Yahoo through the window. (4) Yahoo can
+   also stamp the benchmark tail date while repeating the prior equity close,
+   which date-only recovery cannot detect (2026-11-03 run #335: all four held
+   tickers failed the gate's forward-fill check). `_correct_flatlined_tail`
+   detects that fleet-wide signature when a benchmark moved and replaces the
+   repeated values with Alpaca's same-date official closes; unresolved tickers
+   remain in the rollover retry path.
 4. **`delisted_tickers.csv` ∩ holdings** — a held ticker wrongly on the list
    is skipped by step03 → $0 forever.
 5. **Fractional-share dust** — checkpoints carry tiny negative residues
