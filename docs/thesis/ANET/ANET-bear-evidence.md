@@ -97,6 +97,33 @@ thesis-killing potential. Falsifiers are registered as dated predictions in
   widening neocloud credit spreads. Kills bear: MSFT/META/GOOG/AMZN all guide 2027
   capex up double digits with named Ethernet fabric expansions.
 
+## 2026-11-04 – Q3 FY2026 reconciliation
+
+Source: `docs/research/tickers/anet-q3-2026-deep-research.md` (SEC Exhibit 99.1,
+official Q3/2027 decks and official webcast captions; independent confirm pass).
+
+- **Near-term bear branch failed.** Revenue $3,657.6M beat the ~$3.3B guide by 10.8%;
+  GAAP/non-GAAP GM 63.6%/64.0% stayed within the framework; FY2026 guide rose to ~$13.3B
+  and FY2027 opened at ~$18.5B. `anet-q3-fy26-print` resolved TRUE.
+- **Bullwhip watch triggered, bear not confirmed.** Inventory rose 26.6% QoQ to
+  $3,209.8M and purchase commitments rose 17.5% to $11.4B while deferred revenue slipped
+  0.4% to $6,839.5M. This is the predeclared early-warning combination, but there was no
+  acceptance-related miss and deferred revenue remains 27.3% above FY2025 year-end.
+- **Margin pressure persists.** GM recovered sequentially but remained down YoY
+  (Q3'25 GAAP/non-GAAP 64.6%/65.2%); FY2027 non-GAAP GM guidance remains 62–64%.
+  Operating leverage, not gross-margin expansion, drove the stronger operating margin.
+- **Concentration remains unresolved.** Management expects at least three and perhaps
+  four 10% customers, conditional on shipments through December 31. Do not resolve the
+  third-customer prediction before the FY2026 10-K.
+- **AI evidence strengthened without proving share.** Official FY2027 targets are ~$7B
+  AI fabrics and ~$2B campus. Scale-up has no material FY2027 revenue expected and may
+  contribute in 2028; independent EtherLink versus Spectrum-X share evidence is absent.
+- **Capital-return assumption falsified.** Nine-month repurchases were zero. Replace the
+  former 1–2% annual share-shrink assumption with approximately flat diluted shares.
+- **Scenario response:** retain 0.35/0.50/0.15. Escalate bear toward 0.25 only on another
+  product-deferral decline plus rising inventory/commitments, an acceptance miss or
+  reserve, an FY2027 guide cut, or confirmed hyperscaler share loss.
+
 ## Process notes
 
 - This file was an empty stub until 2026-10-28 — the red-team process the thesis

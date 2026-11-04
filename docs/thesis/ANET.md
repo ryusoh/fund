@@ -193,7 +193,7 @@ This section documents how the JSON `scenarios` block maps to the thesis and why
 - Time horizon: 5 years.
 - Balance sheet / share count:
     - Net cash, no debt.
-    - Buybacks reduce diluted share count by ~1–2% per year in bull/base.
+    - Diluted shares approximately flat in bull/base: buybacks at most offset SBC until repurchases resume (zero in 9M 2026; Q4 diluted-share guide 1.280B).
     - No equity issuance assumed.
 
 - Macro / regime assumptions:
@@ -294,21 +294,22 @@ This section documents how the JSON `scenarios` block maps to the thesis and why
     - Buybacks + R&D.
     - Occasional small acquisitions.
 
-#### 4.3.2a Driver-based revenue build (pilot, added 2026-10-23)
+#### 4.3.2a Driver-based revenue build (pilot, added 2026-10-23; rebased 2026-11-04)
 
 Machine-readable version lives in `data/analysis/ANET.json` base-scenario `drivers`
-(survives nightly sync per WO-4a). FY2025 → FY2030, four legs:
+(survives nightly sync per WO-4a). FY2025 → FY2030, four legs, rebased after the
+[Q3 FY2026 confirm pass](../research/tickers/anet-q3-2026-deep-research.md):
 
-| Driver                                | Formula             | Inputs         | FY2030 value | Source                                                                                                                                                  |
-| ------------------------------------- | ------------------- | -------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| AI fabrics (scale-out + scale-across) | AI TAM × share      | $45B × 20%     | **$9.0B**    | TAM 40–50B (thesis, secondary); cross-check: FY2026 AI goal ≥$3.5B (Q2'26 call, CFO) ⇒ 27% CAGR to 2030; scale-across TAM alone $15–20B by 2030 (Ullal) |
-| Core DC frontend + routing            | FY26 base × 1.11⁴   | $6.2B × 1.11⁴  | **$9.4B**    | FY26 base derived: $12.6B guide − $3.5B AI − $1.25B campus − ~$1.65B service                                                                            |
-| Campus & enterprise                   | FY26 goal × 1.15⁴   | $1.25B × 1.15⁴ | **$2.2B**    | FY2026 campus goal ≥$1.25B (Q2'26 call)                                                                                                                 |
-| Services (PCS/subscriptions)          | FY25 actual × 1.15⁵ | $1.43B × 1.15⁵ | **$2.9B**    | FY2025 service revenue $1,428.8M (10-K)                                                                                                                 |
+| Driver                                | Formula               | Inputs           | FY2030 value | Source                                                                                                                                   |
+| ------------------------------------- | --------------------- | ---------------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| AI fabrics (scale-out + scale-across) | AI TAM × share        | $45B × 20%       | **$9.0B**    | TAM 40–50B (thesis, secondary); new FY2027 target ~$7B (official 2027 Outlook p15) ⇒ 8.74% post-2027 CAGR to the retained terminal value |
+| Core DC frontend + routing            | FY26 base × 1.11⁴     | $6.7866B × 1.11⁴ | **$10.3B**   | FY26 residual: ~$13.3B fourth-raised guide − $3.5B AI − $1.25B campus − $1.7634B service estimate                                        |
+| Campus & enterprise                   | FY27 goal × 1.032³    | $2.0B × 1.032³   | **$2.2B**    | FY2027 campus target ~$2B (official 2027 Outlook p15); explicit post-2027 normalization                                                  |
+| Services (PCS/subscriptions)          | FY26 estimate × 1.15⁴ | $1.7634B × 1.15⁴ | **$3.1B**    | 9M'26 actual $1,295.8M + flat-Q4 assumption $467.6M (Q3 SEC Ex-99.1); estimate, not guidance                                             |
 
-- **Derived**: revenue $23.5B (FY2030) × net margin 39% (FY2025 and H1'26 both 38.9%) ÷ 1,276M diluted shares (flat: buybacks ≈ SBC) = **EPS ~$7.18**.
-- **Reconciliation**: ~21% EPS CAGR from FY2025 ($2.74) — _above_ the scenario's `epsCagr` 0.18. The scenario stays at 0.18 (the build is one day old; promote only after it survives a quarterly reconciliation). The gap is the upside the driver model makes visible.
-- **Falsification drivers** (registered as dated predictions, swept by `prediction_sweeper.py`): `anet-ai-fabrics-fy26` (≥$3.5B), `anet-campus-fy26` (≥$1.25B), `anet-fy26-revenue-guide` (≥$12.6B), `anet-third-10pct-customer-fy26`.
+- **Derived**: revenue $24.585B (FY2030) × net margin 39% ÷ 1,280M diluted shares (Q4'26 guide; approximately flat) = **EPS ~$7.49**.
+- **Reconciliation**: ~22.2% EPS CAGR from actual FY2025 EPS of **$2.75** — above the scenario's `epsCagr` 0.18. Q3 passed the first revenue/margin reconciliation, but the scenario stays at 0.18: this driver CAGR is FY2025→FY2030, not the engine's rolling-five-year CAGR, and the build still embeds unproven terminal AI share and management's FY2027 targets. The gap remains documented upside rather than being silently capitalized into the scenario.
+- **Falsification drivers** (registered as dated predictions, swept by `prediction_sweeper.py`): `anet-ai-fabrics-fy26` (≥$3.5B), `anet-campus-fy26` (≥$1.25B), `anet-fy26-revenue-guide` (≥$12.6B), `anet-third-10pct-customer-fy26`, `anet-fy27-revenue-guide` (≥$18.5B), `anet-fy27-ai-fabrics` (≥$7B), `anet-fy27-campus` (≥$2B).
 
 #### 4.3.3 Why these numbers are reasonable
 
@@ -362,7 +363,7 @@ Machine-readable version lives in `data/analysis/ANET.json` base-scenario `drive
 
 - Networking history includes long capex hangovers and price wars.
 - Customer concentration makes share loss from a few large decisions hurt.
-- EPS CAGR around 3% reflects sluggish revenue and some margin compression.
+- EPS CAGR around 8% (matching the JSON bear scenario) reflects sluggish revenue and some margin compression.
 
 #### 4.4.4 Evidence & supporting material (Bear)
 
@@ -383,13 +384,13 @@ Machine-readable version lives in `data/analysis/ANET.json` base-scenario `drive
 
 ## 5. Quantitative Summary & Model Check
 
-- Expected annualized return (CAGR): live value in `derived.expectedCagr` (`data/analysis/ANET.json`, auto-recomputed by `sync_configs`; ~8.0% as of 2026-10-28 with weights bull 0.35 / base 0.5 / bear 0.15)
+- Expected annualized return (CAGR): live value in `derived.expectedCagr` (`data/analysis/ANET.json`, auto-recomputed by `sync_configs` from refreshed price, EPS and scenario parameters).
 - Expected exit multiple: ~30x probability-weighted across 38x / 28x / 20x (a function of scenario parameters only — does not drift with price; the 5-year expected price multiple lives in `derived.expectedMultiple`)
 - Fair value range today: ~100–130 USD per share (base-case band; a scenario-parameter output, not a market-data echo)
 
 - Kelly outputs:
-    - Full Kelly weight: mid single digits (~5–7% of portfolio).
-    - Scaled Kelly weight (× kellyScale = 0.5): ~2.5–3.5% as practical cap.
+    - Full Kelly weight: live value in `derived.kelly.fullKelly` (recently mid single digits).
+    - Scaled Kelly weight (× kellyScale = 0.5): live value in `derived.kelly.scaledKelly` (recently ~2.5–3.5%).
 
 ### 5.1 Interpretation vs benchmark and hurdle
 
@@ -397,9 +398,9 @@ Machine-readable version lives in `data/analysis/ANET.json` base-scenario `drive
 - Target (hurdle) CAGR: 12%
 
 - Commentary:
-    - Scenario-weighted expected return with the current weights (bull 0.35 / base 0.5 / bear 0.15) sits modestly above the 6.5% benchmark but below the 12% hurdle — see `derived.expectedCagr` for the live figure. This is consistent with “great business, pretty full price” at the prevailing forward multiple.
+    - Compare the live `derived.expectedCagr` against the 6.5% benchmark and 12% hurdle after every market-data refresh; do not carry a pre-earnings expected return forward after new actuals.
     - Upside depends on some combination of: (a) the bull outcome (“AI Ethernet champion”) being realised or getting repriced sooner, and/or (b) the market sustaining a structurally higher exit multiple than the probability-weighted ~30x we are using here.
-    - Downside in the bear case remains meaningful (slower growth plus multiple compression toward ~20x), so the model still points to mid single‑digit full‑Kelly and low‑single‑digit scaled‑Kelly sizing; going materially above that is a discretionary conviction call rather than what the math alone would recommend.
+    - Downside in the bear case remains meaningful (slower growth plus multiple compression toward ~20x); going materially above live scaled-Kelly sizing is a discretionary conviction call rather than what the math alone recommends.
 
 ---
 
@@ -408,9 +409,10 @@ Machine-readable version lives in `data/analysis/ANET.json` base-scenario `drive
 ### 6.1 Position policy
 
 - Target weight range:
-    - Normal target: 2–4% of portfolio (around the scaled Kelly range).
-    - Max allowed (constraints): 10–15% (discretionary risk cap, well above model).
-    - Model-justified max (scaled Kelly): ~1.5–2%.
+    - Normal target: 2–4% of portfolio (around the recent scaled-Kelly range).
+    - Discretionary risk cap: 10–15% (well above the model).
+    - Hard constraint: 30% (`position.constraints.maxWeight` in the JSON).
+    - Model-justified max: live `derived.kelly.scaledKelly`, not a fixed percentage.
 
 - Entry / add rules:
     - Add or overweight when:
@@ -494,6 +496,26 @@ Detailed notes live under `docs/thesis/ANET/`.
 - Bear evidence file: `docs/thesis/ANET/ANET-bear-evidence.md`
 
 ### 8.2 High-level update entries (reverse chronological)
+
+#### 2026-11-04 – Q3 FY2026 beat-and-raise; drivers rebased, scenarios unchanged
+
+- What happened:
+    - Full Q3 deep-research run ([findings doc](../research/tickers/anet-q3-2026-deep-research.md)); fresh-context confirm pass verified 10/10 factual and arithmetic claim groups against the SEC exhibit, official decks/captions, and filings-adapter checks where applicable.
+    - Q3 revenue **$3,657.6M (+58.5% YoY, +20.5% QoQ)** beat the ~$3.3B guide by **10.8%**; GAAP/non-GAAP GM **63.6%/64.0%**, op margin **44.9%/49.1%**, diluted EPS **$1.22/$1.20**. `anet-q3-fy26-print` resolved **TRUE**.
+    - FY2026 revenue guidance raised a fourth time to **~$13.3B / +48%**. Initial FY2027 outlook: **38–40% / ~$18.5B**, AI fabrics **~$7B**, campus **~$2B**, non-GAAP GM **62–64%**, op margin **~49%** (guidance, not actuals).
+    - Red team preserved: inventory **+26.6% QoQ** to $3,209.8M and purchase commitments **+17.5%** to $11.4B while deferred revenue slipped **0.4%** to $6,839.5M; zero 9M buybacks; strategic-investment gains of $134.5M flattered GAAP EPS; concentration and independent EtherLink share remain unresolved.
+- Impact on scenarios:
+    - **Bull 0.35 / Base 0.50 / Bear 0.15 unchanged; EPS CAGRs 28%/18%/8% and exit P/Es unchanged.** The near-term supply-miss branch failed, but FY2027 figures are guidance and the Q3 10-Q must still clarify deferred-revenue churn and inventory exposure.
+- Impact on assumptions:
+    - Base drivers rebased from **$23.5B / $7.18 EPS** to **$24.585B / $7.49 EPS** (§4.3.2a). FY2026 service and the core residual are analytical estimates; the FY2027 AI/campus anchors are official targets.
+    - The driver-implied ~22.2% FY2025→FY2030 EPS CAGR remains a cross-check, not the engine's rolling-five-year assumption; base `epsCagr` stays **18%**. FY2025 diluted EPS corrected to **$2.75** from $2.74.
+    - Share-count assumption changed from 1–2% annual shrink to approximately flat. Added FY2027 total-revenue, AI-fabrics and campus predictions; clarified that the FY GM prediction is non-GAAP.
+- Action:
+    - **HOLD.** Do not resize from stale pre-print valuation fields; `sync_configs` owns the market and derived refresh. The discretionary position-size override remains separate from operating validation.
+    - The scoped sync produced `derived.expectedCagr` **8.91%**, but its market feed still carried pre-Q3 EPS **$3.17** and the pre-release close. This is not a post-print valuation signal; reassess only after the pipeline ingests Q3 actuals and a post-print price.
+- TODO:
+    - On Q3 10-Q publication, inspect deferred-revenue roll-forward, RPO, purchase-commitment maturities, inventory composition, strategic-investment gains and Part II repurchases.
+    - Resolve FY2026 actuals and third-customer disclosure in Feb–Mar 2027; obtain independent Spectrum-X versus EtherLink share evidence.
 
 #### 2026-10-28 – Deep-research synthesis: bear weight raised, sizing override documented
 
