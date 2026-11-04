@@ -343,6 +343,64 @@ def test_alpaca_backstop_merges_when_yahoo_and_polygon_fail():
     assert updated['ANET'].loc['2026-09-22'] == 160.70
 
 
+def test_alpaca_backstop_replaces_same_date_forward_filled_closes():
+    # 2026-11-03 run #335: Yahoo stamped the benchmark tail date on all four
+    # held equities but repeated each prior close. Date-only stale-tail
+    # recovery saw no lag, and the validation gate rejected the flat-line.
+    index = pd.date_range('2026-11-02', '2026-11-03', freq='D')
+    frame = pd.DataFrame(
+        {'VT': [100.0, 100.0], 'ANET': [50.0, 50.0], '^GSPC': [5000.0, 5050.0]},
+        index=index,
+    )
+    alpaca_fresh = pd.Series(float('nan'), index=index)
+    alpaca_fresh.loc['2026-11-03'] = 101.0
+    with patch.object(
+        step03,
+        'fetch_alpaca_daily_closes',
+        return_value={'VT': alpaca_fresh, 'ANET': alpaca_fresh},
+    ) as mock_alpaca:
+        updated, stale = step03.refresh_stale_tails(
+            frame.copy(), ['VT', 'ANET'], index, index[0], index[-1]
+        )
+
+    assert stale == []
+    mock_alpaca.assert_called_once()
+    assert mock_alpaca.call_args[0][1] == [pd.Timestamp('2026-11-03')]
+    assert updated['VT'].loc['2026-11-03'] == 101.0
+    assert updated['ANET'].loc['2026-11-03'] == 101.0
+
+
+def test_same_date_flatline_backstop_ignores_non_fleet_signals():
+    index = pd.date_range('2026-11-02', '2026-11-03', freq='D')
+    one_coincidence = pd.DataFrame(
+        {'VT': [100.0, 100.0], 'ANET': [50.0, 51.0], '^GSPC': [5000.0, 5050.0]},
+        index=index,
+    )
+    static_benchmark = one_coincidence.copy()
+    static_benchmark['ANET'] = [50.0, 50.0]
+    static_benchmark['^GSPC'] = 5000.0
+    for frame in (one_coincidence, static_benchmark):
+        with patch.object(step03, 'fetch_alpaca_daily_closes') as mock_alpaca:
+            _, stale = step03.refresh_stale_tails(
+                frame.copy(), ['VT', 'ANET'], index, index[0], index[-1]
+            )
+        assert stale == []
+        mock_alpaca.assert_not_called()
+
+
+def test_unresolved_same_date_flatlines_are_returned_for_retry():
+    index = pd.date_range('2026-11-02', '2026-11-03', freq='D')
+    frame = pd.DataFrame(
+        {'VT': [100.0, 100.0], 'ANET': [50.0, 50.0], '^GSPC': [5000.0, 5050.0]},
+        index=index,
+    )
+    with patch.object(step03, 'fetch_alpaca_daily_closes', return_value={}):
+        _, stale = step03.refresh_stale_tails(
+            frame.copy(), ['VT', 'ANET'], index, index[0], index[-1]
+        )
+    assert stale == ['ANET', 'VT']
+
+
 def test_fetch_alpaca_daily_closes_maps_and_filters():
     index = pd.date_range('2026-10-06', '2026-10-08', freq='D')
     resp = _alpaca_response(

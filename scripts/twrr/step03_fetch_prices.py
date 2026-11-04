@@ -315,6 +315,56 @@ def _merge_fresher(price_df: pd.DataFrame, retrieved: Dict[str, pd.Series]) -> L
     return merged
 
 
+def _fleet_flatlined_tail(
+    price_df: pd.DataFrame, tickers: List[str], bench_last: pd.Timestamp
+) -> List[str]:
+    """Find a fleet whose benchmark-date closes repeat the prior close.
+
+    Yahoo can stamp the current session date while carrying forward the prior
+    equity close. Date-based staleness cannot see that shape (2026-11-03 run
+    #335), but a moving benchmark proves the tail was a real trading session.
+    """
+    bench_moved = False
+    for bench in BENCHMARK_TICKERS:
+        if bench not in price_df.columns:
+            continue
+        valid = price_df[bench].dropna()
+        if len(valid) >= 2 and valid.index.max() == bench_last and valid.iloc[-1] != valid.iloc[-2]:
+            bench_moved = True
+            break
+    if not bench_moved:
+        return []
+
+    flatlined = []
+    for ticker in tickers:
+        if ticker in BENCHMARK_TICKERS or ticker not in price_df.columns:
+            continue
+        valid = price_df[ticker].dropna()
+        if len(valid) >= 2 and valid.index.max() == bench_last and valid.iloc[-1] == valid.iloc[-2]:
+            flatlined.append(ticker)
+    return sorted(flatlined) if _fleet_stale(flatlined, tickers) else []
+
+
+def _replace_tail_values(
+    price_df: pd.DataFrame,
+    retrieved: Dict[str, pd.Series],
+    tail_date: pd.Timestamp,
+) -> List[str]:
+    """Replace suspected forward-filled values with same-date official closes."""
+    corrected = []
+    for ticker, series in retrieved.items():
+        if ticker not in price_df.columns or tail_date not in series.index:
+            continue
+        value = series.loc[tail_date]
+        if pd.isna(value):
+            continue
+        current = price_df.loc[tail_date, ticker]
+        if pd.isna(current) or current != value:
+            price_df.loc[tail_date, ticker] = value
+            corrected.append(ticker)
+    return corrected
+
+
 def fetch_polygon_daily_closes(
     tickers: List[str], dates: List[pd.Timestamp], date_index: pd.DatetimeIndex
 ) -> Dict[str, pd.Series]:
@@ -465,6 +515,33 @@ def fetch_alpaca_daily_closes(
     return retrieved
 
 
+def _correct_flatlined_tail(
+    price_df: pd.DataFrame,
+    tickers: List[str],
+    bench_last: pd.Timestamp,
+    date_index: pd.DatetimeIndex,
+) -> List[str]:
+    """Replace fleet-wide same-date forward-fills with Alpaca official closes."""
+    flatlined = _fleet_flatlined_tail(price_df, tickers, bench_last)
+    if not flatlined:
+        return []
+    print(
+        f'Refetching {len(flatlined)} tickers that repeat the prior close on the '
+        f'benchmark tail ({bench_last.date()}): {flatlined}'
+    )
+    retrieved = fetch_alpaca_daily_closes(flatlined, [bench_last], date_index)
+    corrected = _replace_tail_values(price_df, retrieved, bench_last)
+    if corrected:
+        print(f'Alpaca same-date flat-line corrections: {sorted(corrected)}')
+    unresolved = sorted(set(flatlined) - set(corrected))
+    if unresolved:
+        print(
+            f'Same-date flat-line backstop could not correct {len(unresolved)} of '
+            f'{len(flatlined)} tickers at {bench_last.date()}: {unresolved}'
+        )
+    return unresolved
+
+
 def refresh_stale_tails(
     price_df: pd.DataFrame,
     tickers: List[str],
@@ -512,7 +589,7 @@ def refresh_stale_tails(
         if last is not None and staleness_floor <= last < bench_last:
             stale.append(ticker)
     if not stale:
-        return price_df, []
+        return price_df, _correct_flatlined_tail(price_df, tickers, bench_last, date_index)
 
     print(
         f'Refetching {len(stale)} tickers whose tail predates the benchmark tail '
@@ -560,7 +637,8 @@ def refresh_stale_tails(
             f'tickers; their tails still predate the benchmark tail '
             f'({bench_last.date()}): {still_stale}'
         )
-    return price_df, still_stale
+    still_flatlined = _correct_flatlined_tail(price_df, tickers, bench_last, date_index)
+    return price_df, sorted(set(still_stale + still_flatlined))
 
 
 def load_overrides(date_index: pd.DatetimeIndex) -> pd.DataFrame:
