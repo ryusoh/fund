@@ -74,9 +74,15 @@ For the given research question `{{args}}`:
 Once per quarter per covered ticker — and always before a thesis-affecting run on a
 subject that has reported since the last sweep — the web subagent's source list must
 include the latest earnings-call transcript and any investor/analyst-day deck from the
-company's IR site. These are the highest-signal primary sources this pipeline otherwise
-touches only ad hoc. Management Q&A language is primary evidence for guidance intent
-and capital-allocation posture, never for hard numbers (those anchor to filings).
+company's IR site. Also check supplemental earnings/outlook decks and official webcast
+caption streams before treating call claims as transcript-only. Official automated
+captions may support management intent, but numeric ASR must be cross-checked against
+SEC filings or official decks. These are the highest-signal primary sources this pipeline
+otherwise touches only ad hoc. Management Q&A language is primary evidence for guidance
+intent and capital-allocation posture, never for hard numbers (those anchor to filings).
+If workers disagree about verification status, the orchestrator must reconcile the
+conflict against the strongest available primary source before synthesis rather than
+preserving contradictory verified/unverified labels.
 
 ## Guardrails
 

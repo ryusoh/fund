@@ -70,7 +70,10 @@ Synthesize the incremental findings in the chat response:
         - If any scenario carries a `drivers` block: reconcile its derived values against
           the new print (actual vs modeled revenue per driver), update driver inputs with
           sources, and register each named falsification driver as a dated entry in
-          `predictions` so `prediction_sweeper.py` enforces resolution.
+          `predictions` so `prediction_sweeper.py` enforces resolution. Align start and
+          end periods before comparing driver-implied CAGR with scenario `epsCagr`; a
+          fixed-fiscal-year driver horizon is not directly comparable to the engine's
+          rolling five-year horizon.
 
 ### Step 4: Apply Surgical Patches
 
@@ -89,6 +92,9 @@ Synthesize the incremental findings in the chat response:
       block — an unscoped run refreshes every tracked ticker and dirties their configs
       with incidental market updates (leave a full refresh for the nightly bot; if one
       happens anyway, commit those incidental refreshes separately as `chore(data)`).
+      After syncing, inspect `market.eps`, `marketDataUpdatedAt`, and price timeliness.
+      If these inputs predate the new earnings print, do not describe the recomputed
+      `derived.expectedCagr` as a post-earnings valuation signal.
 2. **Update `docs/thesis/<TICKER>.md`**:
     - Make surgical edits to specific numbered sections (e.g. §4.2, §8.2 dated log).
     - Link any industry layer docs (`docs/thesis/industry/`) if relevant.

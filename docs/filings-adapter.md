@@ -15,6 +15,9 @@ Always use the module form — the direct script path fails with
 venv/bin/python -m scripts.analysis.filings_adapter {ingest,list,sections,read,export-manifest,verify,candidates} --ticker <T>
 ```
 
+`read` requires a section ref as well as the filing document:
+`venv/bin/python -m scripts.analysis.filings_adapter read --ticker <T> --ref <section-ref> --doc <document>`.
+
 ## Workspace resolution
 
 `filings_adapter.resolve_workspace` (`scripts/analysis/filings_adapter.py:29`):
@@ -46,6 +49,23 @@ SEC_USER_AGENT="Your Name contact@example.com" \
 - Fiscal-year/period are inferred from `reportDate` against the year-end month of
   the latest 10-K — per-company fiscal calendars differ (AEHR's FY ends the Friday
   nearest May 31, June 30 from FY2027), so never assume calendar quarters.
+
+### Proxy failures during ingest
+
+If ingest fails with `httpx.InvalidURL: Invalid port: ':1]'`, inspect all effective
+proxy keys; a malformed `NO_PROXY` entry can remain after clearing only the HTTP,
+HTTPS, and ALL proxy variables:
+
+```bash
+venv/bin/python -c 'import httpx._utils as u; print(list(u.get_environment_proxies().keys()))'
+```
+
+For the ANET ingest that exposed this failure, clearing both cases of every proxy
+variable made the same command succeed:
+
+```bash
+HTTP_PROXY= HTTPS_PROXY= ALL_PROXY= NO_PROXY= http_proxy= https_proxy= all_proxy= no_proxy= venv/bin/python -m scripts.analysis.filings_adapter ingest --ticker ANET --forms 10-Q,8-K
+```
 
 ## Confirm pass semantics
 
