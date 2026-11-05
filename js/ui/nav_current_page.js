@@ -5,6 +5,18 @@
 (function () {
     'use strict';
 
+    function isCurrentPage(normalizedCurrent, normalizedLink) {
+        return (
+            normalizedCurrent === normalizedLink ||
+            (normalizedCurrent.endsWith('/index.html') &&
+                normalizedLink === normalizedCurrent.replace('/index.html', '')) ||
+            (normalizedLink.endsWith('/index.html') &&
+                normalizedCurrent === normalizedLink.replace('/index.html', '')) ||
+            (normalizedCurrent === '/' && normalizedLink === '/index.html') ||
+            (normalizedCurrent === '/index.html' && normalizedLink === '/')
+        );
+    }
+
     function disableCurrentPageLinks() {
         const currentPath = window.location.pathname;
         const navLinks = document.querySelectorAll('.container a, .nav-container a');
@@ -22,15 +34,7 @@
             const normalizedLink = linkPath.replace(/\/$/, '') || '/';
 
             // Handle different path formats
-            if (
-                normalizedCurrent === normalizedLink ||
-                (normalizedCurrent.endsWith('/index.html') &&
-                    normalizedLink === normalizedCurrent.replace('/index.html', '')) ||
-                (normalizedLink.endsWith('/index.html') &&
-                    normalizedCurrent === normalizedLink.replace('/index.html', '')) ||
-                (normalizedCurrent === '/' && normalizedLink === '/index.html') ||
-                (normalizedCurrent === '/index.html' && normalizedLink === '/')
-            ) {
+            if (isCurrentPage(normalizedCurrent, normalizedLink)) {
                 // Disable the link
                 // link.style.opacity = '0.3'; // Handled by CSS
                 link.style.pointerEvents = 'none';
