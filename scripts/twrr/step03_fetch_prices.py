@@ -16,7 +16,6 @@ from zoneinfo import ZoneInfo
 
 import pandas as pd
 import requests
-from polygon import RESTClient
 
 sys.path.append(str(Path(__file__).parent))
 from utils import append_changelog_entry, load_delisted_tickers
@@ -77,7 +76,9 @@ STALE_TAIL_WINDOW_DAYS = 14
 # window rather than flat-lining the night or failing the validation gate.
 ROLLOVER_WINDOW_START = dtime(20, 0)
 ROLLOVER_WINDOW_END = dtime(23, 30)
-ROLLOVER_MAX_ATTEMPTS = 4
+# Fifteen 15-minute attempts cover the full 20:00-23:30 window. Four attempts
+# exhausted run #340 at 21:22 ET, before Yahoo's bars settled around 22:00.
+ROLLOVER_MAX_ATTEMPTS = 15
 ROLLOVER_RETRY_SLEEP_SECONDS = 900
 
 
@@ -365,17 +366,31 @@ def _replace_tail_values(
     return corrected
 
 
+POLYGON_GROUPED_DAILY_URL = 'https://api.polygon.io/v2/aggs/grouped/locale/us/market/stocks'
+POLYGON_API_PREFIXES = ('https://api.polygon.io/', 'https://api.massive.com/')
+
+
+def _closes_to_series(
+    closes: Dict[str, Dict[pd.Timestamp, float]], date_index: pd.DatetimeIndex
+) -> Dict[str, pd.Series]:
+    retrieved = {}
+    for ticker, points in closes.items():
+        series = pd.Series(points).sort_index()
+        series.name = ticker
+        retrieved[ticker] = series.reindex(date_index)
+    return retrieved
+
+
 def fetch_polygon_daily_closes(
     tickers: List[str], dates: List[pd.Timestamp], date_index: pd.DatetimeIndex
 ) -> Dict[str, pd.Series]:
     """Official daily closes from Polygon grouped aggregates for the given dates.
 
-    One API call per date covers every US-listed ticker, and Polygon's
-    completed-session bars are unaffected by Yahoo's ~20:00-22:00 ET daily-bar
-    rollover window (the 2026-10-07/08 failures: delayed runs found all 165
-    equities missing the just-completed session and the yfinance refetch
-    no-opped for every one). Requires POLYGON_KEY; without it, returns {} and
-    the stale-tail log line still reports the laggards.
+    One API call per date covers every US-listed ticker. Use the stable REST
+    contract directly: run #340 installed an unpinned SDK whose RESTClient no
+    longer exposed get_grouped_daily_aggs, disabling this backstop all night.
+    Requires POLYGON_KEY; without it, returns {} and leaves the other recovery
+    layers to report any unresolved laggards.
     """
     if not dates:
         return {}
@@ -390,32 +405,34 @@ def fetch_polygon_daily_closes(
         normalized = raw.upper()
         wanted[normalized] = normalized
         wanted[YFINANCE_ALIASES.get(normalized, normalized).replace('-', '.').upper()] = normalized
+    headers = {'Authorization': f'Bearer {api_key}', 'Accept': 'application/json'}
     closes: Dict[str, Dict[pd.Timestamp, float]] = {}
-    try:
-        # RESTClient (polygon-api-client >=1.x) has no context manager.
-        client = RESTClient(api_key)
-        for day in dates:
-            date_str = day.strftime('%Y-%m-%d')
-            try:
-                aggs = client.get_grouped_daily_aggs(date_str, adjusted=True)
-            except Exception as exc:
-                logging.warning(f'Polygon grouped daily failed for {date_str}: {exc}')
-                continue
-            for agg in aggs or []:
-                symbol = str(getattr(agg, 'ticker', '') or '').upper()
-                ticker = wanted.get(symbol)
-                close = getattr(agg, 'close', None)
-                if ticker is None or not isinstance(close, (int, float)) or close <= 0:
-                    continue
-                closes.setdefault(ticker, {})[day] = float(close)
-    except Exception as exc:
-        logging.warning(f'Polygon stale-tail backstop unavailable: {exc}')
-        return {}
-    retrieved = {}
-    for ticker, points in closes.items():
-        series = pd.Series(points).sort_index()
-        series.name = ticker
-        retrieved[ticker] = series.reindex(date_index)
+    for day in dates:
+        date_str = day.strftime('%Y-%m-%d')
+        url: Optional[str] = f'{POLYGON_GROUPED_DAILY_URL}/{date_str}'
+        params: Optional[Dict[str, str]] = {'adjusted': 'true', 'include_otc': 'false'}
+        try:
+            while url:
+                resp = requests.get(url, params=params, headers=headers, timeout=30)
+                resp.raise_for_status()
+                payload = resp.json()
+                for agg in payload.get('results') or []:
+                    symbol = str(agg.get('T', '') or '').upper()
+                    ticker = wanted.get(symbol)
+                    close = agg.get('c')
+                    if ticker is None or not isinstance(close, (int, float)) or close <= 0:
+                        continue
+                    closes.setdefault(ticker, {})[day] = float(close)
+                next_url = payload.get('next_url')
+                if next_url and not str(next_url).startswith(POLYGON_API_PREFIXES):
+                    logging.warning('Polygon grouped daily returned an untrusted pagination URL')
+                    break
+                url = str(next_url) if next_url else None
+                params = None  # The provider's next_url already contains its query string.
+        except Exception as exc:
+            error_msg = scrub_secrets(str(exc), [api_key])
+            logging.warning(f'Polygon grouped daily failed for {date_str}: {error_msg}')
+    retrieved = _closes_to_series(closes, date_index)
     print(
         f'Polygon stale-tail backstop retrieved {len(retrieved)} of {len(tickers)} tickers '
         f'across {len(dates)} date(s)'
@@ -424,6 +441,81 @@ def fetch_polygon_daily_closes(
 
 
 ALPACA_BARS_URL = 'https://data.alpaca.markets/v2/stocks/bars'
+ALPACA_SNAPSHOTS_URL = 'https://data.alpaca.markets/v2/stocks/snapshots'
+ALPACA_SNAPSHOT_BATCH_SIZE = 25
+
+
+def _alpaca_request_symbols(tickers: List[str]) -> Dict[str, str]:
+    # Alpaca spells class shares with a dot where Yahoo uses a dash (BRK.B vs
+    # our BRKB); map every requested symbol back to the normalized ticker.
+    request_symbols: Dict[str, str] = {}
+    for raw in tickers:
+        normalized = raw.upper()
+        symbol = YFINANCE_ALIASES.get(normalized, normalized).replace('-', '.').replace('_', '.')
+        request_symbols[symbol.upper()] = normalized
+    return request_symbols
+
+
+def _alpaca_headers(api_key: str, api_secret: str) -> Dict[str, str]:
+    return {
+        'APCA-API-KEY-ID': api_key,
+        'APCA-API-SECRET-KEY': api_secret,
+        'Accept': 'application/json',
+    }
+
+
+def fetch_alpaca_snapshot_closes(
+    tickers: List[str], dates: List[pd.Timestamp], date_index: pd.DatetimeIndex
+) -> Dict[str, pd.Series]:
+    """Recover exact-session closes from Alpaca's snapshot endpoint.
+
+    Run #340's bulk-bars request returned 403, while this independent endpoint
+    remained available to the real-time fetcher. dailyBar can be the forming
+    overnight session, so inspect both daily bars and accept a close only when
+    its own timestamp matches a requested session. Never substitute a latest
+    trade or a differently dated bar. Requests are chunked for plan limits and
+    one failed chunk does not discard successful recoveries from the others.
+    """
+    if not dates:
+        return {}
+    api_key = os.environ.get('ALPACA_API_KEY')
+    api_secret = os.environ.get('ALPACA_API_SECRET')
+    if not api_key or not api_secret:
+        print('ALPACA_API_KEY/ALPACA_API_SECRET not set; skipping Alpaca snapshot backstop')
+        return {}
+    request_symbols = _alpaca_request_symbols(tickers)
+    headers = _alpaca_headers(api_key, api_secret)
+    wanted_dates = {day.strftime('%Y-%m-%d') for day in dates}
+    closes: Dict[str, Dict[pd.Timestamp, float]] = {}
+    for batch in chunked(sorted(request_symbols), ALPACA_SNAPSHOT_BATCH_SIZE):
+        params = {'symbols': ','.join(batch)}
+        try:
+            resp = requests.get(ALPACA_SNAPSHOTS_URL, params=params, headers=headers, timeout=30)
+            resp.raise_for_status()
+            snapshots = resp.json()
+        except Exception as exc:
+            error_msg = scrub_secrets(str(exc), [api_key, api_secret])
+            logging.warning(f'Alpaca snapshot backstop unavailable for {batch}: {error_msg}')
+            continue
+        for symbol, snapshot in (snapshots or {}).items():
+            ticker = request_symbols.get(str(symbol).upper())
+            if ticker is None or not isinstance(snapshot, dict):
+                continue
+            for field in ('dailyBar', 'prevDailyBar'):
+                bar = snapshot.get(field) or {}
+                session = str(bar.get('t', ''))[:10]
+                close = bar.get('c')
+                if session not in wanted_dates:
+                    continue
+                if not isinstance(close, (int, float)) or close <= 0:
+                    continue
+                closes.setdefault(ticker, {})[pd.Timestamp(session)] = float(close)
+    retrieved = _closes_to_series(closes, date_index)
+    print(
+        f'Alpaca snapshot backstop retrieved {len(retrieved)} of {len(tickers)} tickers '
+        f'across {len(dates)} date(s)'
+    )
+    return retrieved
 
 
 def fetch_alpaca_daily_closes(
@@ -434,14 +526,10 @@ def fetch_alpaca_daily_closes(
     Alpaca serves the just-completed session's regular daily bar from the
     16:00 ET close on, so it is immune to both of the other sources' evening
     gaps: Yahoo's 20:00-23:30 ET daily-bar rollover window and the Polygon
-    free plan's refusal to serve same-day grouped daily before its end of day
-    (2026-10-13 incident: a congestion-delayed run at 20:15 ET exhausted all
-    four Yahoo rollover retries by 21:04 ET, Polygon 401'd on the same-day
-    date, and the gate flat-line check failed the run). Mutual funds and
-    indices are not Alpaca securities and simply come back absent, so this
-    only ever rescues US-listed equities/ETFs. Requires ALPACA_API_KEY and
-    ALPACA_API_SECRET; without them, returns {} and the stale-tail log line
-    still reports the laggards.
+    free plan's refusal to serve same-day grouped daily before its end of day.
+    Mutual funds and indices are not Alpaca securities and simply come back
+    absent, so this only ever rescues US-listed equities/ETFs. The snapshot
+    backstop handles accounts for which this bulk endpoint returns 403.
     """
     if not dates:
         return {}
@@ -450,19 +538,9 @@ def fetch_alpaca_daily_closes(
     if not api_key or not api_secret:
         print('ALPACA_API_KEY/ALPACA_API_SECRET not set; skipping Alpaca stale-tail backstop')
         return {}
-    # Alpaca spells class shares with a dot where Yahoo uses a dash (BRK.B vs
-    # our BRKB); map every requested symbol back to the normalized ticker.
-    request_symbols: Dict[str, str] = {}
-    for raw in tickers:
-        normalized = raw.upper()
-        symbol = YFINANCE_ALIASES.get(normalized, normalized).replace('-', '.').replace('_', '.')
-        request_symbols[symbol.upper()] = normalized
+    request_symbols = _alpaca_request_symbols(tickers)
     wanted_dates = {day.strftime('%Y-%m-%d') for day in dates}
-    headers = {
-        'APCA-API-KEY-ID': api_key,
-        'APCA-API-SECRET-KEY': api_secret,
-        'Accept': 'application/json',
-    }
+    headers = _alpaca_headers(api_key, api_secret)
     params: Dict[str, str] = {
         'symbols': ','.join(sorted(request_symbols)),
         'timeframe': '1Day',
@@ -503,11 +581,7 @@ def fetch_alpaca_daily_closes(
         error_msg = scrub_secrets(str(exc), [api_key, api_secret])
         logging.warning(f'Alpaca stale-tail backstop unavailable: {error_msg}')
         return {}
-    retrieved = {}
-    for ticker, points in closes.items():
-        series = pd.Series(points).sort_index()
-        series.name = ticker
-        retrieved[ticker] = series.reindex(date_index)
+    retrieved = _closes_to_series(closes, date_index)
     print(
         f'Alpaca stale-tail backstop retrieved {len(retrieved)} of {len(tickers)} tickers '
         f'across {len(dates)} date(s)'
@@ -531,9 +605,13 @@ def _correct_flatlined_tail(
     )
     retrieved = fetch_alpaca_daily_closes(flatlined, [bench_last], date_index)
     corrected = _replace_tail_values(price_df, retrieved, bench_last)
+    unresolved = sorted(set(flatlined) - set(corrected))
+    if unresolved:
+        snapshots = fetch_alpaca_snapshot_closes(unresolved, [bench_last], date_index)
+        corrected.extend(_replace_tail_values(price_df, snapshots, bench_last))
+        unresolved = sorted(set(flatlined) - set(corrected))
     if corrected:
         print(f'Alpaca same-date flat-line corrections: {sorted(corrected)}')
-    unresolved = sorted(set(flatlined) - set(corrected))
     if unresolved:
         print(
             f'Same-date flat-line backstop could not correct {len(unresolved)} of '
@@ -552,19 +630,13 @@ def refresh_stale_tails(
     """Refetch tickers whose price tail lags the benchmark indices.
 
     Yahoo occasionally serves equity daily bars that stop before the last
-    completed session while the index bars in the same response are current
-    (2026-09-22 incident: equities stale at Friday's close, ^GSPC current
-    through Monday). The batch counts those as successes, so without a
-    refetch the forward-fill flat-lines held tickers across real trading
-    days. Only recently-active tails are refetched — a series that stopped
-    weeks ago is a halted/acquired ticker, not a fetch lag.
+    completed session while the index bars in the same response are current.
+    Only recently-active tails are refetched — a series that stopped weeks ago
+    is a halted/acquired ticker, not a fetch lag.
 
-    Three refetch layers: yfinance single-ticker + stooq (attempt_fallbacks),
-    then a Polygon grouped-daily backstop (fetch_polygon_daily_closes), then
-    an Alpaca daily-bars backstop (fetch_alpaca_daily_closes) for whatever is
-    still stale. Alpaca decouples the tail from Yahoo's clock: it serves the
-    completed session's bar from the 16:00 ET close on, covering both Yahoo's
-    evening rollover window and the Polygon free plan's same-day gate.
+    Four refetch layers: yfinance single-ticker + stooq, Polygon grouped daily,
+    Alpaca bulk daily bars, then Alpaca snapshots. The snapshot layer accepts
+    only exact-date completed bars and covers a bulk-bars 403 (run #340).
 
     Returns the tickers still stale after every layer, which is what the
     rollover retry decision needs: a fleet rescued by a backstop must not keep
@@ -618,10 +690,6 @@ def refresh_stale_tails(
             refreshed.extend(polygon_refreshed)
             still_stale = sorted(set(stale) - set(refreshed))
     if still_stale:
-        # The Polygon free plan refuses same-day grouped daily until its end
-        # of day (2026-10-13: NOT_AUTHORIZED at 20:17-21:04 ET), so inside
-        # Yahoo's rollover window Polygon alone could not rescue the tail.
-        # Alpaca serves the completed session's daily bar from 16:00 ET on.
         alpaca_retrieved = fetch_alpaca_daily_closes(still_stale, missing_days, date_index)
         alpaca_refreshed = _merge_fresher(price_df, alpaca_retrieved)
         if alpaca_refreshed:
@@ -629,9 +697,16 @@ def refresh_stale_tails(
             refreshed.extend(alpaca_refreshed)
             still_stale = sorted(set(stale) - set(refreshed))
     if still_stale:
-        # 2026-10-06 incident: the refetch returned stale-or-empty data for
-        # all 39 laggards with no log line — the flat-fill was only caught
-        # downstream by step_validate. Make a no-op refetch visible here.
+        # Snapshots carry only the current and previous daily bars, so request
+        # at most the latest two missing sessions and filter by exact date.
+        snapshots = fetch_alpaca_snapshot_closes(still_stale, missing_days[-2:], date_index)
+        snapshot_refreshed = _merge_fresher(price_df, snapshots)
+        if snapshot_refreshed:
+            print(f'Alpaca snapshot backstop updated: {sorted(snapshot_refreshed)}')
+            refreshed.extend(snapshot_refreshed)
+            still_stale = sorted(set(stale) - set(refreshed))
+    if still_stale:
+        # A no-op refetch must be visible before the downstream validation gate.
         print(
             f'Stale-tail refetch could not refresh {len(still_stale)} of {len(stale)} '
             f'tickers; their tails still predate the benchmark tail '

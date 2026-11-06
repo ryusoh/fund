@@ -9,13 +9,13 @@ import tempfile
 from datetime import date, datetime, timedelta
 from datetime import time as dtime
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any, Dict, List, Optional
 
 import pandas as pd
 import pytz
 import requests
 import yfinance as yf
-from polygon import RESTClient
 
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 from scripts.utils.security_utils import scrub_secrets
@@ -313,28 +313,33 @@ def get_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
         safe_api_key = os.environ.get("POLYGON_KEY")
         try:
             api_key = os.environ["POLYGON_KEY"]
-            # RESTClient (polygon-api-client >=1.x) has no context manager.
-            client = RESTClient(api_key)
-            try:
-                snapshots = client.get_snapshot_all(
-                    market_type="stocks", tickers=tickers_for_polygon
+            # Keep the key in the Authorization header, never in the logged URL.
+            response = requests.get(
+                "https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers",
+                params={"tickers": ",".join(tickers_for_polygon)},
+                headers={"Authorization": f"Bearer {api_key}"},
+                timeout=10,
+            )
+            response.raise_for_status()
+            for raw in response.json().get("tickers", []):
+                t = raw.get("ticker")
+                if t not in tickers_for_polygon:
+                    continue
+                # Adapt the REST payload to the session-aware close selector.
+                day = raw.get("day") or {}
+                prev_day = raw.get("prevDay") or {}
+                last_trade = raw.get("lastTrade") or {}
+                snapshot = SimpleNamespace(
+                    day=SimpleNamespace(close=day.get("c"), timestamp=day.get("t")),
+                    prev_day=SimpleNamespace(close=prev_day.get("c"), timestamp=prev_day.get("t")),
+                    last_trade=SimpleNamespace(price=last_trade.get("p")),
                 )
-                if snapshots:
-                    for snapshot in snapshots:
-                        t = snapshot.ticker
-                        if t not in tickers_for_polygon:
-                            continue
-                        # The baseline must be the last completed
-                        # regular-session close, not a forming bar.
-                        p = _select_polygon_close(snapshot, et_now)
-                        if p:
-                            data[t] = float(p)
-                            logging.info(f"Fetched price for {t} from Polygon.io: {p}")
-            except Exception as e:
-                error_msg = str(e)
-                if safe_api_key:
-                    error_msg = scrub_secrets(error_msg, [safe_api_key])
-                logging.error(f"Error fetching snapshots from Polygon.io: {error_msg}")
+                # The baseline must be the last completed regular-session
+                # close, not a forming bar.
+                p = _select_polygon_close(snapshot, et_now)
+                if p:
+                    data[t] = float(p)
+                    logging.info(f"Fetched price for {t} from Polygon.io: {p}")
         except KeyError:
             logging.error(
                 "Missing environment variable: POLYGON_KEY. Cannot fetch from Polygon.io."
@@ -343,7 +348,7 @@ def get_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
             error_msg = str(e)
             if safe_api_key:
                 error_msg = scrub_secrets(error_msg, [safe_api_key])
-            logging.error(f"An error occurred with Polygon.io: {error_msg}")
+            logging.error(f"Error fetching snapshots from Polygon.io: {error_msg}")
 
     return data
 

@@ -49,30 +49,35 @@ Drift between the two shows up as a jump at the seam.
    congestion regularly delays the 21:15 UTC run into this window —
    2026-10-07/08: all 165 equities missing the just-completed session and
    the yfinance/stooq refetch no-opped for every one (a 21:57 ET run was
-   clean, so the window settles by ~22:00 ET). Defenses added 2026-10-09:
+   clean, so the window settles by ~22:00 ET). The recovery layers are:
    (1) when a majority of the fleet is stale and the run is inside
-   20:00-23:30 ET, step03 waits 15 minutes and refetches, up to 4 attempts
-   — the primary, yfinance-only mechanism; (2) `fetch_polygon_daily_closes`
-   backstops still-stale tails with Polygon grouped daily bars (one call per
-   missing date covers all US tickers) as a fail-open extra layer — needs
-   `POLYGON_KEY` in the "Run TWRR pipeline" step env of
-   `twrr-refresh.yaml`, but nothing depends on it succeeding; (3)
-   `fetch_alpaca_daily_closes` backstops whatever is still stale with Alpaca
-   daily bars — added 2026-10-14 after a congestion-delayed run (20:15 ET)
-   exhausted all four Yahoo retries by 21:04 ET and the Polygon free plan
-   refused same-day grouped daily ("today's data before end of day"),
-   failing the gate. Alpaca serves the completed session's regular daily bar
-   from the 16:00 ET close on, so it decouples the tail from Yahoo's clock;
-   it needs `ALPACA_API_KEY`/`ALPACA_API_SECRET` in the same step env and
-   only covers US-listed equities/ETFs (mutual funds and indices come back
-   absent). `refresh_stale_tails` returns the post-backstop laggards, so a
-   rescued fleet does not keep polling Yahoo through the window. (4) Yahoo can
-   also stamp the benchmark tail date while repeating the prior equity close,
-   which date-only recovery cannot detect (2026-11-03 run #335: all four held
-   tickers failed the gate's forward-fill check). `_correct_flatlined_tail`
-   detects that fleet-wide signature when a benchmark moved and replaces the
-   repeated values with Alpaca's same-date official closes; unresolved tickers
-   remain in the rollover retry path.
+   20:00-23:30 ET, step03 waits 15 minutes and refetches, up to 15 attempts
+   spanning the full window (four attempts exhausted run #340 at 21:22 ET);
+   (2) `fetch_polygon_daily_closes` backstops still-stale tails with Polygon
+   grouped daily bars (one call per missing date covers all US tickers) as a
+   fail-open extra layer. It uses the version-stable grouped-daily REST API
+   directly, with bearer credentials kept out of query parameters, because
+   run #340's unpinned SDK no longer exposed `get_grouped_daily_aggs`.
+   `update_fund_data.py` likewise calls the snapshot REST endpoint directly;
+   no Polygon SDK remains in the dependency graph (the 1.x SDK also conflicts
+   with the repository's `certifi` security floor);
+   (3) `fetch_alpaca_daily_closes` backstops whatever is still stale with
+   Alpaca bulk daily bars; (4) `fetch_alpaca_snapshot_closes` independently
+   recovers from a bulk-bars 403 (also run #340), requesting bounded symbol
+   chunks and accepting only `dailyBar`/`prevDailyBar` entries whose own
+   session date exactly matches the missing close. A forming overnight bar or
+   latest trade is never substituted. Alpaca needs
+   `ALPACA_API_KEY`/`ALPACA_API_SECRET` in the "Run TWRR pipeline" step env
+   and only covers US-listed equities/ETFs (mutual funds and indices come
+   back absent). `refresh_stale_tails` returns the post-backstop laggards, so
+   a rescued fleet does not keep polling Yahoo through the window. Finally,
+   Yahoo can stamp the benchmark tail date while repeating the prior equity
+   close, which date-only recovery cannot detect (2026-11-03 run #335: all
+   four held tickers failed the gate's forward-fill check).
+   `_correct_flatlined_tail` detects that fleet-wide signature when a
+   benchmark moved and tries both Alpaca endpoints for same-date official
+   closes; unresolved tickers remain in the rollover retry path, and the
+   validation gate still refuses to commit if every provider stays stale.
 4. **`delisted_tickers.csv` ∩ holdings** — a held ticker wrongly on the list
    is skipped by step03 → $0 forever.
 5. **Fractional-share dust** — checkpoints carry tiny negative residues

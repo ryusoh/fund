@@ -227,7 +227,6 @@ def test_polygon_friday_night_uses_day():
 
 @patch("scripts.data.update_fund_data.datetime")
 @patch("scripts.data.update_fund_data.yf.download")
-@patch("scripts.data.update_fund_data.RESTClient")
 @patch("scripts.data.update_fund_data.requests.get")
 @patch.dict(
     "os.environ",
@@ -237,9 +236,7 @@ def test_polygon_friday_night_uses_day():
     },
     clear=True,
 )
-def test_get_prices_overnight_priority(
-    mock_requests_get, mock_rest_client, mock_yf_download, mock_datetime
-):
+def test_get_prices_overnight_priority(mock_requests_get, mock_yf_download, mock_datetime):
     # Mock time to be 11 PM ET (Overnight)
     mock_now = datetime(2026, 3, 10, 23, 0, tzinfo=pytz.timezone("US/Eastern"))
     mock_datetime.now.return_value = mock_now
@@ -287,7 +284,6 @@ def test_alpaca_never_requests_overnight_feed(mock_requests_get, mock_datetime):
 
 @patch("scripts.data.update_fund_data.datetime")
 @patch("scripts.data.update_fund_data.yf.download")
-@patch("scripts.data.update_fund_data.RESTClient")
 @patch("scripts.data.update_fund_data.requests.get")
 @patch.dict(
     "os.environ",
@@ -297,9 +293,7 @@ def test_alpaca_never_requests_overnight_feed(mock_requests_get, mock_datetime):
     },
     clear=True,
 )
-def test_get_prices_overnight_fallback(
-    mock_requests_get, mock_rest_client, mock_yf_download, mock_datetime
-):
+def test_get_prices_overnight_fallback(mock_requests_get, mock_yf_download, mock_datetime):
     # Mock time to be 11 PM ET
     mock_now = datetime(2026, 3, 10, 23, 0, tzinfo=pytz.timezone("US/Eastern"))
     mock_datetime.now.return_value = mock_now
@@ -325,11 +319,8 @@ def test_get_prices_overnight_fallback(
 
 @patch("scripts.data.update_fund_data.datetime")
 @patch("scripts.data.update_fund_data.yf.download")
-@patch("scripts.data.update_fund_data.RESTClient")
 @patch("scripts.data.update_fund_data.requests.get")
-def test_get_prices_standard_priority(
-    mock_requests_get, mock_rest_client, mock_yf_download, mock_datetime
-):
+def test_get_prices_standard_priority(mock_requests_get, mock_yf_download, mock_datetime):
     # Mock time to be 10 AM ET (Regular hours)
     mock_now = datetime(2026, 3, 10, 10, 0, tzinfo=pytz.timezone("US/Eastern"))
     mock_datetime.now.return_value = mock_now
@@ -352,7 +343,6 @@ def test_get_prices_standard_priority(
 
 @patch("scripts.data.update_fund_data.datetime")
 @patch("scripts.data.update_fund_data.yf.download")
-@patch("scripts.data.update_fund_data.RESTClient")
 @patch("scripts.data.update_fund_data.requests.get")
 @patch.dict(
     "os.environ",
@@ -362,9 +352,7 @@ def test_get_prices_standard_priority(
     },
     clear=True,
 )
-def test_get_prices_standard_fallback(
-    mock_requests_get, mock_rest_client, mock_yf_download, mock_datetime
-):
+def test_get_prices_standard_fallback(mock_requests_get, mock_yf_download, mock_datetime):
     # Mock time to be 10 AM ET
     mock_now = datetime(2026, 3, 10, 10, 0, tzinfo=pytz.timezone("US/Eastern"))
     mock_datetime.now.return_value = mock_now
@@ -389,7 +377,6 @@ def test_get_prices_standard_fallback(
 
 @patch("scripts.data.update_fund_data.datetime")
 @patch("scripts.data.update_fund_data.yf.download")
-@patch("scripts.data.update_fund_data.RESTClient")
 @patch("scripts.data.update_fund_data.requests.get")
 @patch.dict(
     "os.environ",
@@ -400,42 +387,38 @@ def test_get_prices_standard_fallback(
     },
     clear=True,
 )
-def test_get_prices_polygon_fallback(
-    mock_requests_get, mock_rest_client, mock_yf_download, mock_datetime
-):
+def test_get_prices_polygon_fallback(mock_requests_get, mock_yf_download, mock_datetime):
     # Mock time
     mock_now = datetime(2026, 3, 10, 10, 0, tzinfo=pytz.timezone("US/Eastern"))
     mock_datetime.now.return_value = mock_now
     # Mock yfinance to return empty
     mock_yf_download.return_value = {}
 
-    # Mock Alpaca to return nothing or fail
+    # Mock Alpaca to return nothing, then Polygon's REST snapshot payload.
     def mock_requests_get_side_effect(url, params=None, headers=None, timeout=None):
         mock_resp = MagicMock()
-        mock_resp.json.return_value = {}
         mock_resp.status_code = 200
+        if "alpaca" in url:
+            mock_resp.json.return_value = {}
+        else:
+            mock_resp.json.return_value = {
+                "tickers": [
+                    {"ticker": "AAPL", "day": {"c": 165.0}, "lastTrade": {"p": 160.0}},
+                    {"ticker": "TSLA", "lastTrade": {"p": 210.0}},
+                ]
+            }
         return mock_resp
 
     mock_requests_get.side_effect = mock_requests_get_side_effect
-
-    # Mock Polygon to return data: AAPL has a daily aggregate close (preferred),
-    # TSLA only a last trade (fallback)
-    mock_client_instance = mock_rest_client.return_value
-    mock_snapshot1 = MagicMock()
-    mock_snapshot1.ticker = "AAPL"
-    mock_snapshot1.day.close = 165.0
-    mock_snapshot1.last_trade.price = 160.0
-    mock_snapshot2 = MagicMock()
-    mock_snapshot2.ticker = "TSLA"
-    mock_snapshot2.day = None
-    mock_snapshot2.last_trade.price = 210.0
-    mock_client_instance.get_snapshot_all.return_value = [mock_snapshot1, mock_snapshot2]
 
     tickers = ["AAPL", "TSLA"]
     prices = get_prices(tickers)
 
     assert prices == {"AAPL": 165.0, "TSLA": 210.0}
-    mock_client_instance.get_snapshot_all.assert_called_once()
+    polygon_call = mock_requests_get.call_args_list[1]
+    assert polygon_call.args[0].endswith("/v2/snapshot/locale/us/markets/stocks/tickers")
+    assert polygon_call.kwargs["params"] == {"tickers": "AAPL,TSLA"}
+    assert polygon_call.kwargs["headers"]["Authorization"] == "Bearer test_key"
 
 
 @patch("scripts.data.update_fund_data.get_tickers_from_holdings")

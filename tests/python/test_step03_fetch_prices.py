@@ -215,32 +215,31 @@ def test_polygon_backstop_merges_when_yfinance_refetch_fails():
     assert updated['ANET'].loc['2026-09-22'] == 160.70
 
 
-def _polygon_agg(ticker, close):
-    agg = MagicMock()
-    agg.ticker = ticker
-    agg.close = close
-    return agg
+def _polygon_response(results, next_url=None):
+    resp = MagicMock()
+    resp.json.return_value = {'results': results, 'next_url': next_url}
+    return resp
 
 
 def test_fetch_polygon_daily_closes_maps_and_filters():
     index = pd.date_range('2026-10-06', '2026-10-08', freq='D')
-    client = MagicMock()
-    client.get_grouped_daily_aggs.return_value = [
-        _polygon_agg('VT', 160.70),
-        _polygon_agg('BRK.B', 490.12),  # Polygon spelling of our BRKB
-        _polygon_agg('UNWANTED', 12.34),
-        _polygon_agg('ZERO', 0),
-    ]
+    resp = _polygon_response(
+        [
+            {'T': 'VT', 'c': 160.70},
+            {'T': 'BRK.B', 'c': 490.12},  # Polygon spelling of our BRKB
+            {'T': 'UNWANTED', 'c': 12.34},
+            {'T': 'ZERO', 'c': 0},
+        ]
+    )
     with (
         patch.dict('os.environ', {'POLYGON_KEY': 'key'}, clear=True),
-        patch.object(step03, 'RESTClient') as mock_client_cls,
+        patch.object(step03.requests, 'get', return_value=resp) as mock_get,
     ):
-        mock_client_cls.return_value = client
         retrieved = step03.fetch_polygon_daily_closes(
             ['VT', 'BRKB', 'ANET'], [pd.Timestamp('2026-10-08')], index
         )
 
-    client.get_grouped_daily_aggs.assert_called_once_with('2026-10-08', adjusted=True)
+    assert mock_get.call_args[0][0].endswith('/2026-10-08')
     assert set(retrieved) == {'VT', 'BRKB'}
     assert retrieved['VT'].loc['2026-10-08'] == 160.70
     assert retrieved['BRKB'].loc['2026-10-08'] == 490.12
@@ -248,17 +247,15 @@ def test_fetch_polygon_daily_closes_maps_and_filters():
 
 
 def test_fetch_polygon_daily_closes_accumulates_dates():
-    client = MagicMock()
-    client.get_grouped_daily_aggs.side_effect = [
-        [_polygon_agg('VT', 160.11)],
-        [_polygon_agg('VT', 160.70)],
+    responses = [
+        _polygon_response([{'T': 'VT', 'c': 160.11}]),
+        _polygon_response([{'T': 'VT', 'c': 160.70}]),
     ]
     index = pd.date_range('2026-10-05', '2026-10-06', freq='D')
     with (
         patch.dict('os.environ', {'POLYGON_KEY': 'key'}, clear=True),
-        patch.object(step03, 'RESTClient') as mock_client_cls,
+        patch.object(step03.requests, 'get', side_effect=responses),
     ):
-        mock_client_cls.return_value = client
         retrieved = step03.fetch_polygon_daily_closes(
             ['VT'], [pd.Timestamp('2026-10-05'), pd.Timestamp('2026-10-06')], index
         )
@@ -267,6 +264,43 @@ def test_fetch_polygon_daily_closes_accumulates_dates():
         pd.Timestamp('2026-10-05'): 160.11,
         pd.Timestamp('2026-10-06'): 160.70,
     }
+
+
+def test_fetch_polygon_daily_closes_paginates_with_authenticated_headers():
+    next_url = 'https://api.polygon.io/v2/aggs/grouped/page-2?cursor=abc'
+    responses = [
+        _polygon_response([{'T': 'VT', 'c': 160.70}], next_url=next_url),
+        _polygon_response([{'T': 'ANET', 'c': 50.25}]),
+    ]
+    with (
+        patch.dict('os.environ', {'POLYGON_KEY': 'key'}, clear=True),
+        patch.object(step03.requests, 'get', side_effect=responses) as mock_get,
+    ):
+        retrieved = step03.fetch_polygon_daily_closes(
+            ['VT', 'ANET'], [pd.Timestamp('2026-10-08')], DATE_INDEX
+        )
+
+    assert mock_get.call_count == 2
+    assert mock_get.call_args_list[1][0][0] == next_url
+    assert mock_get.call_args_list[1][1]['params'] is None
+    assert mock_get.call_args_list[1][1]['headers']['Authorization'] == 'Bearer key'
+    assert set(retrieved) == {'VT', 'ANET'}
+
+
+def test_fetch_polygon_daily_closes_rejects_untrusted_pagination(caplog):
+    resp = _polygon_response([], next_url='https://example.com/steal-credentials')
+    with (
+        patch.dict('os.environ', {'POLYGON_KEY': 'key'}, clear=True),
+        patch.object(step03.requests, 'get', return_value=resp) as mock_get,
+        caplog.at_level(logging.WARNING),
+    ):
+        retrieved = step03.fetch_polygon_daily_closes(
+            ['VT'], [pd.Timestamp('2026-10-08')], DATE_INDEX
+        )
+
+    assert retrieved == {}
+    assert mock_get.call_count == 1
+    assert 'untrusted pagination URL' in caplog.text
 
 
 def test_fetch_polygon_daily_closes_without_key_skips():
@@ -278,20 +312,18 @@ def test_fetch_polygon_daily_closes_without_key_skips():
 
 
 def test_fetch_polygon_daily_closes_api_failure_returns_empty(caplog):
-    client = MagicMock()
-    client.get_grouped_daily_aggs.side_effect = RuntimeError('boom')
     with (
         patch.dict('os.environ', {'POLYGON_KEY': 'key'}, clear=True),
-        patch.object(step03, 'RESTClient') as mock_client_cls,
+        patch.object(step03.requests, 'get', side_effect=RuntimeError('boom key')),
         caplog.at_level(logging.WARNING),
     ):
-        mock_client_cls.return_value = client
         retrieved = step03.fetch_polygon_daily_closes(
             ['VT'], [pd.Timestamp('2026-10-08')], DATE_INDEX
         )
 
     assert retrieved == {}
     assert 'Polygon grouped daily failed for 2026-10-08' in caplog.text
+    assert 'boom key' not in caplog.text
 
 
 # --- Alpaca stale-tail backstop ---
@@ -611,7 +643,7 @@ def test_rollover_window_gives_up_after_max_attempts():
     stale = (_fleet_frame('2026-09-18'), [f'T{i}' for i in range(8)], [])
     now = datetime(2026, 9, 22, 21, 0, tzinfo=ZoneInfo('US/Eastern'))
 
-    mock_fetch, mock_time = _run_main([stale] * 6, now)
+    mock_fetch, mock_time = _run_main([stale] * (step03.ROLLOVER_MAX_ATTEMPTS + 1), now)
 
     assert mock_fetch.call_count == step03.ROLLOVER_MAX_ATTEMPTS
     assert mock_time.sleep.call_count == step03.ROLLOVER_MAX_ATTEMPTS - 1
@@ -653,3 +685,161 @@ def test_no_retry_when_backstop_rescues_fleet():
 
     assert mock_fetch.call_count == 1
     mock_time.sleep.assert_not_called()
+
+
+# --- Run #340: both stale-tail providers failed inside the rollover window ---
+
+
+def test_polygon_backstop_uses_version_independent_rest_api():
+    index = pd.date_range('2026-11-04', '2026-11-05', freq='D')
+    resp = MagicMock()
+    resp.json.return_value = {
+        'results': [
+            {'T': 'VT', 'c': 160.70},
+            {'T': 'BRK.B', 'c': 490.12},
+            {'T': 'UNWANTED', 'c': 12.34},
+            {'T': 'ZERO', 'c': 0},
+        ]
+    }
+    with (
+        patch.dict('os.environ', {'POLYGON_KEY': 'polygon-secret'}, clear=True),
+        patch.object(step03.requests, 'get', return_value=resp) as mock_get,
+    ):
+        retrieved = step03.fetch_polygon_daily_closes(
+            ['VT', 'BRKB', 'ANET'], [pd.Timestamp('2026-11-05')], index
+        )
+
+    assert set(retrieved) == {'VT', 'BRKB'}
+    assert retrieved['VT'].loc['2026-11-05'] == 160.70
+    assert retrieved['BRKB'].loc['2026-11-05'] == 490.12
+    _, kwargs = mock_get.call_args
+    assert kwargs['headers']['Authorization'] == 'Bearer polygon-secret'
+    assert kwargs['params'] == {'adjusted': 'true', 'include_otc': 'false'}
+    assert 'polygon-secret' not in str(kwargs['params'])
+
+
+def test_alpaca_snapshot_backstop_selects_only_the_requested_session():
+    index = pd.date_range('2026-11-04', '2026-11-05', freq='D')
+    resp = MagicMock()
+    resp.json.return_value = {
+        'VT': {
+            'dailyBar': _alpaca_bar('2026-11-06', 999.0),  # forming overnight bar
+            'prevDailyBar': _alpaca_bar('2026-11-05', 160.70),
+        },
+        'BRK.B': {
+            'dailyBar': _alpaca_bar('2026-11-05', 490.12),
+            'prevDailyBar': _alpaca_bar('2026-11-04', 489.00),
+        },
+        'ZERO': {'dailyBar': _alpaca_bar('2026-11-05', 0)},
+    }
+    with (
+        patch.dict('os.environ', ALPACA_ENV, clear=True),
+        patch.object(step03.requests, 'get', return_value=resp) as mock_get,
+    ):
+        retrieved = step03.fetch_alpaca_snapshot_closes(
+            ['VT', 'BRKB', 'ANET'], [pd.Timestamp('2026-11-05')], index
+        )
+
+    assert set(retrieved) == {'VT', 'BRKB'}
+    assert retrieved['VT'].loc['2026-11-05'] == 160.70
+    assert retrieved['BRKB'].loc['2026-11-05'] == 490.12
+    assert mock_get.call_args[0][0] == step03.ALPACA_SNAPSHOTS_URL
+    assert 'feed' not in mock_get.call_args[1]['params']
+
+
+def test_alpaca_snapshot_backstop_chunks_symbol_requests():
+    tickers = [f'T{i}' for i in range(step03.ALPACA_SNAPSHOT_BATCH_SIZE + 1)]
+    with (
+        patch.dict('os.environ', ALPACA_ENV, clear=True),
+        patch.object(step03.requests, 'get', return_value=MagicMock()) as mock_get,
+    ):
+        step03.fetch_alpaca_snapshot_closes(tickers, [pd.Timestamp('2026-11-05')], DATE_INDEX)
+
+    assert mock_get.call_count == 2
+    for call in mock_get.call_args_list:
+        assert len(call[1]['params']['symbols'].split(',')) <= step03.ALPACA_SNAPSHOT_BATCH_SIZE
+
+
+def test_alpaca_snapshots_rescue_tail_when_bulk_bars_fail():
+    frame = _stale_tail_frame()
+    snapshot_fresh = pd.Series(float('nan'), index=STALE_INDEX)
+    snapshot_fresh.loc['2026-09-22'] = 160.70
+    with (
+        patch.object(step03, 'attempt_fallbacks', return_value={}),
+        patch.object(step03, 'fetch_polygon_daily_closes', return_value={}),
+        patch.object(step03, 'fetch_alpaca_daily_closes', return_value={}),
+        patch.object(
+            step03,
+            'fetch_alpaca_snapshot_closes',
+            return_value={'VT': snapshot_fresh, 'ANET': snapshot_fresh},
+        ) as mock_snapshots,
+    ):
+        updated, stale = step03.refresh_stale_tails(
+            frame.copy(), ['VT', 'ANET'], STALE_INDEX, STALE_INDEX[0], STALE_INDEX[-1]
+        )
+
+    assert stale == []
+    mock_snapshots.assert_called_once()
+    assert updated['VT'].loc['2026-09-22'] == 160.70
+    assert updated['ANET'].loc['2026-09-22'] == 160.70
+
+
+def test_alpaca_snapshot_failed_chunk_preserves_other_recoveries(caplog):
+    tickers = [f'T{i}' for i in range(step03.ALPACA_SNAPSHOT_BATCH_SIZE + 1)]
+    last_ticker = sorted(tickers)[-1]
+    resp = MagicMock()
+    resp.json.return_value = {last_ticker: {'dailyBar': _alpaca_bar('2024-01-03', 101.0)}}
+    with (
+        patch.dict('os.environ', ALPACA_ENV, clear=True),
+        patch.object(
+            step03.requests,
+            'get',
+            side_effect=[RuntimeError('boom alpaca-key alpaca-secret'), resp],
+        ),
+        caplog.at_level(logging.WARNING),
+    ):
+        retrieved = step03.fetch_alpaca_snapshot_closes(
+            tickers, [pd.Timestamp('2024-01-03')], DATE_INDEX
+        )
+
+    assert retrieved[last_ticker].loc['2024-01-03'] == 101.0
+    assert len(retrieved) == 1
+    assert 'alpaca-key' not in caplog.text
+    assert 'alpaca-secret' not in caplog.text
+
+
+def test_alpaca_snapshots_correct_same_date_flatlines_when_bulk_bars_fail():
+    index = pd.date_range('2026-11-04', '2026-11-05', freq='D')
+    frame = pd.DataFrame(
+        {'VT': [100.0, 100.0], 'ANET': [50.0, 50.0], '^GSPC': [5000.0, 5050.0]},
+        index=index,
+    )
+    snapshot_fresh = pd.Series(float('nan'), index=index)
+    snapshot_fresh.loc['2026-11-05'] = 101.0
+    with (
+        patch.object(step03, 'fetch_alpaca_daily_closes', return_value={}),
+        patch.object(
+            step03,
+            'fetch_alpaca_snapshot_closes',
+            return_value={'VT': snapshot_fresh, 'ANET': snapshot_fresh},
+        ) as mock_snapshots,
+    ):
+        updated, stale = step03.refresh_stale_tails(
+            frame.copy(), ['VT', 'ANET'], index, index[0], index[-1]
+        )
+
+    assert stale == []
+    mock_snapshots.assert_called_once()
+    assert updated['VT'].loc['2026-11-05'] == 101.0
+    assert updated['ANET'].loc['2026-11-05'] == 101.0
+
+
+def test_rollover_retries_cover_the_full_window():
+    stale = (_fleet_frame('2026-09-18'), [f'T{i}' for i in range(8)], [])
+    fresh = (_fleet_frame('2026-09-22'), [f'T{i}' for i in range(8)], [])
+    now = datetime(2026, 9, 22, 20, 0, tzinfo=ZoneInfo('US/Eastern'))
+
+    mock_fetch, mock_time = _run_main([stale] * 14 + [fresh], now)
+
+    assert mock_fetch.call_count == 15
+    assert mock_time.sleep.call_count == 14
