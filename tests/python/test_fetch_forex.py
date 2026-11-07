@@ -454,3 +454,11 @@ class TestFetchForexDataFallback:
             fetch_forex_data()
 
         assert not fx_path.exists()
+
+
+def test_forex_workflow_pins_supported_python_runtime():
+    """A floating runtime can select an incompatible native-library build."""
+    from pathlib import Path
+
+    workflow = Path(".github/workflows/daily-forex-update.yml").read_text()
+    assert "python-version: '3.12'" in workflow

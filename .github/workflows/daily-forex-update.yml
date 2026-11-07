@@ -34,7 +34,9 @@ jobs:
             - name: Set up Python
               uses: actions/setup-python@v7
               with:
-                  python-version: '3.x' # Use a recent Python 3 version
+                  # Match CI/TWRR: floating 3.x selected Python 3.15 and its
+                  # free-threaded native curl_cffi build, which segfaulted on import.
+                  python-version: '3.12'
 
             - name: Install dependencies
               run: pip install -r requirements.txt
