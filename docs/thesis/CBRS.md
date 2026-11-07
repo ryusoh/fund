@@ -11,7 +11,7 @@
 - **Benchmark (annual)**: 6.5%
 - **Target CAGR (Hurdle)**: 12%
 - **Industry Layer**: none yet (candidate: merchant AI accelerators / inference; overlaps [cloud-ai-ecosystem](industry/cloud-ai-ecosystem.md) and the Ethernet-vs-alternatives battle in [ai-networking](industry/ai-networking.md))
-- **Findings doc**: [docs/research/tickers/cerebras-systems.md](../research/tickers/cerebras-systems.md) (deep-research run, 2026-10-13; confirm pass 6/6 PASS @ 0.80 vs Q2 2026 10-Q + 3 S-1 claims verbatim-confirmed); [docs/research/tickers/cerebras-customer-economics.md](../research/tickers/cerebras-customer-economics.md) (customer-economics deep dive, 2026-10-23)
+- **Findings doc**: [docs/research/tickers/cerebras-systems.md](../research/tickers/cerebras-systems.md) (deep-research run, 2026-10-13; confirm pass 6/6 PASS @ 0.80 vs Q2 2026 10-Q + 3 S-1 claims verbatim-confirmed); [docs/research/tickers/cerebras-customer-economics.md](../research/tickers/cerebras-customer-economics.md) (customer-economics deep dive, 2026-10-23); [docs/research/tickers/cerebras-wafer-scale-rebuttal.md](../research/tickers/cerebras-wafer-scale-rebuttal.md) (Culper/Feldman reliability rebuttal, 2026-11-07; independent confirm pass 0.60–0.80 + direct SEC/exhibit checks)
 
 - **Model Settings**
     - Engine: fermat-pascal-v1
@@ -77,6 +77,7 @@ Valuation-relevant context (as of 2026-10-23; Q2 2026 10-Q fundamentals):
 - Heavy fixed-cost buildout ahead: ~$2.25B of data-center leases signed Q2+Q3 2026 not yet commenced, plus $548.9M H1 capex — H1 2026 FCF ≈ $(596)M (OCF $(47.5)M − capex); the OpenAI loan has been repaid only in $86.3M of non-cash service credits, zero cash.
 - Dilution inventory vs 112.2M Class A: 76.0M anti-dilutive shares + 25.8M unvested customer warrants + 42.7M 2026-Plan + 48.9M ESPP reserves; Class N warrant shares auto-convert 1:1 into voting Class A on transfer.
 - TSMC single-foundry dependence, purchase-order basis, no long-term capacity commitments (10-Q risk factors); wafer supply described as "secured" for growth (Q2'26 release).
+- **Physical life ≠ accounting life ≠ economic life.** Feldman's 2026-11-05 rebuttal cites TSMC 105°C/10-year qualification, CS-3 average junction <65°C / maximum ≤85°C, 33-year Arrhenius life at 85°C and <0.5% deployed-wafer decommissioning, but these remain issuer assertions without independent qualification or age-cohort fleet data. SEC confirms only the separate useful-life disclosure change from computer equipment **1.5–3 years** (2024 S-1) to data-center and computer equipment **3–5 years** (2026 424B4). H1's ~$19.2M inventory charge tied primarily to next-generation transition shows that economic obsolescence can occur without physical failure; reliability relief therefore does not upgrade pricing, utilization or ROIC assumptions.
 
 ### 2.3 Management & capital allocation
 
@@ -231,6 +232,7 @@ Valuation-relevant context (as of 2026-10-23; Q2 2026 10-Q fundamentals):
 - Customer-letter distribution each 10-Q (A/B/C/D shares; AR concentration).
 - AWS revenue emergence (Bedrock integration Q1 2027) and AMD partnership production ramp (Q4 2026).
 - Warrant amortization trajectory and core-vs-GAAP margin bridge each quarter.
+- Reliability and asset returns: TSMC qualification parameters; CS-3 fleet denominator, install-age cohorts, operating hours, failures/free replacements, retirements and residual values; asset-level depreciation sensitivity. Keep these separate from realized $/token, renewal pricing, utilization and cash ROIC.
 
 ### 7.2 Scenario update triggers
 
@@ -251,6 +253,19 @@ Append-only log. Machine-readable records: `data/analysis/CBRS.evidence.jsonl`. 
 - Bear evidence file: `docs/thesis/CBRS/CBRS-bear-evidence.md`
 
 ### 8.2 High-level update entries (reverse chronological)
+
+#### 2026-11-07 – Feldman rebuts Culper; reliability relief is not an ROIC upgrade
+
+- What happened:
+    - Four-track deep research plus fresh-context confirm pass on Feldman's [2026-11-05 CEO response](https://www.cerebras.ai/blog/what-it-took-to-build-wafer-scale-and-why-it-lasts); findings: `docs/research/tickers/cerebras-wafer-scale-rebuttal.md` (commit `ad06a57b`). The response supplies specific company-asserted temperature, Arrhenius and <0.5% fleet-decommissioning evidence against a ~2-year physical-failure claim. SEC confirms the accounting-life change (**1.5–3** to **3–5** years) and the H1 ~$19.2M next-generation inventory charge, but not the technical/fleet figures. Culper's PDF returned 403 in both worker and orchestrator attempts, so secondary numerical retellings remain unverified.
+- Impact on scenarios:
+    - Unchanged: Bull 0.25 / Base 0.40 / Bear 0.35. The existing bear case is OpenAI decode migration + MRA/loan/fixed-cost stress, not Culper physical failure; reliability relief does not transfer probability to Bull.
+- Impact on assumptions:
+    - None to EPS CAGRs, exit P/Es, prediction probabilities or confidence. Add bounded positive reliability evidence and two open questions on independent durability data and commercial ROIC; do not treat this as refuting the separate SemiAnalysis claim.
+- Action:
+    - WATCH, 0 shares. The overdue 2026-10-29 review is closed by this entry; next review remains 2026-11-13 after Q3.
+- TODO:
+    - At Q3, seek TSMC/fleet-age reliability support, warranty/free-replacement and residual-value data, asset-level depreciation sensitivity, and OpenAI $/MW-year economics net of pass-through, service credits and replacement capex. Obtain the original Culper and SemiAnalysis reports before promoting their claims.
 
 #### 2026-10-23 – Customer-economics deep dive + price-drop decomposition
 
@@ -316,6 +331,8 @@ Append-only log. Machine-readable records: `data/analysis/CBRS.evidence.jsonl`. 
     - MRA delivery schedule: verify the article-claimed 250/500/750MW per-year tranches against the 424B4 or MRA exhibit (absent from the 10-Q and April S-1).
     - RPO survivability under OpenAI tranche-termination rights.
     - Utilization chain: which of deployment → utilization → cloud revenue → gross margin is the binding constraint? Q3 print should show whether the 600MW+ contracted capacity converts.
+    - Durability verification: can TSMC qualification parameters and age-stratified CS-3 fleet data independently substantiate Feldman's temperature, Arrhenius and <0.5% decommissioning claims, including whole-system connectors and cooling rather than silicon alone?
+    - Commercial returns after reliability relief: even if physical life exceeds 3–5 years, do realized pricing, renewals, utilization and margins earn above capital cost after capex, leases, pass-through costs, warrants and financing?
     - G42 post-IPO stake and Class N mapping (UNVERIFIED).
 - Planned research:
     - Post-print `/thesis-update CBRS` on Q3 2026 results (~mid-Nov 2026) with confirm pass against the 10-Q.

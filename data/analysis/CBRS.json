@@ -3,7 +3,7 @@
     "name": "Cerebras Systems",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-11-06T15:24:40.629368+00:00",
+        "asOf": "2026-11-07T07:47:31.121588+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -28,29 +28,29 @@
         }
     },
     "market": {
-        "price": 86.93,
+        "price": 89.68,
         "eps": -5.14,
         "forwardEps": 1.2793,
         "pe": null,
-        "forwardPe": 67.9518,
+        "forwardPe": 70.1014,
         "beta": null,
-        "marketCap": 20651442176.0,
+        "marketCap": 21304743936.0,
         "currency": "USD",
-        "marketDataUpdatedAt": "2026-11-06T15:24:40.509961+00:00",
+        "marketDataUpdatedAt": "2026-11-07T07:47:29.803593+00:00",
         "pegRatio": null,
-        "enterpriseValue": 12976881664.0,
+        "enterpriseValue": 14870266880.0,
         "ebitda": -484790016.0,
         "dividendYield": 0.0,
         "fiftyDayAverage": 161.2198,
         "twoHundredDayAverage": 195.2192,
-        "averageVolume": 8876143.0,
-        "averageDailyVolume10Day": 11796800.0,
+        "averageVolume": 8877925.0,
+        "averageDailyVolume10Day": 11808200.0,
         "fiftyTwoWeekHigh": 386.34,
         "fiftyTwoWeekLow": 77.84,
-        "evToEbitda": -26.768
+        "evToEbitda": -30.6736
     },
     "risk": {
-        "volatility": 1.1285,
+        "volatility": 1.134,
         "estimateSource": "historical",
         "correlations": null
     },
@@ -136,7 +136,8 @@
             "Core (non-GAAP) net loss only $(6.9)M in Q2 2026 / $(9.4)M H1 — near breakeven ex-IPO SBC and warrant amortization [10-Q s_0002_c17/19].",
             "Liquidity: $7.4B cash+restricted + $1.2B securities + undrawn $850M revolver at 2026-06-30 [10-Q; confirm pass 80%].",
             "Supply-chain wedge: 'We do not use HBM memory, CoWoS packaging or 3nm fabrication technology, all of which are currently supply limited' [Q2'26 release, verbatim].",
-            "Demand-side scaling evidence: core cloud revenue +287% YoY (Q2'26); >600MW data-center capacity live or under contract for delivery by end-2027; manufacturing capacity scaling >10x in 2026 via new Flex/Sanmina/Rocket EMS lines; TSMC wafer supply secured [Q2'26 earnings release, primary]."
+            "Demand-side scaling evidence: core cloud revenue +287% YoY (Q2'26); >600MW data-center capacity live or under contract for delivery by end-2027; manufacturing capacity scaling >10x in 2026 via new Flex/Sanmina/Rocket EMS lines; TSMC wafer supply secured [Q2'26 earnings release, primary].",
+            "Bounded physical-reliability evidence: Feldman cites TSMC 105C/10-year qualification, CS-3 junction temperatures <65C average/<=85C maximum, Arrhenius estimates of 33 years at 85C, and <0.5% deployed-wafer decommissioning to rebut Culper's ~2-year physical-life claim. These remain issuer assertions without independent qualification or age-cohort fleet data; they do not establish pricing power, utilization, ROIC, OpenAI decode share, or MRA execution [Cerebras CEO blog 2026-11-05; findings ad06a57b]."
         ],
         "evidence_against": [
             "Concentration: Q2 2026 Customer A 34% / B 32% / C 10% (A = MBZUAI by AR cross-reference; B matches OpenAI MRA revenue magnitude); two customers = 76% of receivables [10-Q s_0001_c06/07].",
@@ -161,9 +162,11 @@
             "RPO survivability: how much of the $25.4B is exposed to OpenAI tranche-termination rights?",
             "Utilization chain: deployment → utilization → cloud revenue → gross margin — which step is the current binding constraint? Q3 print should show whether the 600MW+ contracted capacity is converting.",
             "G42 post-IPO equity stake and the G42-to-Class-N non-voting mapping (UNVERIFIED).",
-            "Q3 2026 print (~mid-Nov): core revenue vs the $214-216M guide; first print after the Oct 14/28 lockup windows."
+            "Q3 2026 print (~mid-Nov): core revenue vs the $214-216M guide; first print after the Oct 14/28 lockup windows.",
+            "Durability verification: can TSMC qualification parameters and age-stratified CS-3 fleet data (denominator, operating hours, failures, free replacements, retirements and residual values) independently substantiate Feldman's reliability claims?",
+            "Commercial returns after reliability relief: even if physical life exceeds 3-5 years, do realized $/token, renewal pricing, utilization and margins produce ROIC above capital cost after capex, leases, pass-through costs, customer warrants and financing?"
         ],
-        "as_of": "2026-10-23T00:00:00Z"
+        "as_of": "2026-11-07T00:00:00Z"
     },
     "predictions": [
         {
@@ -265,6 +268,23 @@
                 "Q3 print (Nov 12) meets/exceeds guide and Oct 28 + Nov 9 supply is absorbed; ambiguity resolves post-print": 0.4,
                 "Guide-consistent print but continued overhang/ambiguity keeps the stock ranging toward the $50-70 zone": 0.35,
                 "Q3 miss or MRA/Ultrafast disclosure breaks the anchor; de-rating accelerates": 0.25
+            },
+            "review_date": "2026-11-13"
+        },
+        {
+            "date": "2026-11-07",
+            "action": "WATCH",
+            "shares_changed": 0,
+            "situation": "Deep research on Feldman's 2026-11-05 rebuttal to Culper (findings: docs/research/tickers/cerebras-wafer-scale-rebuttal.md; committed ad06a57b). Fresh-context confirm pass verified the SEC financial, contract and accounting claims at 0.60-0.80 or by direct SEC/exhibit inspection. The CEO's temperature, Arrhenius and <0.5% decommissioning figures remain issuer assertions; Culper's original PDF was inaccessible and its secondary numerical retellings remain unverified. The response weakens a peripheral two-year physical-failure argument but does not alter the existing bear mechanism (OpenAI decode migration, MRA termination/loan acceleration and fixed costs) or establish pricing power and ROIC.",
+            "alternatives_rejected": [
+                "Raise Bull probabilities or commercial assumptions because Feldman disputed two-year physical failure (rejected: physical durability, accounting useful life and economic returns are different claims; no new delivery, pricing, utilization or ROIC evidence).",
+                "Treat the Culper rebuttal as resolution of the separate SemiAnalysis Nvidia-for-decode claim (rejected: different evidence chain and falsifier; the original SemiAnalysis source remains unread).",
+                "Resolve any existing dated prediction early (rejected: none of the five resolution criteria intersects with the reliability post)."
+            ],
+            "expected_outcomes": {
+                "Bull: committed capacity and optionality deliver with durable commercial returns": 0.25,
+                "Base: committed capacity delivers while optionality lapses and pricing erodes": 0.4,
+                "Bear: OpenAI decode migration or delivery failure breaks the anchor economics": 0.35
             },
             "review_date": "2026-11-13"
         }
