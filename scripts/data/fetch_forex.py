@@ -3,7 +3,7 @@ import json
 import os
 import shutil
 import tempfile
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 import pandas as pd
 import yfinance as yf
@@ -21,8 +21,8 @@ FX_DAILY_RATES_FILE = os.path.join(DATA_DIR, "fx_daily_rates.csv")
 DEFAULT_CURRENCIES = ["CNY", "JPY", "KRW"]
 
 
-def update_fx_daily_csv(rates: dict[str, float]) -> None:
-    today = datetime.now(timezone.utc).date().strftime("%Y-%m-%d")
+def update_fx_daily_csv(rates: dict[str, float], on_date: str | None = None) -> None:
+    today = on_date or datetime.now(timezone.utc).date().strftime("%Y-%m-%d")
 
     if os.path.exists(FX_DAILY_RATES_FILE):
         df = pd.read_csv(FX_DAILY_RATES_FILE)
@@ -119,6 +119,78 @@ def _fetch_single(currency: str) -> float | None:
         return None
 
 
+def backfill_missing_daily_rates(today: date | None = None) -> None:
+    """Fill the latest trailing or interior calendar-day gap from daily closes.
+
+    Forex markets do not provide new bars on weekends. Carrying the latest
+    available close across those days matches the existing daily updater.
+    """
+    if not os.path.exists(FX_DAILY_RATES_FILE):
+        return
+    try:
+        df = pd.read_csv(FX_DAILY_RATES_FILE)
+        df["date"] = pd.to_datetime(df["date"], errors="coerce")
+        df = df.dropna(subset=["date"]).sort_values("date")
+        if df.empty:
+            return
+        dates = df["date"].drop_duplicates().tolist()
+        last_date = dates[-1].date()
+        currencies = [c for c in df.columns if c.lower() not in {"date", "usd"}]
+    except Exception as e:
+        print(f"Warning: could not inspect Forex history for backfill: {e}")
+        return
+
+    today = today or datetime.now(timezone.utc).date()
+    first_missing = last_date + timedelta(days=1)
+    # A successful latest-only run can leave the outage gap immediately before
+    # the newest row. Recover that gap without rewriting older sparse history.
+    if len(dates) > 1 and (dates[-1] - dates[-2]).days > 1:
+        first_missing = dates[-2].date() + timedelta(days=1)
+    if first_missing >= today or not currencies:
+        return
+    baseline_date = first_missing - timedelta(days=1)
+
+    history: dict[str, pd.Series] = {}
+    for currency in currencies:
+        ticker = f"USD{currency}=X"
+        try:
+            data = yf.download(
+                ticker,
+                start=baseline_date.isoformat(),
+                end=(today + timedelta(days=1)).isoformat(),
+                progress=False,
+            )
+            close = data["Close"] if "Close" in data.columns else data
+            if isinstance(close, pd.DataFrame):
+                close = close.iloc[:, 0]
+            close.index = pd.to_datetime(close.index)
+            series = close.dropna()
+            if not series.empty:
+                history[currency] = series
+        except Exception as e:
+            print(f"Warning: historical fetch failed for USD/{currency}: {e}")
+
+    recovered = 0
+    for timestamp in pd.date_range(first_missing, today - timedelta(days=1), freq="D"):
+        target_date = timestamp.date()
+        rates: dict[str, float] = {"USD": 1.0}
+        for currency in currencies:
+            series = history.get(currency)
+            if series is None:
+                continue
+            eligible = series[series.index.date <= target_date]
+            if not eligible.empty:
+                rates[currency] = round(float(eligible.iloc[-1]), 6)
+        if len(rates) != len(currencies) + 1:
+            print(f"Warning: incomplete historical rates for {target_date}; leaving a gap")
+            continue
+        update_fx_daily_csv(rates, on_date=target_date.isoformat())
+        recovered += 1
+
+    if recovered:
+        print(f"Backfilled {recovered} missing Forex daily rows")
+
+
 def fetch_forex_data() -> None:
     print("Fetching forex data...")
     json_rates = {"USD": 1.0}
@@ -212,4 +284,5 @@ def fetch_forex_data() -> None:
 
 
 if __name__ == "__main__":
+    backfill_missing_daily_rates()
     fetch_forex_data()
