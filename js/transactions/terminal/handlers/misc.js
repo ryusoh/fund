@@ -79,13 +79,8 @@ export async function handleAllTimeCommand(args, { appendMessage, filterAndSort,
     appendMessage(result);
 }
 
-export async function handleAllStockCommand(
-    args,
-    { appendMessage, filterAndSort, chartManager, terminalInput }
-) {
-    const currentTerm = transactionState.activeFilterTerm || '';
+function _cleanTermFromTickers(currentTerm, activeTickers) {
     const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\\]/g, '\\$&');
-    const activeTickers = transactionState.compositionFilterTickers || [];
     let cleanedTerm = currentTerm
         .replace(/^\s*(stock|etf)\s*:?/gi, ' ')
         .replace(/\b(stock|etf)\b/gi, ' ')
@@ -103,17 +98,20 @@ export async function handleAllStockCommand(
             .replace(/\s+/g, ' ')
             .trim();
     });
-    if (terminalInput) {
-        terminalInput.value = cleanedTerm;
-    }
+    return cleanedTerm;
+}
+
+function _handleAllStockUpdate(chartManager, cleanedTerm, filterAndSort) {
     setCompositionFilterTickers([]);
     setCompositionAssetClassFilter(null);
     filterAndSort(cleanedTerm);
     if (isActiveChartVisible() && chartManager && typeof chartManager.update === 'function') {
         chartManager.update();
     }
-    let result = 'Cleared composition ticker filters.';
+}
 
+async function _getAllStockResultMsg() {
+    let result = 'Cleared composition ticker filters.';
     if (isTransactionTableVisible()) {
         const statsText = await getDynamicStatsText(transactionState.selectedCurrency || 'USD');
         if (statsText) {
@@ -125,6 +123,21 @@ export async function handleAllStockCommand(
             result += `\n${summary}`;
         }
     }
+    return result;
+}
+
+export async function handleAllStockCommand(
+    args,
+    { appendMessage, filterAndSort, chartManager, terminalInput }
+) {
+    const currentTerm = transactionState.activeFilterTerm || '';
+    const activeTickers = transactionState.compositionFilterTickers || [];
+    const cleanedTerm = _cleanTermFromTickers(currentTerm, activeTickers);
+    if (terminalInput) {
+        terminalInput.value = cleanedTerm;
+    }
+    _handleAllStockUpdate(chartManager, cleanedTerm, filterAndSort);
+    const result = await _getAllStockResultMsg();
     appendMessage(result);
 }
 
