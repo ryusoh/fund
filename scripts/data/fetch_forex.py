@@ -3,6 +3,7 @@ import json
 import os
 import shutil
 import tempfile
+import time
 from datetime import date, datetime, timedelta, timezone
 
 import pandas as pd
@@ -119,6 +120,40 @@ def _fetch_single(currency: str) -> float | None:
         return None
 
 
+def _fetch_historical_close(
+    currency: str, baseline_date: date, today: date, max_attempts: int = 3
+) -> pd.Series | None:
+    """Fetch one currency's history, retrying transient failures with backoff."""
+    ticker = f"USD{currency}=X"
+    reason = "no data returned"
+    for attempt in range(1, max_attempts + 1):
+        try:
+            data = yf.download(
+                ticker,
+                start=baseline_date.isoformat(),
+                end=(today + timedelta(days=1)).isoformat(),
+                progress=False,
+            )
+            close = data["Close"] if "Close" in data.columns else data
+            if isinstance(close, pd.DataFrame):
+                close = close.iloc[:, 0]
+            close.index = pd.to_datetime(close.index)
+            series = close.dropna()
+            if not series.empty:
+                return series
+            reason = "no data returned"
+        except Exception as e:
+            reason = str(e)
+        if attempt < max_attempts:
+            time.sleep(2 ** (attempt - 1))
+
+    print(
+        f"Warning: historical fetch failed for USD/{currency} "
+        f"after {max_attempts} attempts: {reason}"
+    )
+    return None
+
+
 def backfill_missing_daily_rates(today: date | None = None) -> None:
     """Fill the latest trailing or interior calendar-day gap from daily closes.
 
@@ -152,23 +187,9 @@ def backfill_missing_daily_rates(today: date | None = None) -> None:
 
     history: dict[str, pd.Series] = {}
     for currency in currencies:
-        ticker = f"USD{currency}=X"
-        try:
-            data = yf.download(
-                ticker,
-                start=baseline_date.isoformat(),
-                end=(today + timedelta(days=1)).isoformat(),
-                progress=False,
-            )
-            close = data["Close"] if "Close" in data.columns else data
-            if isinstance(close, pd.DataFrame):
-                close = close.iloc[:, 0]
-            close.index = pd.to_datetime(close.index)
-            series = close.dropna()
-            if not series.empty:
-                history[currency] = series
-        except Exception as e:
-            print(f"Warning: historical fetch failed for USD/{currency}: {e}")
+        series = _fetch_historical_close(currency, baseline_date, today)
+        if series is not None:
+            history[currency] = series
 
     recovered = 0
     for timestamp in pd.date_range(first_missing, today - timedelta(days=1), freq="D"):

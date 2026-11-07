@@ -278,13 +278,46 @@ def test_backfill_leaves_gap_when_history_is_unavailable(tmp_path, monkeypatch):
     csv_path = tmp_path / "fx_daily_rates.csv"
     csv_path.write_text("date,USD,JPY\n2026-10-29,1.000000,149.000000\n")
     monkeypatch.setattr("scripts.data.fetch_forex.FX_DAILY_RATES_FILE", str(csv_path))
-    monkeypatch.setattr(
-        "scripts.data.fetch_forex.yf.download",
-        lambda *args, **kwargs: pd.DataFrame({"Close": pd.Series(dtype=float)}),
-    )
+    mock_download = MagicMock(return_value=pd.DataFrame({"Close": pd.Series(dtype=float)}))
+    monkeypatch.setattr("scripts.data.fetch_forex.yf.download", mock_download)
+    sleeps = []
+    monkeypatch.setattr("scripts.data.fetch_forex.time.sleep", sleeps.append)
 
     backfill_missing_daily_rates(today=date(2026, 10, 31))
     assert pd.read_csv(csv_path)["date"].tolist() == ["2026-10-29"]
+    assert mock_download.call_count == 3
+    assert sleeps == [1, 2]
+
+
+def test_backfill_retries_transient_failures_and_empty_responses(tmp_path, monkeypatch):
+    from datetime import date
+
+    from scripts.data.fetch_forex import backfill_missing_daily_rates
+
+    csv_path = tmp_path / "fx_daily_rates.csv"
+    csv_path.write_text("date,USD,JPY\n2026-10-29,1.000000,149.000000\n")
+    monkeypatch.setattr("scripts.data.fetch_forex.FX_DAILY_RATES_FILE", str(csv_path))
+    calls = []
+    sleeps = []
+
+    def fake_download(*args, **kwargs):
+        calls.append(args)
+        if len(calls) == 1:
+            raise RuntimeError("temporary outage")
+        if len(calls) == 2:
+            return pd.DataFrame({"Close": pd.Series(dtype=float)})
+        return pd.DataFrame(
+            {"Close": [150.5]},
+            index=pd.DatetimeIndex(["2026-10-30"]),
+        )
+
+    monkeypatch.setattr("scripts.data.fetch_forex.yf.download", fake_download)
+    monkeypatch.setattr("scripts.data.fetch_forex.time.sleep", sleeps.append)
+
+    backfill_missing_daily_rates(today=date(2026, 10, 31))
+    assert len(calls) == 3
+    assert sleeps == [1, 2]
+    assert pd.read_csv(csv_path)["JPY"].tolist() == pytest.approx([149.0, 150.5])
 
 
 def test_backfill_skips_history_without_valid_dates(tmp_path, monkeypatch):
@@ -349,14 +382,16 @@ def test_backfill_leaves_gap_when_historical_fetch_fails(tmp_path, monkeypatch, 
     csv_path = tmp_path / "fx_daily_rates.csv"
     csv_path.write_text("date,USD,JPY\n2026-10-29,1.000000,149.000000\n")
     monkeypatch.setattr("scripts.data.fetch_forex.FX_DAILY_RATES_FILE", str(csv_path))
-    monkeypatch.setattr(
-        "scripts.data.fetch_forex.yf.download",
-        lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("history unavailable")),
-    )
+    mock_download = MagicMock(side_effect=RuntimeError("history unavailable"))
+    monkeypatch.setattr("scripts.data.fetch_forex.yf.download", mock_download)
+    sleeps = []
+    monkeypatch.setattr("scripts.data.fetch_forex.time.sleep", sleeps.append)
 
     backfill_missing_daily_rates(today=date(2026, 10, 31))
     assert pd.read_csv(csv_path)["date"].tolist() == ["2026-10-29"]
-    assert "historical fetch failed for USD/JPY" in capsys.readouterr().out
+    assert mock_download.call_count == 3
+    assert sleeps == [1, 2]
+    assert "after 3 attempts" in capsys.readouterr().out
 
 
 # ---------------------------------------------------------------------------
