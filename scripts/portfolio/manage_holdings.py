@@ -79,6 +79,31 @@ def record_transaction(
         logging.error(f"Unable to record transaction in {filepath}: {exc}")
 
 
+def _convert_list_format(loaded_data: list, filepath: Path) -> HoldingsType:
+    print(f"Note: Converting holdings data from list format in {filepath} to dictionary format.")
+    holdings_dict: HoldingsType = {}
+    for item in loaded_data:
+        ticker = item.get("ticker")
+        shares = item.get("shares")
+        cost = item.get("cost")
+        if ticker and shares is not None and cost is not None:
+            holdings_dict[ticker.upper()] = {
+                "shares": Decimal(str(shares)),
+                "average_price": Decimal(str(cost)),
+            }
+    save_holdings(filepath, holdings_dict)
+    return holdings_dict
+
+
+def _process_dict_format(loaded_data: dict) -> HoldingsType:
+    for _ticker, details in loaded_data.items():
+        if "shares" in details:
+            details["shares"] = Decimal(str(details["shares"]))
+        if "average_price" in details:
+            details["average_price"] = Decimal(str(details["average_price"]))
+    return loaded_data
+
+
 def load_holdings(filepath: Path) -> HoldingsType:
     if not filepath.exists():
         logging.info(f"Holdings file {filepath} not found. Starting with empty holdings.")
@@ -87,30 +112,10 @@ def load_holdings(filepath: Path) -> HoldingsType:
         with filepath.open("r", encoding="utf-8") as f:
             loaded_data = json.load(f)
 
-        holdings_dict: HoldingsType = {}
-
         if isinstance(loaded_data, list):
-            print(
-                f"Note: Converting holdings data from list format in {filepath} to dictionary format."
-            )
-            for item in loaded_data:
-                ticker = item.get("ticker")
-                shares = item.get("shares")
-                cost = item.get("cost")
-                if ticker and shares is not None and cost is not None:
-                    holdings_dict[ticker.upper()] = {
-                        "shares": Decimal(str(shares)),
-                        "average_price": Decimal(str(cost)),
-                    }
-            save_holdings(filepath, holdings_dict)
-            return holdings_dict
+            return _convert_list_format(loaded_data, filepath)
         elif isinstance(loaded_data, dict):
-            for _ticker, details in loaded_data.items():
-                if "shares" in details:
-                    details["shares"] = Decimal(str(details["shares"]))
-                if "average_price" in details:
-                    details["average_price"] = Decimal(str(details["average_price"]))
-            return loaded_data
+            return _process_dict_format(loaded_data)
         else:
             logging.warning(
                 f"Holdings file {filepath} contains data in an unexpected format. Starting with empty holdings."
