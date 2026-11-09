@@ -37,13 +37,13 @@
         "@stylistic/stylelint-plugin": "^5.3.1",
         "@testing-library/jest-dom": "^7.0.1",
         "babel-jest": "^30.5.2",
-        "d3-color": "^3.1.0",
-        "d3-fetch": "^3.0.1",
-        "d3-selection": "^3.0.0",
+        "d3-color": "^3.1.1",
+        "d3-fetch": "^3.0.2",
+        "d3-selection": "^3.0.1",
         "dayjs": "^1.11.23",
-        "dependency-cruiser": "^18.7.0",
+        "dependency-cruiser": "^18.7.2",
         "esbuild": "^0.28.2",
-        "eslint": "^10.13.0",
+        "eslint": "^10.14.0",
         "eventemitter3": "^5.0.4",
         "husky": "^9.1.6",
         "jest": "^30.5.2",
@@ -51,12 +51,12 @@
         "lint-staged": "^17.6.0",
         "lodash-es": "^4.18.1",
         "markdownlint-cli2": "^0.24.0",
-        "playwright": "^1.64.1",
+        "playwright": "^1.65.0",
         "prettier": "^3.9.10",
         "sharp": "^0.35.5",
         "stylelint": "^17.16.0",
         "typescript": "^7.0.2",
-        "wrangler": "^4.156.0"
+        "wrangler": "^4.158.0"
     },
     "lint-staged": {
         "*.js": [
