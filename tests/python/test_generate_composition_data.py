@@ -1,4 +1,5 @@
 import json
+import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -9,6 +10,7 @@ import pytest
 # Add scripts directory to path to import generate_composition_data
 sys.path.append(str(Path(__file__).parent.parent.parent / "scripts"))
 from generate_composition_data import calculate_daily_composition, save_json_data
+from generate_deploy_figures import generate_deploy_figures  # noqa: E402
 from validate_frontend_figures import (  # noqa: E402
     FIGURE_FILENAMES,
     compare_figures,
@@ -282,3 +284,91 @@ def test_figure_directory_cli_fails_on_missing_file(valid_figure, tmp_path, caps
     (tmp_path / "sectors.json").write_text(json.dumps(valid_figure))
     assert validate_main([str(tmp_path)]) == 1
     assert "marketcap.json" in capsys.readouterr().err
+
+
+@pytest.fixture
+def figure_tree(tmp_path):
+    """Minimal synthetic project tree able to run both figure generators."""
+    (tmp_path / "data/checkpoints").mkdir(parents=True)
+    (tmp_path / "data/output/figures").mkdir(parents=True)
+
+    holdings = pd.DataFrame(
+        {"AAPL": [10.0, 10.0], "VT": [5.0, 5.0]},
+        index=pd.to_datetime(["2023-01-01", "2023-01-02"]),
+    )
+    holdings.to_parquet(tmp_path / "data/checkpoints/holdings_daily.parquet")
+    (tmp_path / "data/historical_prices.json").write_text(
+        json.dumps(
+            {
+                "AAPL": {"2023-01-01": 150.0, "2023-01-02": 160.0},
+                "VT": {"2023-01-01": 100.0, "2023-01-02": 110.0},
+            }
+        )
+    )
+    (tmp_path / "data/ticker_metadata.json").write_text(
+        json.dumps({"AAPL": {"sector": "Technology"}})
+    )
+    (tmp_path / "data/fund_sector_allocations.json").write_text(
+        json.dumps({"VT": {"Technology": 60.0, "Financials": 40.0}})
+    )
+    (tmp_path / "data/fund_marketcap_breakdown.json").write_text(
+        json.dumps({"VT": {"Large Cap": 100}})
+    )
+    return tmp_path
+
+
+def test_deploy_figures_clean_generation(figure_tree):
+    regenerated = generate_deploy_figures(root=figure_tree)
+    assert set(regenerated) == set(FIGURE_FILENAMES)
+    assert validate_figure_directory(figure_tree / "data/output/figures") == []
+
+
+def test_deploy_figures_baseline_comparison_parity(figure_tree):
+    figures_dir = figure_tree / "data/output/figures"
+
+    # First clean run supplies committed baselines.
+    first = generate_deploy_figures(root=figure_tree)
+    baselines = {name: json.loads((figures_dir / name).read_text()) for name in FIGURE_FILENAMES}
+    assert baselines == first
+
+    # Exact composition/marketcap parity plus sectors round-off tolerance pass.
+    tolerated = json.loads(json.dumps(baselines))
+    sector_name = next(iter(tolerated["sectors.json"]["series"]))
+    tolerated["sectors.json"]["series"][sector_name][0] += 1e-13
+    for name, payload in tolerated.items():
+        (figures_dir / name).write_text(json.dumps(payload))
+    generate_deploy_figures(root=figure_tree)
+
+
+def test_deploy_figures_detects_baseline_drift(figure_tree):
+    figures_dir = figure_tree / "data/output/figures"
+    generate_deploy_figures(root=figure_tree)
+    drifted = json.loads((figures_dir / "composition.json").read_text())
+    drifted["total_values"][0] += 1.0
+    (figures_dir / "composition.json").write_text(json.dumps(drifted))
+    with pytest.raises(ValueError, match="composition.json"):
+        generate_deploy_figures(root=figure_tree)
+
+
+def test_deploy_figures_rejects_partial_baselines(figure_tree):
+    figures_dir = figure_tree / "data/output/figures"
+    (figures_dir / "composition.json").write_text(json.dumps({"placeholder": True}))
+    with pytest.raises(ValueError, match="partial committed figures"):
+        generate_deploy_figures(root=figure_tree)
+    # Generators must not have run: no other figure was produced.
+    assert sorted(p.name for p in figures_dir.iterdir()) == ["composition.json"]
+
+
+def test_deploy_figures_propagates_generator_failure(figure_tree):
+    (figure_tree / "data/fund_marketcap_breakdown.json").unlink()
+    with pytest.raises(subprocess.CalledProcessError):
+        generate_deploy_figures(root=figure_tree)
+
+
+def test_deploy_figures_propagates_validator_failure(figure_tree, monkeypatch):
+    def broken_validate(payload, filename="figure.json"):
+        raise ValueError(f"{filename}: injected failure")
+
+    monkeypatch.setattr("generate_deploy_figures.validate_figure", broken_validate)
+    with pytest.raises(ValueError, match="injected failure"):
+        generate_deploy_figures(root=figure_tree)
