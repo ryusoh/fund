@@ -11,7 +11,7 @@
   },
   "js/transactions/chart/renderers/concentration.js": {
     "complexity": {
-      "count": 2
+      "count": 1
     }
   },
   "js/transactions/chart/renderers/contribution.js": {
