@@ -5,7 +5,6 @@ Uses composition.json data and fund_marketcap_breakdown.json to calculate market
 """
 
 import json
-import sys
 from pathlib import Path
 
 
@@ -16,8 +15,7 @@ def main():
     # Load composition data
     composition_path = Path('data/output/figures/composition.json')
     if not composition_path.exists():
-        print(f"⚠ {composition_path} not found, skipping market cap generation")
-        return True
+        raise FileNotFoundError(f"{composition_path} not found")
 
     with open(composition_path, 'r') as f:
         composition_data = json.load(f)
@@ -25,8 +23,7 @@ def main():
     # Load fund breakdowns
     fund_mc_path = Path('data/fund_marketcap_breakdown.json')
     if not fund_mc_path.exists():
-        print(f"⚠ {fund_mc_path} not found, skipping market cap generation")
-        return True
+        raise FileNotFoundError(f"{fund_mc_path} not found")
 
     with open(fund_mc_path, 'r') as f:
         fund_market_caps = json.load(f)
@@ -115,10 +112,4 @@ def main():
 
 
 if __name__ == '__main__':
-    try:
-        success = main()
-        sys.exit(0 if success else 1)
-    except Exception as e:
-        print(f"⚠ Market cap generation failed: {e}")
-        print("  Keeping existing data (fail-open mechanism)")
-        sys.exit(0)  # Exit with success to keep workflow going
+    main()

@@ -7,12 +7,8 @@ from scripts.generate_marketcap_from_composition import main
 class TestGenerateMarketcapFromComposition(unittest.TestCase):
     def test_missing_composition_file(self):
         with patch('scripts.generate_marketcap_from_composition.Path.exists', return_value=False):
-            with patch('builtins.print') as mock_print:
-                result = main()
-                self.assertTrue(result)
-                mock_print.assert_any_call(
-                    "⚠ data/output/figures/composition.json not found, skipping market cap generation"
-                )
+            with self.assertRaises(FileNotFoundError):
+                main()
 
     def test_missing_fund_mc_file(self):
         with patch('scripts.generate_marketcap_from_composition.Path.exists') as mock_exists:
@@ -22,12 +18,8 @@ class TestGenerateMarketcapFromComposition(unittest.TestCase):
                 'builtins.open',
                 mock_open(read_data='{"dates": [], "series": {}, "total_values": []}'),
             ):
-                with patch('builtins.print') as mock_print:
-                    result = main()
-                    self.assertTrue(result)
-                    mock_print.assert_any_call(
-                        "⚠ data/fund_marketcap_breakdown.json not found, skipping market cap generation"
-                    )
+                with self.assertRaises(FileNotFoundError):
+                    main()
 
     @patch('scripts.generate_marketcap_from_composition.Path.exists')
     @patch('scripts.generate_marketcap_from_composition.Path.mkdir')
@@ -136,33 +128,11 @@ class TestGenerateMarketcapFromComposition(unittest.TestCase):
 
         namespace = {'__name__': '__main__'}
 
-        with patch('sys.exit') as mock_exit:
-            with patch(
-                'scripts.generate_marketcap_from_composition.Path.exists', return_value=False
-            ):
-                with patch('builtins.print'):
-                    exec(code, namespace)
-            mock_exit.assert_called_with(0)
-
-        with patch('sys.exit') as mock_exit:
-            with patch('builtins.print'):
-                # Force failure return
-                code_replace_main = code.replace("success = main()", "success = False")
-                exec(code_replace_main, namespace)
-            mock_exit.assert_called_with(1)
-
-        with patch('sys.exit') as mock_exit:
-            with patch(
-                'scripts.generate_marketcap_from_composition.Path.exists',
-                side_effect=Exception("Test Exception"),
-            ):
-                with patch('builtins.print') as mock_print:
-                    try:
-                        exec(code, namespace)
-                    except Exception:
-                        pass
-                    mock_exit.assert_called_with(0)
-                    mock_print.assert_any_call("⚠ Market cap generation failed: Test Exception")
+        # Missing inputs now fail closed: the exception propagates out of
+        # __main__ instead of exiting 0 and preserving stale output.
+        with patch('scripts.generate_marketcap_from_composition.Path.exists', return_value=False):
+            with self.assertRaises(FileNotFoundError):
+                exec(code, namespace)
 
 
 if __name__ == '__main__':
