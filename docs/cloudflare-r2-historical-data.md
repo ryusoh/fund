@@ -262,72 +262,120 @@ Confirmed constraints and current baselines:
 - **Guardrail:** Do not change the full checkouts in CI, diff-coverage, or
   mutation-testing workflows; those have separate history requirements.
 
-### AI-2 [skip] — Generate bounded price shards during Pages deployment
+### AI-2 implementation sequence — bounded price loading
 
-- **Files:** `.github/workflows/pages.yml`, `.gitignore`, new
-  `scripts/prepare_historical_price_shards.py`,
-  `tests/python/test_prepare_frontend_data.py`,
-  `js/transactions/dataLoader.js`,
-  `js/transactions/chart/renderers/contribution.js`,
+Run these items in order. **Price verification bundle (P)** means:
+
+```bash
+venv/bin/python -m pytest tests/python/test_prepare_frontend_data.py
+npx jest tests/js/transactions/dataLoader.test.js tests/js/transactions/chart/data/contribution.test.js tests/js/transactions/chart/renderers/contribution.test.js tests/js/transactions/terminal/snapshots.test.js tests/js/transactions/terminal/snapshots_coverage.test.js tests/js/transactions/terminal/snapshots_more.test.js --runInBand
+npx prettier --check .github/workflows/analysis-sync.yml .github/workflows/pages.yml .github/workflows/twrr-refresh.yaml
+make smoke
+```
+
+#### AI-2A [low] — Add the deploy-only shard generator
+
+- **Files:** new `scripts/prepare_historical_price_shards.py` and existing
+  `tests/python/test_prepare_frontend_data.py`.
+- **Find:** `def test_prepare_historical_prices_missing_parquet(self, mock_exists):`
+  in the test file.
+- **Change:** Implement `write_price_shards(source_path, output_dir)` using only
+  the standard library and test it in the existing frontend-data test file. Add
+  a CLI with positional source/output arguments defaulting to
+  `data/historical_prices.json` and `data/historical_prices`.
+- **Contract:**
+    1. Read the raw monolith as UTF-8 JSON. Require a top-level object whose
+       values are date-map objects; reject malformed input and non-finite numbers.
+       Do not import pandas or read Parquet.
+    2. For each symbol, serialize its date map directly with sorted keys, compact
+       separators, and `allow_nan=False`. The shard body is the date map itself,
+       not another symbol wrapper. Name it `<sha256-of-exact-shard-bytes>.json`.
+    3. Write `index.json` last with `schema_version` integer `1`,
+       `source_sha256` for the source bytes, and `symbols`. Each `symbols` entry
+       maps a symbol to `{file, sha256}`. Add an entry for
+       `symbol.replace('-', '').upper()` pointing to the same shard. Sort manifest
+       keys so repeated runs are byte-identical.
+    4. Create the output directory if needed and remove stale `.json` files only
+       inside that dedicated generated directory. Write shards before the
+       manifest. Return the parsed manifest. Keep the source monolith unchanged.
+- **Tests:** Exact symbol/date/value parity; deterministic hashes across
+  different insertion orders; normalized aliases sharing one file; malformed
+  input and non-finite rejection; rerun removing a stale shard; source hash and
+  source bytes unchanged. Use `tempfile.TemporaryDirectory` in the existing
+  `unittest.TestCase` tests.
+- **Verify:** Price bundle (P).
+- **Guardrail:** The raw monolith is the only exact source; never use
+  `prepare_historical_prices()` or the filled Parquet.
+
+#### AI-2B [low] — Add the shared single-flight price loader
+
+- **Files:** `js/transactions/dataLoader.js` and
+  `tests/js/transactions/dataLoader.test.js`.
+- **Find:** `let balanceSeriesPayloadPromise = null;` and
+  `describe('snapshot data loaders', () => {`.
+- **Change:** Export `loadHistoricalPrices(transactions)` and import
+  `transactionState` plus `setHistoricalPrices` from `state.js`.
+- **Contract:**
+    1. Normalize and deduplicate `transaction.security` with uppercase and dash
+       removal. Return the current price object immediately for an empty request.
+       Do not inspect the filter text.
+    2. Cache one manifest promise, one promise per normalized symbol, and one
+       monolith promise at module scope. Load
+       `../data/historical_prices/index.json` with `{ cache: 'no-cache' }`.
+       Require schema version 1 and shard filenames matching exactly 64 lowercase
+       hex characters plus `.json`. Fetch missing shards in parallel.
+    3. Store each loaded date map under its normalized symbol. Merge into a new
+       object only when a previously absent symbol arrives, using the latest
+       `transactionState.historicalPrices` so concurrent calls cannot remove one
+       another's symbols. Otherwise return the identical existing object.
+    4. Cache null results for failed requests for the page session. Fall back to
+       `../data/historical_prices.json` once only for an unavailable/invalid
+       manifest or a failed referenced shard. A symbol absent from a valid
+       manifest is a no-data result and must not trigger the monolith.
+- **Tests:** Empty input; concurrent same-symbol and disjoint-symbol calls;
+  multi-ticker loading; alias deduplication; manifest/schema/path validation;
+  absent symbol without fallback; broken shard with one fallback; failed
+  requests without a retry storm; object identity on cache hits and union on
+  disjoint completions.
+- **Verify:** Price bundle (P).
+- **Guardrail:** Do not mutate an already cached price object; the contribution
+  pipeline cache keys on its identity.
+
+#### AI-2C [low] — Route both filtered consumers through the loader
+
+- **Files:** `js/transactions/chart/renderers/contribution.js`,
   `js/transactions/terminal/snapshots.js`, and their existing Jest suites.
-- **Find:** `- name: Stamp service worker cache version`;
-  `data/analysis/theme_timeline.json`;
-  `let balanceSeriesPayloadPromise = null;`; and
-  `const response = await fetch('../data/historical_prices.json');` at both
-  browser call sites.
-- **Change:** Split the existing raw JSON into deploy-only, content-hashed
-  per-symbol artifacts and add one shared, single-flight loader used by both
-  consumers. Do not generate or commit shards in `step03`.
-- **Design:**
-    1. Use only the Python standard library. Read
-       `data/historical_prices.json`, preserve every symbol/date/value without
-       arithmetic, and serialize each symbol's date map compactly. Name each
-       shard after its content SHA-256 and write `index.json` last with
-       `schema_version=1`, the source SHA-256, and a symbol-to-shard map. Include
-       normalized ticker aliases in the map. Content hashes prevent mixed-release
-       responses without retaining old releases in the Pages artifact.
-    2. Add `data/historical_prices/` to `.gitignore`. In Pages, set up Python
-       3.11 and run the generator after checkout but before service-worker
-       stamping and artifact upload. No pip packages are needed. The monolith
-       remains tracked and deployed for Python compatibility and legacy fallback.
-    3. In `dataLoader.js`, cache one manifest promise, one promise per shard, and
-       one legacy-monolith promise. Derive requested symbols from
-       `filteredTransactions`, not the filter text, and fetch missing shards in
-       parallel. Validate the manifest schema before using it.
-    4. Merge loaded series into `transactionState.historicalPrices`. Return the
-       existing object unchanged when no new series arrives; otherwise set a new
-       object containing the union of the latest state and loaded series. This
-       prevents stale concurrent responses from dropping symbols and avoids
-       invalidating the contribution pipeline cache on every frame. Cache failed
-       promises for the page session so a failed render cannot trigger a fetch
-       storm; reload the page to retry.
-    5. Fall back to the monolith only when the manifest is unavailable/invalid
-       or a referenced shard fails. A symbol absent from a valid manifest is a
-       real no-data case: do not download the monolith. `CHX` currently exercises
-       this path and must continue using transaction-price fallback.
-    6. Replace both browser fetch blocks with the shared loader. Keep the
-       existing raw-price gaps, ticker normalization, 10-day lookup fallback,
-       split adjustment, and last-transaction-price behavior unchanged.
-    7. Add generator tests for exact per-symbol parity, deterministic hashes,
-       aliases, and malformed input. Add loader tests for concurrent callers,
-       multi-ticker filters, object identity, absent symbols, broken shards, and
-       fallback fetch counts. Keep renderer and snapshot regression suites.
-- **Tradeoff:** The Pages artifact grows by roughly the 8.9 MB shard payload,
-  but Git history does not grow and filtered browsers avoid the monolith. The
-  current four-holding estimate is about 55 KiB gzipped versus 2.45 MiB.
-- **Verify:**
+- **Find:** `const response = await fetch('../data/historical_prices.json');`
+  once in each production file.
+- **Change:** Import `loadHistoricalPrices` from `dataLoader.js`. Replace each
+  check/fetch/parse block with an awaited call using the current filtered
+  transactions. Preserve the non-filter path, empty-data behavior, raw date
+  gaps, 10-day price lookup, split adjustments, and transaction-price fallback.
+  `ensureHistoricalPricesAvailable` may remain as a thin wrapper.
+- **Tests:** Mock the loader in both suites. Verify no load without filters,
+  filtered transactions are passed through, renderer and snapshot calls share
+  the loader API, loader failure produces the current empty-data behavior, and
+  no direct monolith fetch remains in either production consumer.
+- **Verify:** Price bundle (P).
+- **Guardrail:** Do not call the loader with `activeFilterTerm`; order-type and
+  other filters can produce multi-ticker transaction sets.
 
-    ```bash
-    venv/bin/python -m pytest tests/python/test_prepare_frontend_data.py
-    npx jest tests/js/transactions/dataLoader.test.js tests/js/transactions/chart/data/contribution.test.js tests/js/transactions/chart/renderers/contribution.test.js tests/js/transactions/terminal/snapshots.test.js tests/js/transactions/terminal/snapshots_coverage.test.js tests/js/transactions/terminal/snapshots_more.test.js --runInBand
-    npx prettier --check .github/workflows/analysis-sync.yml .github/workflows/pages.yml .github/workflows/twrr-refresh.yaml
-    make smoke
-    ```
+#### AI-2D [trivial] — Generate shards in the Pages artifact
 
-- **Guardrail:** Never rebuild the shards from the forward/back-filled Parquet
-  or `prepare_historical_prices()`; the raw monolith is the only exact source.
+- **Files:** `.github/workflows/pages.yml` and `.gitignore`.
+- **Find:** `- name: Stamp service worker cache version` and
+  `data/analysis/theme_timeline.json`.
+- **Change:** Add `data/historical_prices/` to `.gitignore`. In Pages, set up
+  Python 3.11 and run `prepare_historical_price_shards.py` with the tracked
+  monolith as source and the ignored directory as output, after checkout and
+  before service-worker stamping. Do not install pip packages or change the
+  service worker, CSP, `twrr-refresh.yaml`, or any `data/` content.
+- **Verify:** Price bundle (P). Also inspect the workflow diff to confirm the
+  generator runs before both artifact upload and deployment.
+- **Guardrail:** Keep `data/historical_prices.json` tracked and deployed for
+  Python consumers and legacy fallback. Only its derived directory is ignored.
 
-### AI-3 [skip] — Compact ratio JSON without changing parsed values
+### AI-3 [low] — Compact ratio JSON without changing parsed values
 
 - **Files:** `scripts/ratios/calculate_ratios.py` and
   `tests/python/test_calculate_ratios.py`.
@@ -335,7 +383,7 @@ Confirmed constraints and current baselines:
   `def test_get_performance_series(self):`.
 - **Change:** Add one temporary-directory integration test, then add compact
   separators to the six existing `json.dump` calls in `main()`.
-- **Design:**
+- **Contract:**
     1. In the existing test class, skip when pandas is unavailable, patch
        `OUTPUT_DIR` to a temporary directory, and call the real `main()` against
        tracked inputs. This covers all six JSON writes without mocking financial
@@ -355,75 +403,130 @@ Confirmed constraints and current baselines:
 - **Guardrail:** Do not round values, reorder series, or change the
   current-date padding behavior as part of this serialization-only item.
 
-### AI-4 [skip] — Deploy-generate the composition family in two stages
+### AI-4 implementation sequence — deploy-generated composition family
 
-- **Files:** `.github/workflows/pages.yml`,
-  `.github/workflows/twrr-refresh.yaml`, `.gitignore`, `Makefile`,
+Run these items in order. **Figure verification bundle (F)** means:
+
+```bash
+npx prettier --check .github/workflows/analysis-sync.yml .github/workflows/pages.yml .github/workflows/twrr-refresh.yaml
+venv/bin/python -m pytest tests/python/test_generate_composition_data.py tests/python/test_generate_marketcap_from_composition.py tests/python/test_twrr_refresh_workflow.py
+make twrr-validate
+make smoke
+```
+
+#### AI-4A [low] — Add figure validation and semantic comparison
+
+- **Files:** new `scripts/validate_frontend_figures.py` and existing
+  `tests/python/test_generate_composition_data.py`.
+- **Find:** `def test_save_json_data_writes_compact_json(tmp_path):` in the test
+  file.
+- **Change:** Implement `validate_figure(payload)` and
+  `compare_figures(expected, actual)` plus a CLI accepting a figure directory.
+- **Contract:**
+    1. Validate exactly the three filenames `composition.json`, `sectors.json`,
+       and `marketcap.json`. Require top-level `dates`, `total_values`, and
+       `series`; non-empty dates; equal date/total lengths; equally long,
+       non-decreasing ISO date strings; object-valued series; and a same-length
+       numeric array for every series entry.
+    2. Reject bools as numbers and reject NaN or infinity. Require finite numeric
+       totals and series values. Raise `ValueError` with the filename and field
+       path on the first invalid value; the CLI exits non-zero on any failure.
+    3. Compare object keys, list lengths, dates, strings, and booleans exactly.
+       Compare ints/floats with `math.isclose(rel_tol=1e-12, abs_tol=1e-12)`.
+       Return `None` on success and raise `ValueError` with the differing path on
+       mismatch.
+- **Tests:** Valid fixtures; each missing/wrong-length/non-finite case; key,
+  date, and list mismatches; values inside/outside tolerance; bool rejection;
+  CLI success and failure. Use temporary files, never `data/` writes.
+- **Verify:** Figure bundle (F).
+- **Guardrail:** Numeric tolerance is only for float round-off. Do not relax
+  dates, dimensions, series membership, or finite-number checks.
+
+#### AI-4B [low] — Make marketcap generation fail closed
+
+- **Files:** `scripts/generate_marketcap_from_composition.py` and
+  `tests/python/test_generate_marketcap_from_composition.py`.
+- **Find:** `if not composition_path.exists():`,
+  `if not fund_mc_path.exists():`, and
+  `sys.exit(0)  # Exit with success to keep workflow going`.
+- **Change:** Raise `FileNotFoundError` for either missing input. Return `True`
+  only after writing output. Replace the top-level catch-and-exit-zero behavior
+  with normal non-zero failure; do not catch exceptions just to preserve stale
+  output. Update the existing missing-input and `__main__` tests to assert the
+  new failure behavior, retaining all calculation tests.
+- **Verify:** Figure bundle (F).
+- **Guardrail:** This deterministic local transform must never silently deploy
+  stale or missing output. Do not change its allocation calculations.
+
+#### AI-4C [low] — Add the dual-mode deploy orchestrator
+
+- **Files:** new `scripts/generate_deploy_figures.py`, existing
   `scripts/generate_composition_data.py`,
-  `scripts/generate_marketcap_from_composition.py`, new
-  `scripts/generate_deploy_figures.py` and
-  `scripts/validate_frontend_figures.py`, and the existing generator/workflow
-  test files.
-- **Find:** `- name: Stamp service worker cache version`;
-  `- name: Validate generated data`; `twrr-validate:`;
-  `data/analysis/theme_timeline.json`; `def main():` in each generator; and
-  `composition_path = Path('data/output/figures/composition.json')`.
-- **Change:** Add a reusable generator/validator and prove it during Pages
-  deployment before stopping future commits of composition, sectors, and
-  marketcap.
-- **Design:**
-    1. `generate_deploy_figures.py` reads the three committed baselines into
-       memory, runs composition/sectors followed by marketcap, validates the
-       regenerated files, and compares them with the baselines. Its initial
-       `--require-baseline` mode must fail when a baseline is absent.
-    2. `validate_frontend_figures.py` requires `dates`, `total_values`, and
-       `series`; equal non-zero lengths; matching series lengths; sorted date
-       strings; and finite numbers. Comparison keeps object keys, list lengths,
-       dates, and strings exact, using `math.isclose` with relative and absolute
-       tolerance `1e-12` only for numeric values. Reject NaN and infinity.
-    3. Make marketcap fail closed: missing composition or fund-breakdown inputs
-       raise an error, and its top-level exception handler must not exit zero.
-       Update its existing fail-open tests. This deterministic local transform
-       must never silently deploy a stale or missing file.
-    4. In Pages, set up Python 3.11, install only the pandas and pyarrow
-       constraints already declared in `requirements.txt`, and run the deploy
-       generator before service-worker stamping and artifact upload. Generation,
-       comparison, or validation failure prevents upload, leaving the previous
-       deployment active.
-    5. Add the structural validator to `make twrr-validate`, so nightly input
-       commits remain gated after the derived files become untracked. Keep the
-       existing TWRR validation unchanged.
-    6. **Stage A — dual-publish:** keep nightly output commits and run Pages
-       generation with `--require-baseline`. Require successful parity on several
-       data deploys. An intentional generator change must update the committed
-       baseline before it can deploy.
-    7. **Stage B — stop future snapshots:** in a separate reviewed change, add
-       exactly the three generated paths to `.gitignore`, remove them from
-       version control without rewriting history, and drop `--require-baseline`.
-       Nightly still generates and validates them, but ignored files are not
-       staged by the existing `git add data/output`. Continue generating them in
-       Pages from tracked canonical inputs.
-- **Measured baseline:** Temporary-directory generation reproduced composition
-  and marketcap exactly. Sectors had identical structure, dates, and totals,
-  with numeric differences around `10^-15`; this justifies tolerant numeric
-  comparison rather than byte equality. The three current files total
-  3,147,117 bytes per snapshot. Existing history remains unchanged.
-- **Tradeoff:** Pages gains a Python/pandas setup step, while future nightly
-  commits avoid roughly 3.15 MB of derived JSON per changed run. The deployed
-  artifact and browser payload remain the same size.
-- **Verify:**
+  `scripts/validate_frontend_figures.py`, and
+  `tests/python/test_generate_composition_data.py`.
+- **Find:** `def main():` in the composition generator and
+  `def test_save_json_data_writes_compact_json(tmp_path):` in the test file.
+- **Change:** Implement `generate_deploy_figures(root=Path('.'))` and a CLI that
+  runs composition/sectors first and marketcap second, then validates all three
+  outputs.
+- **Contract:**
+    1. Resolve all input/output paths from `root`. Before generation, read any of
+       the three committed outputs that exist. All three present means
+       baseline-comparison mode; none present means clean-generation mode; a
+       partial set raises `ValueError` before running generators.
+    2. Run both generator scripts by absolute path in subprocesses with
+       `cwd=root` and `check=True`; do not change the caller's process-wide cwd
+       or refactor generator path handling. Calculations and output schemas stay
+       unchanged.
+    3. Validate all regenerated files. In baseline mode, compare each regenerated
+       payload with its in-memory baseline using AI-4A. In clean mode, successful
+       generation and structural validation are sufficient. Propagate failures.
+    4. Tests cover exact composition/marketcap parity, sectors round-off within
+       tolerance, clean generation with no baselines, partial-baseline rejection,
+       generator failure, and validator failure. Use temporary input trees based
+       on the already verified symlink/copy approach; never overwrite `data/`.
+- **Verify:** Figure bundle (F).
+- **Guardrail:** There is no command-line mode flag to remove later. Baseline
+  detection is all-or-none so the same Pages step works before and after AI-4E.
 
-    ```bash
-    npx prettier --check .github/workflows/analysis-sync.yml .github/workflows/pages.yml .github/workflows/twrr-refresh.yaml
-    venv/bin/python -m pytest tests/python/test_generate_composition_data.py tests/python/test_generate_marketcap_from_composition.py tests/python/test_twrr_refresh_workflow.py
-    make twrr-validate
-    make smoke
-    ```
+#### AI-4D [trivial] — Wire generation into Pages and nightly validation
 
-- **Guardrail:** Do not include geography, TWRR, or P/E in this pilot: their
-  current generators have network, timestamp, or previous-output dependencies.
-  Do not ignore the whole `data/output/` directory or remove its broad staging
-  rule without replacing coverage for every remaining artifact.
+- **Files:** `.github/workflows/pages.yml` and `Makefile`.
+- **Find:** `- name: Stamp service worker cache version`, `twrr-validate:`, and
+  `$(PYTHON_BIN) scripts/twrr/step_validate.py`.
+- **Change:** In Pages, set up Python 3.11, install only the pandas/pyarrow
+  constraints already declared in `requirements.txt`, and run the AI-4C
+  orchestrator before service-worker stamping and artifact upload. Add the
+  AI-4A structural validator to `twrr-validate` after the existing TWRR check.
+  Do not alter the existing TWRR validator or Pages deployment permissions.
+- **Verify:** Figure bundle (F). At this point baselines are still tracked, so
+  the orchestrator tests and local run must exercise comparison mode.
+- **Guardrail:** Any generation, comparison, or validation failure must stop
+  before artifact upload, leaving the previous live deployment active.
+
+#### AI-4E [trivial] — Stop committing the three derived figures
+
+- **Files:** `.gitignore` and the Git index entries for
+  `data/output/figures/composition.json`, `sectors.json`, and `marketcap.json`.
+- **Find:** `data/analysis/theme_timeline.json` in `.gitignore`.
+- **Change:** Add exactly those three generated paths to `.gitignore`. Remove
+  them from the Git index without editing their contents or deleting the local
+  generated working copies. Do not change the Pages orchestrator. Nightly still
+  generates and validates them, and the existing `git add data/output` leaves
+  ignored untracked copies unstaged.
+- **Verify:** Figure bundle (F). Confirm `git status --short` shows only the
+  intended index removals and `.gitignore` modification, with no unrelated
+  `data/` changes. AI-4C tests must also pass in clean-generation mode.
+- **Guardrail:** Do not ignore all of `data/output/`, rewrite history, manually
+  edit generated JSON, or remove the broad staging rule. Existing blobs remain
+  in history; this stops roughly 3.15 MB of future snapshots per changed run.
+
+AI-4 has no production-wait gate: the implementation sequence proves both
+baseline-comparison and clean-generation modes locally. Normal post-merge
+deploys provide operational monitoring; failed generation blocks publication
+and leaves the previous site active. A temporary-directory probe reproduced
+composition and marketcap exactly; sectors had identical structure, dates, and
+totals with numeric differences around `10^-15`, within AI-4A's tolerance.
 
 ## Open questions / what I could not verify
 
