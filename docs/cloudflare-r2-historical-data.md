@@ -359,6 +359,15 @@ make smoke
 - **Verify:** Price bundle (P).
 - **Guardrail:** Do not call the loader with `activeFilterTerm`; order-type and
   other filters can produce multi-ticker transaction sets.
+- **Guardrail:** `_getPortfolioSeriesForDrawdown` in `snapshots.js` reads
+  `transactionState.historicalPrices` synchronously without loading. Today any
+  earlier filtered load fills state with every symbol, so only the first
+  filtered view can race. With per-symbol loading, every switch to a new
+  ticker can race, and the drawdown snapshot would silently use
+  transaction-price fallbacks. Trace each `getDrawdownSnapshotLine` caller
+  (`viewUtils.js`, `handlers/plot.js`, `handlers/misc.js`). If any caller can
+  run before the loader settles for the current filtered transactions, STOP
+  and report. Do not make `getDrawdownSnapshotLine` async inside this item.
 
 #### AI-2D [trivial] — Generate shards in the Pages artifact
 
@@ -375,33 +384,14 @@ make smoke
 - **Guardrail:** Keep `data/historical_prices.json` tracked and deployed for
   Python consumers and legacy fallback. Only its derived directory is ignored.
 
-### AI-3 [low] — Compact ratio JSON without changing parsed values
+### AI-3 [dropped] — Compact ratio JSON
 
-- **Files:** `scripts/ratios/calculate_ratios.py` and
-  `tests/python/test_calculate_ratios.py`.
-- **Find:** `with open(OUTPUT_DIR / 'balance_series.json', 'w') as f:` and
-  `def test_get_performance_series(self):`.
-- **Change:** Add one temporary-directory integration test, then add compact
-  separators to the six existing `json.dump` calls in `main()`.
-- **Contract:**
-    1. In the existing test class, skip when pandas is unavailable, patch
-       `OUTPUT_DIR` to a temporary directory, and call the real `main()` against
-       tracked inputs. This covers all six JSON writes without mocking financial
-       calculations or modifying `data/`.
-    2. For balance, contribution, daily FX, performance, transaction stats, and
-       holdings, assert each generated file equals
-       `json.dumps(json.loads(text), separators=(',', ':'))`. This test fails
-       with the current spaced serialization and passes after the change.
-    3. Change only the `json.dump` keyword arguments. Do not add a helper or
-       refactor `main()`, and do not compare against committed files whose
-       current-date padding can legitimately differ.
-- **Measured baseline:** A temporary-directory run reproduced all six committed
-  parsed payloads exactly. Expected raw-size savings are 7.5% for contribution,
-  7.6% for performance and balance, and 11.1% for daily FX; gzip savings are
-  negligible, so this targets future Git growth rather than latency.
-- **Verify:** `venv/bin/python -m pytest tests/python/test_calculate_ratios.py`
-- **Guardrail:** Do not round values, reorder series, or change the
-  current-date padding behavior as part of this serialization-only item.
+Dropped on review (2026-11-10); do not implement. Git stores blobs
+zlib-compressed, so savings on raw bytes do not carry over. zlib-6 on the
+current `data/output/*.json` files shrinks the compact form by only 0.3–2.7%
+(contribution 245,331 → 243,964 bytes; performance 164,075 → 159,661). That
+is negligible for both Git growth and transfer, and it does not justify a new
+integration test that runs the whole `calculate_ratios.main()`.
 
 ### AI-4 implementation sequence — deploy-generated composition family
 
@@ -506,17 +496,33 @@ make smoke
 
 #### AI-4E [trivial] — Stop committing the three derived figures
 
-- **Files:** `.gitignore` and the Git index entries for
-  `data/output/figures/composition.json`, `sectors.json`, and `marketcap.json`.
-- **Find:** `data/analysis/theme_timeline.json` in `.gitignore`.
+- **Files:** `.gitignore`, `.github/workflows/update-vt-sectors.yml`, and the
+  Git index entries for `data/output/figures/composition.json`, `sectors.json`,
+  and `marketcap.json`.
+- **Find:** `data/analysis/theme_timeline.json` in `.gitignore`;
+  `- name: Regenerate market cap data with updated VT breakdown`,
+  `- name: Regenerate composition data`, and
+  `data/output/figures/composition.json data/output/figures/sectors.json` in
+  the workflow.
 - **Change:** Add exactly those three generated paths to `.gitignore`. Remove
   them from the Git index without editing their contents or deleting the local
-  generated working copies. Do not change the Pages orchestrator. Nightly still
-  generates and validates them, and the existing `git add data/output` leaves
-  ignored untracked copies unstaged.
+  generated working copies. In `update-vt-sectors.yml`, take the three paths
+  out of the explicit `git add` list. Delete the two regeneration steps named
+  above: after this item they produce output nobody commits, and on a fresh
+  checkout the marketcap step runs before composition exists. Leave the
+  geography and P/E steps alone; neither reads these files. Do not change the
+  Pages orchestrator. Nightly still generates and validates the files, and the
+  existing `git add data/output` leaves ignored untracked copies unstaged.
+- **Why the workflow edit is mandatory:** if you `git add` an ignored path by
+  name, Git exits 1 ("paths are ignored by one of your .gitignore files";
+  verified 2026-11-10). That would fail the weekly commit step before it
+  commits the VT allocation, HHI, geography, and P/E updates.
 - **Verify:** Figure bundle (F). Confirm `git status --short` shows only the
-  intended index removals and `.gitignore` modification, with no unrelated
-  `data/` changes. AI-4C tests must also pass in clean-generation mode.
+  intended index removals plus the `.gitignore` and workflow modifications,
+  with no unrelated `data/` changes. Confirm
+  `git grep -n -e composition.json -e sectors.json -e marketcap.json -- .github`
+  finds no explicit `git add` of the three paths. AI-4C tests must also pass
+  in clean-generation mode.
 - **Guardrail:** Do not ignore all of `data/output/`, rewrite history, manually
   edit generated JSON, or remove the broad staging rule. Existing blobs remain
   in history; this stops roughly 3.15 MB of future snapshots per changed run.
