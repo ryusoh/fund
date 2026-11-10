@@ -26,6 +26,14 @@ jobs:
             - name: Checkout
               uses: actions/checkout@v7
 
+            - name: Set up Python
+              uses: actions/setup-python@v7
+              with:
+                  python-version: '3.11'
+
+            - name: Generate historical price shards
+              run: python scripts/prepare_historical_price_shards.py data/historical_prices.json data/historical_prices
+
             - name: Stamp service worker cache version
               run: |
                   stamp=$(git rev-parse --short HEAD)
