@@ -212,10 +212,127 @@ asset such as `historical_prices.json`, not the canonical Parquet files.
 Do not rewrite Git history as part of this pilot. If later justified, plan that
 separately with explicit coordination, backup, and verification.
 
+## Action items (code-verified 2026-11-10)
+
+Work one item at a time and commit after each item, but never push. Each `Find`
+string is a unique current anchor; if it does not match, STOP and report rather
+than improvising. Line numbers may drift. Format only touched files with the
+repo's scoped Prettier/Black commands, run the item's scoped checks, and never
+hand-edit `data/`. Do not rewrite Git history or start an R2 migration as part
+of these items.
+
+Confirmed constraints and current baselines:
+
+- `historical_prices.json` is 8,883,926 bytes (2,453,977 bytes with local
+  gzip-9). Equivalent payloads for the four current holdings total 198,937
+  bytes, or 55,166 bytes as independently gzipped per-ticker responses.
+- `step03_fetch_prices.py` writes the JSON from raw `combined_raw`, then
+  forward-fills/back-fills that frame for Parquet. The existing
+  `prepare_frontend_data.py` reads the transformed Parquet and therefore cannot
+  reproduce the JSON's missing-date semantics.
+- Both browser fetch sites can race because they check state before fetching
+  without a shared in-flight promise: `renderers/contribution.js` and
+  `terminal/snapshots.js`.
+- The JSON is also a Python input to composition, geography, and P/E
+  generation. Do not delete it until those readers have a replacement.
+- Composition/sectors/marketcap are deterministic from tracked inputs.
+  Geography and TWRR fetch external data; P/E reads its previous output for
+  fail-open carry-forward; contribution output includes the current date.
+- GitHub's repository API reported `size=909374` KiB (about 888 MiB). Current
+  logical historical blobs total about 3.93 GB under `data/output/` and 2.52 GB
+  for `historical_prices.json`; compaction does not remove existing history.
+
+### AI-1 [trivial] — Stop fetching all history for analysis sync
+
+- **File:** `.github/workflows/analysis-sync.yml`
+- **Find:** `fetch-depth: 0`
+- **Change:** Delete the two-line `with:` block containing this anchor, leaving
+  the existing `Checkout` step and `uses: actions/checkout@v7` line unchanged.
+  The sync script reads working-tree JSON and writes commits; it does not read
+  Git history. The default shallow checkout still supports the existing rebase
+  and push retry loop.
+
+- **Verify:**
+
+    ```bash
+    npx prettier --check .github/workflows/analysis-sync.yml .github/workflows/pages.yml .github/workflows/twrr-refresh.yaml
+    venv/bin/python -m pytest tests/python/test_sync_configs_*.py
+    ```
+
+- **Guardrail:** Do not change the full checkouts in CI, diff-coverage, or
+  mutation-testing workflows; those have separate history requirements.
+
+### AI-2 [skip] — Load only filtered tickers through one shared loader
+
+- **Files:** `scripts/twrr/step03_fetch_prices.py`,
+  `js/transactions/dataLoader.js`,
+  `js/transactions/chart/renderers/contribution.js`, and
+  `js/transactions/terminal/snapshots.js`.
+- **Find:** `write_raw_json_prices(combined_raw)`;
+  `let balanceSeriesPayloadPromise = null;`; and
+  `const response = await fetch('../data/historical_prices.json');` at both
+  browser call sites.
+- **Change:** Route to a stronger model. Generate per-ticker browser artifacts
+  from `combined_raw` and add one shared, single-flight loader used by both
+  consumers. Add monolith-versus-shard parity, multi-ticker, alias,
+  missing/failed response, and fetch-count tests. Keep the monolith until its
+  Python readers migrate.
+- **Verify:**
+
+    ```bash
+    venv/bin/python -m pytest tests/python/test_step03_fetch_prices.py
+    npx jest tests/js/transactions/chart/data/contribution.test.js tests/js/transactions/chart/renderers/contribution.test.js tests/js/transactions/terminal/snapshots.test.js tests/js/transactions/terminal/snapshots_coverage.test.js tests/js/transactions/terminal/snapshots_more.test.js --runInBand
+    ```
+
+- **Guardrail:** Do not regenerate these browser artifacts from
+  `historical_prices.parquet` or `prepare_frontend_data.py`; both lose the raw
+  JSON's missing-date semantics. Preserve the existing 10-day price fallback.
+
+### AI-3 [skip] — Compact ratio JSON without changing parsed values
+
+- **Files:** `scripts/ratios/calculate_ratios.py` and
+  `tests/python/test_calculate_ratios.py`.
+- **Find:** `with open(OUTPUT_DIR / 'balance_series.json', 'w') as f:` and
+  `def test_get_performance_series(self):`.
+- **Change:** Route to a stronger model to add output coverage first, then use
+  compact JSON separators for the JSON writes in `main()`. Compare parsed
+  before/after payloads. Current raw-size savings are 7.5% for contribution,
+  7.6% for performance and balance, and 11.1% for daily FX; gzip savings are
+  negligible, so this targets future Git growth rather than latency.
+- **Verify:** `venv/bin/python -m pytest tests/python/test_calculate_ratios.py`
+- **Guardrail:** Do not round values, reorder series, or change the
+  current-date padding behavior as part of this serialization-only item.
+
+### AI-4 [skip] — Prove deploy generation on the composition family first
+
+- **Files:** `.github/workflows/pages.yml`,
+  `.github/workflows/twrr-refresh.yaml`,
+  `scripts/generate_composition_data.py`, and
+  `scripts/generate_marketcap_from_composition.py`.
+- **Find:** `- name: Stamp service worker cache version`;
+  `- name: Validate generated data`; `def main():` in each
+  generator; and `composition_path = Path('data/output/figures/composition.json')`.
+- **Change:** Route to a stronger model. Add a clean-checkout parity harness
+  for composition, sectors, and marketcap, then generate them during Pages
+  deployment only if parsed artifacts match. Make deploy generation fail
+  closed and keep nightly validation ahead of publication. Remove future
+  committed copies only as a separate reviewed step with explicit staging.
+- **Verify:**
+
+    ```bash
+    npx prettier --check .github/workflows/analysis-sync.yml .github/workflows/pages.yml .github/workflows/twrr-refresh.yaml
+    venv/bin/python -m pytest tests/python/test_generate_composition_data.py tests/python/test_generate_marketcap_from_composition.py tests/python/test_twrr_refresh_workflow.py
+    ```
+
+- **Guardrail:** Do not include geography, TWRR, or P/E in this pilot: their
+  current generators have network, timestamp, or previous-output dependencies.
+  Marketcap currently exits successfully on generation failure, which is not
+  acceptable for a clean deploy artifact.
+
 ## Open questions / what I could not verify
 
-- GitHub's actual hosted-repository size and whether repository size is causing
-  an operational restriction today.
+- Whether GitHub's reported repository size is causing an operational
+  restriction today; the public API size is now recorded above.
 - Production Pages bandwidth, cache-hit rates, browser parse timing, memory
   use, and user-perceived latency.
 - Whether deploy-time generation can reproduce every current derived JSON
