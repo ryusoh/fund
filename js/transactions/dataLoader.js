@@ -131,6 +131,7 @@ export async function loadTransactionData() {
 }
 
 import { fetchRealTimeData } from './realtimeData.js';
+import { transactionState, setHistoricalPrices } from './state.js';
 
 let balanceSeriesPayloadPromise = null;
 
@@ -141,6 +142,180 @@ function loadBalanceSeriesPayload() {
             .catch(() => null);
     }
     return balanceSeriesPayloadPromise;
+}
+
+const PRICE_MANIFEST_URL = '../data/historical_prices/index.json';
+const PRICE_MONOLITH_URL = '../data/historical_prices.json';
+const PRICE_SHARD_FILENAME_REGEX = /^[0-9a-f]{64}\.json$/;
+
+let priceManifestPromise = null;
+let priceMonolithPromise = null;
+const priceShardPromises = new Map();
+
+function normalizePriceSymbol(security) {
+    if (typeof security !== 'string') {
+        return null;
+    }
+    const cleaned = security.trim().toUpperCase().replace(/-/g, '');
+    return cleaned || null;
+}
+
+function collectPriceSymbols(transactions) {
+    const symbols = new Set();
+    if (!Array.isArray(transactions)) {
+        return symbols;
+    }
+    for (const transaction of transactions) {
+        const symbol = normalizePriceSymbol(transaction?.security);
+        if (symbol) {
+            symbols.add(symbol);
+        }
+    }
+    return symbols;
+}
+
+function isValidPriceManifest(manifest) {
+    if (!manifest || typeof manifest !== 'object' || manifest.schema_version !== 1) {
+        return false;
+    }
+    if (!manifest.symbols || typeof manifest.symbols !== 'object') {
+        return false;
+    }
+    for (const entry of Object.values(manifest.symbols)) {
+        if (
+            !entry ||
+            typeof entry !== 'object' ||
+            typeof entry.file !== 'string' ||
+            !PRICE_SHARD_FILENAME_REGEX.test(entry.file)
+        ) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function loadPriceManifest() {
+    if (!priceManifestPromise) {
+        priceManifestPromise = (async () => {
+            try {
+                const response = await fetch(PRICE_MANIFEST_URL, { cache: 'no-cache' });
+                if (!response.ok) {
+                    return null;
+                }
+                const manifest = await response.json();
+                return isValidPriceManifest(manifest) ? manifest : null;
+            } catch (error) {
+                logger.warn('Failed to load historical price manifest:', error);
+                return null;
+            }
+        })();
+    }
+    return priceManifestPromise;
+}
+
+function loadPriceMonolith() {
+    if (!priceMonolithPromise) {
+        priceMonolithPromise = (async () => {
+            try {
+                const response = await fetch(PRICE_MONOLITH_URL, { cache: 'no-cache' });
+                if (!response.ok) {
+                    return null;
+                }
+                const payload = await response.json();
+                if (!payload || typeof payload !== 'object') {
+                    return null;
+                }
+                setHistoricalPrices(payload);
+                return payload;
+            } catch (error) {
+                logger.warn('Failed to load historical prices monolith:', error);
+                return null;
+            }
+        })();
+    }
+    return priceMonolithPromise;
+}
+
+function loadPriceShard(symbol, entry) {
+    if (!priceShardPromises.has(symbol)) {
+        priceShardPromises.set(
+            symbol,
+            (async () => {
+                try {
+                    const response = await fetch(`../data/historical_prices/${entry.file}`, {
+                        cache: 'no-cache',
+                    });
+                    if (!response.ok) {
+                        return null;
+                    }
+                    const dateMap = await response.json();
+                    if (!dateMap || typeof dateMap !== 'object' || Array.isArray(dateMap)) {
+                        return null;
+                    }
+                    return dateMap;
+                } catch (error) {
+                    logger.warn(`Failed to load historical price shard for ${symbol}:`, error);
+                    return null;
+                }
+            })()
+        );
+    }
+    return priceShardPromises.get(symbol);
+}
+
+export async function loadHistoricalPrices(transactions) {
+    const requested = collectPriceSymbols(transactions);
+    if (requested.size === 0) {
+        return transactionState.historicalPrices;
+    }
+
+    const missing = [];
+    for (const symbol of requested) {
+        if (!transactionState.historicalPrices[symbol]) {
+            missing.push(symbol);
+        }
+    }
+    if (missing.length === 0) {
+        return transactionState.historicalPrices;
+    }
+
+    const manifest = await loadPriceManifest();
+    if (!manifest) {
+        await loadPriceMonolith();
+        return transactionState.historicalPrices;
+    }
+
+    let needsMonolithFallback = false;
+    const arrivals = [];
+    await Promise.all(
+        missing.map(async (symbol) => {
+            const entry = manifest.symbols[symbol];
+            if (!entry) {
+                // Symbol absent from a valid manifest: a no-data result, no fallback.
+                return;
+            }
+            const dateMap = await loadPriceShard(symbol, entry);
+            if (dateMap) {
+                arrivals.push([symbol, dateMap]);
+            } else {
+                needsMonolithFallback = true;
+            }
+        })
+    );
+
+    if (needsMonolithFallback) {
+        await loadPriceMonolith();
+        return transactionState.historicalPrices;
+    }
+
+    const fresh = arrivals.filter(([symbol]) => !transactionState.historicalPrices[symbol]);
+    if (fresh.length > 0) {
+        // No await between reading the latest state and setting the merge, so
+        // concurrent completions cannot remove one another's symbols.
+        setHistoricalPrices({ ...transactionState.historicalPrices, ...Object.fromEntries(fresh) });
+    }
+
+    return transactionState.historicalPrices;
 }
 
 export async function loadPortfolioSeries() {

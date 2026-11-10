@@ -16,6 +16,7 @@ describe('dataLoader basic history loaders', () => {
     let loadMarketcapSnapshotData;
     let loadFxDailyRates;
     let loadPerformanceSeries;
+    let loadHistoricalPrices;
     let mockFetch;
 
     beforeEach(() => {
@@ -48,6 +49,7 @@ describe('dataLoader basic history loaders', () => {
         loadMarketcapSnapshotData = mod.loadMarketcapSnapshotData;
         loadFxDailyRates = mod.loadFxDailyRates;
         loadPerformanceSeries = mod.loadPerformanceSeries;
+        loadHistoricalPrices = mod.loadHistoricalPrices;
     }
 
     function createMockResponse(data, ok = true, isText = false) {
@@ -127,6 +129,283 @@ describe('dataLoader basic history loaders', () => {
             const second = await loadMarketcapSnapshotData();
             expect(second).toBe(first);
             expect(mockFetch).toHaveBeenCalledTimes(1);
+        });
+    });
+
+    describe('loadHistoricalPrices', () => {
+        const sha = (c) => c.repeat(64);
+
+        let transactionState;
+        let setHistoricalPrices;
+
+        function makeManifest(entries) {
+            return {
+                schema_version: 1,
+                source_sha256: sha('s'),
+                symbols: entries,
+            };
+        }
+
+        function setupPriceFetch({ manifest, monolith, shardsByFile = {}, failUrls = [] }) {
+            const calls = [];
+            mockFetch.mockImplementation((url, options) => {
+                calls.push({ url: String(url), options });
+                const target = String(url);
+                if (failUrls.some((f) => target.includes(f))) {
+                    return Promise.resolve({ ok: false, status: 404 });
+                }
+                if (target.includes('/historical_prices/index.json')) {
+                    return Promise.resolve(createMockResponse(manifest));
+                }
+                if (target.endsWith('/data/historical_prices.json')) {
+                    return Promise.resolve(createMockResponse(monolith));
+                }
+                const file = target.split('/').pop();
+                return Promise.resolve(createMockResponse(shardsByFile[file]));
+            });
+            return calls;
+        }
+
+        beforeEach(async () => {
+            const stateMod = await import('../../../js/transactions/state.js');
+            transactionState = stateMod.transactionState;
+            setHistoricalPrices = stateMod.setHistoricalPrices;
+            setHistoricalPrices({});
+        });
+
+        it('returns the current price object immediately for an empty request', async () => {
+            const calls = setupPriceFetch({ manifest: null });
+            await loadModule();
+            const result = await loadHistoricalPrices([]);
+            expect(result).toBe(transactionState.historicalPrices);
+            expect(calls).toHaveLength(0);
+        });
+
+        it('concurrent same-symbol calls share a single shard fetch', async () => {
+            const file = sha('a');
+            const manifest = makeManifest({
+                AAPL: { file: `${file}.json`, sha256: file },
+            });
+            const calls = setupPriceFetch({
+                manifest,
+                shardsByFile: { [`${file}.json`]: { '2024-01-01': 150 } },
+            });
+            await loadModule();
+            const txns = [{ security: 'AAPL' }];
+            const [first, second] = await Promise.all([
+                loadHistoricalPrices(txns),
+                loadHistoricalPrices(txns),
+            ]);
+            expect(first).toBe(second);
+            const shardCalls = calls.filter((c) => c.url.includes(`${file}.json`));
+            expect(shardCalls).toHaveLength(1);
+            expect(transactionState.historicalPrices.AAPL).toEqual({ '2024-01-01': 150 });
+        });
+
+        it('concurrent disjoint-symbol calls union without losing symbols', async () => {
+            const fileA = sha('a');
+            const fileB = sha('b');
+            const manifest = makeManifest({
+                AAPL: { file: `${fileA}.json`, sha256: fileA },
+                VTI: { file: `${fileB}.json`, sha256: fileB },
+            });
+            setupPriceFetch({
+                manifest,
+                shardsByFile: {
+                    [`${fileA}.json`]: { '2024-01-01': 150 },
+                    [`${fileB}.json`]: { '2024-01-01': 200 },
+                },
+            });
+            await loadModule();
+            await Promise.all([
+                loadHistoricalPrices([{ security: 'AAPL' }]),
+                loadHistoricalPrices([{ security: 'VTI' }]),
+            ]);
+            // Each disjoint completion merges a new object; the surviving state
+            // must contain every symbol loaded by either call.
+            expect(transactionState.historicalPrices).toEqual({
+                AAPL: { '2024-01-01': 150 },
+                VTI: { '2024-01-01': 200 },
+            });
+        });
+
+        it('fetches missing shards in parallel for multiple tickers', async () => {
+            const fileA = sha('a');
+            const fileB = sha('b');
+            const manifest = makeManifest({
+                AAPL: { file: `${fileA}.json`, sha256: fileA },
+                VTI: { file: `${fileB}.json`, sha256: fileB },
+            });
+            const shardBodies = {
+                [`${fileA}.json`]: { '2024-01-01': 150 },
+                [`${fileB}.json`]: { '2024-01-01': 200 },
+            };
+            const shardResolvers = {};
+            const calls = [];
+            mockFetch.mockImplementation((url, options) => {
+                const target = String(url);
+                calls.push({ url: target, options });
+                if (target.includes('/historical_prices/index.json')) {
+                    return Promise.resolve(createMockResponse(manifest));
+                }
+                const file = target.split('/').pop();
+                return new Promise((resolve) => {
+                    shardResolvers[file] = () => resolve(createMockResponse(shardBodies[file]));
+                });
+            });
+            await loadModule();
+            const promise = loadHistoricalPrices([{ security: 'AAPL' }, { security: 'VTI' }]);
+            for (let i = 0; i < 5; i += 1) {
+                await Promise.resolve();
+            }
+            // Both shard fetches were issued while neither had resolved.
+            expect(Object.keys(shardResolvers).sort()).toEqual(
+                [`${fileA}.json`, `${fileB}.json`].sort()
+            );
+            expect(calls.some((c) => c.url.endsWith('/data/historical_prices.json'))).toBe(false);
+            shardResolvers[`${fileA}.json`]();
+            shardResolvers[`${fileB}.json`]();
+            await promise;
+        });
+
+        it('normalizes and deduplicates aliases, ignoring non-string securities', async () => {
+            const file = sha('a');
+            const entry = { file: `${file}.json`, sha256: file };
+            const manifest = makeManifest({
+                'BRK-B': entry,
+                BRKB: entry,
+            });
+            const calls = setupPriceFetch({
+                manifest,
+                shardsByFile: { [`${file}.json`]: { '2024-01-01': 300 } },
+            });
+            await loadModule();
+            await loadHistoricalPrices([
+                { security: 'BRK-B' },
+                { security: 'brkb' },
+                { security: ' BRK-B ' },
+                { security: '' },
+                {},
+                { security: 42 },
+            ]);
+            const shardCalls = calls.filter((c) => c.url.includes(`${file}.json`));
+            expect(shardCalls).toHaveLength(1);
+            expect(transactionState.historicalPrices.BRKB).toEqual({ '2024-01-01': 300 });
+        });
+
+        it('requests the manifest with no-cache and validates filenames', async () => {
+            const badFile = 'A'.repeat(64) + '.json'; // uppercase hex is invalid
+            const calls = setupPriceFetch({
+                manifest: makeManifest({ AAPL: { file: badFile, sha256: sha('a') } }),
+                monolith: { AAPL: { '2024-01-01': 150 } },
+            });
+            await loadModule();
+            const result = await loadHistoricalPrices([{ security: 'AAPL' }]);
+            const manifestCall = calls.find((c) => c.url.includes('index.json'));
+            expect(manifestCall.options).toEqual({ cache: 'no-cache' });
+            // Invalid manifest (bad filename) falls back to the monolith.
+            expect(transactionState.historicalPrices.AAPL).toEqual({ '2024-01-01': 150 });
+            expect(result).toBe(transactionState.historicalPrices);
+        });
+
+        it('rejects wrong schema versions and falls back to the monolith', async () => {
+            const calls = setupPriceFetch({
+                manifest: { schema_version: 2, symbols: { AAPL: { file: `${sha('a')}.json` } } },
+                monolith: { AAPL: { '2024-01-01': 150 } },
+            });
+            await loadModule();
+            await loadHistoricalPrices([{ security: 'AAPL' }]);
+            expect(transactionState.historicalPrices.AAPL).toEqual({ '2024-01-01': 150 });
+            expect(calls.some((c) => c.url.endsWith('/data/historical_prices.json'))).toBe(true);
+        });
+
+        it('treats a symbol absent from a valid manifest as no-data without fallback', async () => {
+            const calls = setupPriceFetch({
+                manifest: makeManifest({ AAPL: { file: `${sha('a')}.json`, sha256: sha('a') } }),
+                monolith: { TSLA: { '2024-01-01': 999 } },
+            });
+            await loadModule();
+            await loadHistoricalPrices([{ security: 'TSLA' }]);
+            expect(transactionState.historicalPrices.TSLA).toBeUndefined();
+            expect(calls.some((c) => c.url.endsWith('/data/historical_prices.json'))).toBe(false);
+        });
+
+        it('falls back to the monolith once when a referenced shard fails', async () => {
+            const file = sha('a');
+            const manifest = makeManifest({
+                AAPL: { file: `${file}.json`, sha256: file },
+            });
+            const calls = setupPriceFetch({
+                manifest,
+                monolith: { AAPL: { '2024-01-01': 150 } },
+                failUrls: [`${file}.json`],
+            });
+            await loadModule();
+            await loadHistoricalPrices([{ security: 'AAPL' }]);
+            await loadHistoricalPrices([{ security: 'AAPL' }]);
+            const monolithCalls = calls.filter((c) =>
+                c.url.endsWith('/data/historical_prices.json')
+            );
+            expect(monolithCalls).toHaveLength(1);
+            expect(transactionState.historicalPrices.AAPL).toEqual({ '2024-01-01': 150 });
+        });
+
+        it('caches failed shard requests for the page session without a retry storm', async () => {
+            const file = sha('a');
+            const manifest = makeManifest({
+                AAPL: { file: `${file}.json`, sha256: file },
+            });
+            const calls = setupPriceFetch({
+                manifest,
+                shardsByFile: { [`${file}.json`]: null }, // shard resolves ok but body is invalid
+            });
+            await loadModule();
+            await loadHistoricalPrices([{ security: 'AAPL' }]);
+            await loadHistoricalPrices([{ security: 'AAPL' }]);
+            const shardCalls = calls.filter((c) => c.url.includes(`${file}.json`));
+            expect(shardCalls).toHaveLength(1);
+            const manifestCalls = calls.filter((c) => c.url.includes('index.json'));
+            expect(manifestCalls).toHaveLength(1);
+        });
+
+        it('returns identical object identity on cache hits', async () => {
+            const file = sha('a');
+            const manifest = makeManifest({
+                AAPL: { file: `${file}.json`, sha256: file },
+            });
+            setupPriceFetch({
+                manifest,
+                shardsByFile: { [`${file}.json`]: { '2024-01-01': 150 } },
+            });
+            await loadModule();
+            const first = await loadHistoricalPrices([{ security: 'AAPL' }]);
+            const second = await loadHistoricalPrices([{ security: 'AAPL' }]);
+            expect(second).toBe(first);
+            expect(transactionState.historicalPrices).toBe(first);
+        });
+
+        it('unions disjoint completions into the cached object', async () => {
+            const fileA = sha('a');
+            const fileB = sha('b');
+            const manifest = makeManifest({
+                AAPL: { file: `${fileA}.json`, sha256: fileA },
+                VTI: { file: `${fileB}.json`, sha256: fileB },
+            });
+            setupPriceFetch({
+                manifest,
+                shardsByFile: {
+                    [`${fileA}.json`]: { '2024-01-01': 150 },
+                    [`${fileB}.json`]: { '2024-01-01': 200 },
+                },
+            });
+            await loadModule();
+            const first = await loadHistoricalPrices([{ security: 'AAPL' }]);
+            expect(first).toEqual({ AAPL: { '2024-01-01': 150 } });
+            const second = await loadHistoricalPrices([{ security: 'VTI' }]);
+            expect(second).toEqual({
+                AAPL: { '2024-01-01': 150 },
+                VTI: { '2024-01-01': 200 },
+            });
         });
     });
 
