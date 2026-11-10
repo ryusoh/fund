@@ -101,6 +101,52 @@ function calculateAdjustedHhiContribution(ticker, normalizedWeight) {
  * @param {Date|null} filterTo - Optional end date filter.
  * @returns {{ date: Date, hhi: number, effectiveHoldings: number }[]}
  */
+export function _getValidDate(dateStr, filterFrom, filterTo) {
+    const date = new Date(dateStr);
+    if (Number.isNaN(date.getTime())) {
+        return null;
+    }
+    if (filterFrom && date < filterFrom) {
+        return null;
+    }
+    if (filterTo && date > filterTo) {
+        return null;
+    }
+    return date;
+}
+
+export function _gatherActiveWeights(index, tickers, compositionSeries) {
+    let totalWeight = 0;
+    const activeWeights = [];
+    const activeTickers = [];
+
+    for (let j = 0; j < tickers.length; j += 1) {
+        const ticker = tickers[j];
+        const values = compositionSeries[ticker];
+        const pct = Number(Array.isArray(values) ? (values[index] ?? 0) : 0);
+        if (Number.isFinite(pct) && pct > 0) {
+            activeWeights.push(pct);
+            activeTickers.push(ticker);
+            totalWeight += pct;
+        }
+    }
+
+    return { totalWeight, activeWeights, activeTickers };
+}
+
+export function _computeConcentrationMetrics(activeWeights, activeTickers, totalWeight) {
+    let hhi = 0;
+    for (let j = 0; j < activeWeights.length; j += 1) {
+        const w = activeWeights[j];
+        const ticker = activeTickers[j];
+        const normalized = w / totalWeight;
+        hhi += calculateAdjustedHhiContribution(ticker, normalized);
+    }
+
+    const effectiveHoldings = hhi > 0 ? 1 / hhi : 0;
+    return { hhi, effectiveHoldings };
+}
+
 export function buildConcentrationSeries(dates, compositionSeries, filterFrom, filterTo) {
     if (!Array.isArray(dates) || dates.length === 0) {
         return [];
@@ -117,52 +163,26 @@ export function buildConcentrationSeries(dates, compositionSeries, filterFrom, f
     const result = [];
 
     for (let i = 0; i < dates.length; i += 1) {
-        const dateStr = dates[i];
-        const date = new Date(dateStr);
-        if (Number.isNaN(date.getTime())) {
-            continue;
-        }
-        if (filterFrom && date < filterFrom) {
-            continue;
-        }
-        if (filterTo && date > filterTo) {
+        const date = _getValidDate(dates[i], filterFrom, filterTo);
+        if (!date) {
             continue;
         }
 
-        // Gather positive weights for this day
-        // Use explicit arrays and standard loops instead of .forEach + Object lookups
-        // to avoid allocating closures and O(N^2) inner search loops
-        let totalWeight = 0;
-        const activeWeights = [];
-        const activeTickers = [];
-
-        for (let j = 0; j < tickers.length; j += 1) {
-            const ticker = tickers[j];
-            const values = compositionSeries[ticker];
-            const pct = Number(Array.isArray(values) ? (values[i] ?? 0) : 0);
-            if (Number.isFinite(pct) && pct > 0) {
-                activeWeights.push(pct);
-                activeTickers.push(ticker);
-                totalWeight += pct;
-            }
-        }
+        const { totalWeight, activeWeights, activeTickers } = _gatherActiveWeights(
+            i,
+            tickers,
+            compositionSeries
+        );
 
         if (totalWeight <= 0 || activeWeights.length === 0) {
             continue;
         }
 
-        // Normalize and compute adjusted HHI
-        // For ETFs: HHI = Σ(wᵢ² × ETF_HHI/10000)
-        // For stocks: HHI = Σ(wᵢ²)
-        let hhi = 0;
-        for (let j = 0; j < activeWeights.length; j += 1) {
-            const w = activeWeights[j];
-            const ticker = activeTickers[j];
-            const normalized = w / totalWeight;
-            hhi += calculateAdjustedHhiContribution(ticker, normalized);
-        }
-
-        const effectiveHoldings = hhi > 0 ? 1 / hhi : 0;
+        const { hhi, effectiveHoldings } = _computeConcentrationMetrics(
+            activeWeights,
+            activeTickers,
+            totalWeight
+        );
 
         result.push({
             date,
