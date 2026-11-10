@@ -262,31 +262,70 @@ Confirmed constraints and current baselines:
 - **Guardrail:** Do not change the full checkouts in CI, diff-coverage, or
   mutation-testing workflows; those have separate history requirements.
 
-### AI-2 [skip] — Load only filtered tickers through one shared loader
+### AI-2 [skip] — Generate bounded price shards during Pages deployment
 
-- **Files:** `scripts/twrr/step03_fetch_prices.py`,
+- **Files:** `.github/workflows/pages.yml`, `.gitignore`, new
+  `scripts/prepare_historical_price_shards.py`,
+  `tests/python/test_prepare_frontend_data.py`,
   `js/transactions/dataLoader.js`,
-  `js/transactions/chart/renderers/contribution.js`, and
-  `js/transactions/terminal/snapshots.js`.
-- **Find:** `write_raw_json_prices(combined_raw)`;
+  `js/transactions/chart/renderers/contribution.js`,
+  `js/transactions/terminal/snapshots.js`, and their existing Jest suites.
+- **Find:** `- name: Stamp service worker cache version`;
+  `data/analysis/theme_timeline.json`;
   `let balanceSeriesPayloadPromise = null;`; and
   `const response = await fetch('../data/historical_prices.json');` at both
   browser call sites.
-- **Change:** Route to a stronger model. Generate per-ticker browser artifacts
-  from `combined_raw` and add one shared, single-flight loader used by both
-  consumers. Add monolith-versus-shard parity, multi-ticker, alias,
-  missing/failed response, and fetch-count tests. Keep the monolith until its
-  Python readers migrate.
+- **Change:** Split the existing raw JSON into deploy-only, content-hashed
+  per-symbol artifacts and add one shared, single-flight loader used by both
+  consumers. Do not generate or commit shards in `step03`.
+- **Design:**
+    1. Use only the Python standard library. Read
+       `data/historical_prices.json`, preserve every symbol/date/value without
+       arithmetic, and serialize each symbol's date map compactly. Name each
+       shard after its content SHA-256 and write `index.json` last with
+       `schema_version=1`, the source SHA-256, and a symbol-to-shard map. Include
+       normalized ticker aliases in the map. Content hashes prevent mixed-release
+       responses without retaining old releases in the Pages artifact.
+    2. Add `data/historical_prices/` to `.gitignore`. In Pages, set up Python
+       3.11 and run the generator after checkout but before service-worker
+       stamping and artifact upload. No pip packages are needed. The monolith
+       remains tracked and deployed for Python compatibility and legacy fallback.
+    3. In `dataLoader.js`, cache one manifest promise, one promise per shard, and
+       one legacy-monolith promise. Derive requested symbols from
+       `filteredTransactions`, not the filter text, and fetch missing shards in
+       parallel. Validate the manifest schema before using it.
+    4. Merge loaded series into `transactionState.historicalPrices`. Return the
+       existing object unchanged when no new series arrives; otherwise set a new
+       object containing the union of the latest state and loaded series. This
+       prevents stale concurrent responses from dropping symbols and avoids
+       invalidating the contribution pipeline cache on every frame. Cache failed
+       promises for the page session so a failed render cannot trigger a fetch
+       storm; reload the page to retry.
+    5. Fall back to the monolith only when the manifest is unavailable/invalid
+       or a referenced shard fails. A symbol absent from a valid manifest is a
+       real no-data case: do not download the monolith. `CHX` currently exercises
+       this path and must continue using transaction-price fallback.
+    6. Replace both browser fetch blocks with the shared loader. Keep the
+       existing raw-price gaps, ticker normalization, 10-day lookup fallback,
+       split adjustment, and last-transaction-price behavior unchanged.
+    7. Add generator tests for exact per-symbol parity, deterministic hashes,
+       aliases, and malformed input. Add loader tests for concurrent callers,
+       multi-ticker filters, object identity, absent symbols, broken shards, and
+       fallback fetch counts. Keep renderer and snapshot regression suites.
+- **Tradeoff:** The Pages artifact grows by roughly the 8.9 MB shard payload,
+  but Git history does not grow and filtered browsers avoid the monolith. The
+  current four-holding estimate is about 55 KiB gzipped versus 2.45 MiB.
 - **Verify:**
 
     ```bash
-    venv/bin/python -m pytest tests/python/test_step03_fetch_prices.py
-    npx jest tests/js/transactions/chart/data/contribution.test.js tests/js/transactions/chart/renderers/contribution.test.js tests/js/transactions/terminal/snapshots.test.js tests/js/transactions/terminal/snapshots_coverage.test.js tests/js/transactions/terminal/snapshots_more.test.js --runInBand
+    venv/bin/python -m pytest tests/python/test_prepare_frontend_data.py
+    npx jest tests/js/transactions/dataLoader.test.js tests/js/transactions/chart/data/contribution.test.js tests/js/transactions/chart/renderers/contribution.test.js tests/js/transactions/terminal/snapshots.test.js tests/js/transactions/terminal/snapshots_coverage.test.js tests/js/transactions/terminal/snapshots_more.test.js --runInBand
+    npx prettier --check .github/workflows/analysis-sync.yml .github/workflows/pages.yml .github/workflows/twrr-refresh.yaml
+    make smoke
     ```
 
-- **Guardrail:** Do not regenerate these browser artifacts from
-  `historical_prices.parquet` or `prepare_frontend_data.py`; both lose the raw
-  JSON's missing-date semantics. Preserve the existing 10-day price fallback.
+- **Guardrail:** Never rebuild the shards from the forward/back-filled Parquet
+  or `prepare_historical_prices()`; the raw monolith is the only exact source.
 
 ### AI-3 [skip] — Compact ratio JSON without changing parsed values
 
@@ -294,40 +333,97 @@ Confirmed constraints and current baselines:
   `tests/python/test_calculate_ratios.py`.
 - **Find:** `with open(OUTPUT_DIR / 'balance_series.json', 'w') as f:` and
   `def test_get_performance_series(self):`.
-- **Change:** Route to a stronger model to add output coverage first, then use
-  compact JSON separators for the JSON writes in `main()`. Compare parsed
-  before/after payloads. Current raw-size savings are 7.5% for contribution,
+- **Change:** Add one temporary-directory integration test, then add compact
+  separators to the six existing `json.dump` calls in `main()`.
+- **Design:**
+    1. In the existing test class, skip when pandas is unavailable, patch
+       `OUTPUT_DIR` to a temporary directory, and call the real `main()` against
+       tracked inputs. This covers all six JSON writes without mocking financial
+       calculations or modifying `data/`.
+    2. For balance, contribution, daily FX, performance, transaction stats, and
+       holdings, assert each generated file equals
+       `json.dumps(json.loads(text), separators=(',', ':'))`. This test fails
+       with the current spaced serialization and passes after the change.
+    3. Change only the `json.dump` keyword arguments. Do not add a helper or
+       refactor `main()`, and do not compare against committed files whose
+       current-date padding can legitimately differ.
+- **Measured baseline:** A temporary-directory run reproduced all six committed
+  parsed payloads exactly. Expected raw-size savings are 7.5% for contribution,
   7.6% for performance and balance, and 11.1% for daily FX; gzip savings are
   negligible, so this targets future Git growth rather than latency.
 - **Verify:** `venv/bin/python -m pytest tests/python/test_calculate_ratios.py`
 - **Guardrail:** Do not round values, reorder series, or change the
   current-date padding behavior as part of this serialization-only item.
 
-### AI-4 [skip] — Prove deploy generation on the composition family first
+### AI-4 [skip] — Deploy-generate the composition family in two stages
 
 - **Files:** `.github/workflows/pages.yml`,
-  `.github/workflows/twrr-refresh.yaml`,
-  `scripts/generate_composition_data.py`, and
-  `scripts/generate_marketcap_from_composition.py`.
+  `.github/workflows/twrr-refresh.yaml`, `.gitignore`, `Makefile`,
+  `scripts/generate_composition_data.py`,
+  `scripts/generate_marketcap_from_composition.py`, new
+  `scripts/generate_deploy_figures.py` and
+  `scripts/validate_frontend_figures.py`, and the existing generator/workflow
+  test files.
 - **Find:** `- name: Stamp service worker cache version`;
-  `- name: Validate generated data`; `def main():` in each
-  generator; and `composition_path = Path('data/output/figures/composition.json')`.
-- **Change:** Route to a stronger model. Add a clean-checkout parity harness
-  for composition, sectors, and marketcap, then generate them during Pages
-  deployment only if parsed artifacts match. Make deploy generation fail
-  closed and keep nightly validation ahead of publication. Remove future
-  committed copies only as a separate reviewed step with explicit staging.
+  `- name: Validate generated data`; `twrr-validate:`;
+  `data/analysis/theme_timeline.json`; `def main():` in each generator; and
+  `composition_path = Path('data/output/figures/composition.json')`.
+- **Change:** Add a reusable generator/validator and prove it during Pages
+  deployment before stopping future commits of composition, sectors, and
+  marketcap.
+- **Design:**
+    1. `generate_deploy_figures.py` reads the three committed baselines into
+       memory, runs composition/sectors followed by marketcap, validates the
+       regenerated files, and compares them with the baselines. Its initial
+       `--require-baseline` mode must fail when a baseline is absent.
+    2. `validate_frontend_figures.py` requires `dates`, `total_values`, and
+       `series`; equal non-zero lengths; matching series lengths; sorted date
+       strings; and finite numbers. Comparison keeps object keys, list lengths,
+       dates, and strings exact, using `math.isclose` with relative and absolute
+       tolerance `1e-12` only for numeric values. Reject NaN and infinity.
+    3. Make marketcap fail closed: missing composition or fund-breakdown inputs
+       raise an error, and its top-level exception handler must not exit zero.
+       Update its existing fail-open tests. This deterministic local transform
+       must never silently deploy a stale or missing file.
+    4. In Pages, set up Python 3.11, install only the pandas and pyarrow
+       constraints already declared in `requirements.txt`, and run the deploy
+       generator before service-worker stamping and artifact upload. Generation,
+       comparison, or validation failure prevents upload, leaving the previous
+       deployment active.
+    5. Add the structural validator to `make twrr-validate`, so nightly input
+       commits remain gated after the derived files become untracked. Keep the
+       existing TWRR validation unchanged.
+    6. **Stage A — dual-publish:** keep nightly output commits and run Pages
+       generation with `--require-baseline`. Require successful parity on several
+       data deploys. An intentional generator change must update the committed
+       baseline before it can deploy.
+    7. **Stage B — stop future snapshots:** in a separate reviewed change, add
+       exactly the three generated paths to `.gitignore`, remove them from
+       version control without rewriting history, and drop `--require-baseline`.
+       Nightly still generates and validates them, but ignored files are not
+       staged by the existing `git add data/output`. Continue generating them in
+       Pages from tracked canonical inputs.
+- **Measured baseline:** Temporary-directory generation reproduced composition
+  and marketcap exactly. Sectors had identical structure, dates, and totals,
+  with numeric differences around `10^-15`; this justifies tolerant numeric
+  comparison rather than byte equality. The three current files total
+  3,147,117 bytes per snapshot. Existing history remains unchanged.
+- **Tradeoff:** Pages gains a Python/pandas setup step, while future nightly
+  commits avoid roughly 3.15 MB of derived JSON per changed run. The deployed
+  artifact and browser payload remain the same size.
 - **Verify:**
 
     ```bash
     npx prettier --check .github/workflows/analysis-sync.yml .github/workflows/pages.yml .github/workflows/twrr-refresh.yaml
     venv/bin/python -m pytest tests/python/test_generate_composition_data.py tests/python/test_generate_marketcap_from_composition.py tests/python/test_twrr_refresh_workflow.py
+    make twrr-validate
+    make smoke
     ```
 
 - **Guardrail:** Do not include geography, TWRR, or P/E in this pilot: their
   current generators have network, timestamp, or previous-output dependencies.
-  Marketcap currently exits successfully on generation failure, which is not
-  acceptable for a clean deploy artifact.
+  Do not ignore the whole `data/output/` directory or remove its broad staging
+  rule without replacing coverage for every remaining artifact.
 
 ## Open questions / what I could not verify
 
