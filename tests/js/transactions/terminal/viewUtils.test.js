@@ -5,6 +5,7 @@ import {
     getActiveChartSummaryText,
 } from '../../../../js/transactions/terminal/viewUtils.js';
 import * as snapshotsModule from '../../../../js/transactions/terminal/snapshots.js';
+import * as dataLoaderModule from '../../../../js/transactions/dataLoader.js';
 import { transactionState } from '../../../../js/transactions/state.js';
 
 describe('viewUtils - isActiveChartVisible', () => {
@@ -304,5 +305,76 @@ describe('viewUtils - getActiveChartSummaryText', () => {
         transactionState.activeChart = 'unknown';
         const res = await getActiveChartSummaryText();
         expect(res).toBeNull();
+    });
+});
+
+describe('viewUtils - drawdown summary price readiness', () => {
+    let drawdownSpy;
+    let readySpy;
+
+    beforeEach(() => {
+        drawdownSpy = jest
+            .spyOn(snapshotsModule, 'getDrawdownSnapshotLine')
+            .mockReturnValue('drawdown text');
+        readySpy = jest
+            .spyOn(dataLoaderModule, 'ensureFilteredPricesLoaded')
+            .mockResolvedValue(undefined);
+    });
+
+    afterEach(() => {
+        jest.restoreAllMocks();
+        transactionState.activeChart = null;
+        transactionState.allTransactions = [];
+        transactionState.filteredTransactions = [];
+        transactionState.activeFilterTerm = '';
+    });
+
+    it('waits for filtered prices before the drawdown snapshot when filters are active', async () => {
+        transactionState.activeChart = 'drawdownAbs';
+        transactionState.allTransactions = [{ security: 'AAPL' }, { security: 'VTI' }];
+        transactionState.filteredTransactions = [{ security: 'AAPL' }];
+        transactionState.activeFilterTerm = 'AAPL';
+
+        const res = await getActiveChartSummaryText();
+
+        expect(res).toBe('drawdown text');
+        expect(readySpy).toHaveBeenCalledTimes(1);
+        expect(readySpy.mock.invocationCallOrder[0]).toBeLessThan(
+            drawdownSpy.mock.invocationCallOrder[0]
+        );
+    });
+
+    it('waits for filtered prices for the percentage drawdown chart too', async () => {
+        transactionState.activeChart = 'drawdown';
+        transactionState.allTransactions = [{ security: 'AAPL' }, { security: 'VTI' }];
+        transactionState.filteredTransactions = [{ security: 'VTI' }];
+        transactionState.activeFilterTerm = 'VTI';
+
+        await getActiveChartSummaryText();
+
+        expect(readySpy).toHaveBeenCalledTimes(1);
+        expect(drawdownSpy).toHaveBeenCalledWith({ includeHidden: true });
+    });
+
+    it('still delegates gating to the helper when no transaction filter is active', async () => {
+        transactionState.activeChart = 'drawdownAbs';
+        transactionState.allTransactions = [{ security: 'AAPL' }, { security: 'VTI' }];
+        transactionState.filteredTransactions = [{ security: 'AAPL' }, { security: 'VTI' }];
+        transactionState.activeFilterTerm = '';
+
+        await getActiveChartSummaryText();
+
+        // The helper itself decides whether to load; the summary must still
+        // await it before the synchronous snapshot read.
+        expect(readySpy).toHaveBeenCalledTimes(1);
+        expect(readySpy.mock.invocationCallOrder[0]).toBeLessThan(
+            drawdownSpy.mock.invocationCallOrder[0]
+        );
+    });
+
+    it('does not wait for prices on non-drawdown charts', async () => {
+        transactionState.activeChart = 'performance';
+        await getActiveChartSummaryText();
+        expect(readySpy).not.toHaveBeenCalled();
     });
 });

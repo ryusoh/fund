@@ -27,6 +27,7 @@ import {
     getBetaSnapshotLine,
     getYieldSnapshotLine,
 } from '../snapshots.js';
+import { ensureFilteredPricesLoaded } from '../../dataLoader.js';
 import { toggleZoom, getZoomState } from '../../zoom.js';
 import { PLOT_SUBCOMMANDS } from '../constants.js';
 const TWRR_MESSAGE =
@@ -165,7 +166,10 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
 
     const getSnapshotFn = (baseChartKey, useAbsolute) => {
         if (baseChartKey === 'drawdown') {
-            return () => getDrawdownSnapshotLine({ includeHidden: true, isAbsolute: useAbsolute });
+            return async () => {
+                await ensureFilteredPricesLoaded();
+                return getDrawdownSnapshotLine({ includeHidden: true, isAbsolute: useAbsolute });
+            };
         }
         const snapshotFnMap = {
             composition: getCompositionSnapshotLine,

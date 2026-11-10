@@ -131,7 +131,7 @@ export async function loadTransactionData() {
 }
 
 import { fetchRealTimeData } from './realtimeData.js';
-import { transactionState, setHistoricalPrices } from './state.js';
+import { transactionState, setHistoricalPrices, hasActiveTransactionFilters } from './state.js';
 
 let balanceSeriesPayloadPromise = null;
 
@@ -261,6 +261,17 @@ function loadPriceShard(symbol, entry) {
         );
     }
     return priceShardPromises.get(symbol);
+}
+
+export async function ensureFilteredPricesLoaded() {
+    // Mirrors the filtersActive condition used by the drawdown snapshot so
+    // prices are settled before its synchronous state read.
+    const filtersActive =
+        hasActiveTransactionFilters() && transactionState.activeFilterTerm?.trim().length > 0;
+    if (!filtersActive) {
+        return;
+    }
+    await loadHistoricalPrices(transactionState.filteredTransactions || []);
 }
 
 export async function loadHistoricalPrices(transactions) {

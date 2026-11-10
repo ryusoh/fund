@@ -1,4 +1,5 @@
 import { transactionState } from '../state.js';
+import { ensureFilteredPricesLoaded } from '../dataLoader.js';
 import {
     getDrawdownSnapshotLine,
     getPerformanceSnapshotLine,
@@ -78,8 +79,14 @@ export async function getActiveChartSummaryText() {
         performance: () => getPerformanceSnapshotLine({ includeHidden: true }),
         fx: () => getFxSnapshotLine(),
         contribution: () => getContributionSummaryText(transactionState.chartDateRange),
-        drawdown: () => getDrawdownSnapshotLine({ includeHidden: true }),
-        drawdownAbs: () => getDrawdownSnapshotLine({ includeHidden: true, isAbsolute: true }),
+        drawdown: async () => {
+            await ensureFilteredPricesLoaded();
+            return getDrawdownSnapshotLine({ includeHidden: true });
+        },
+        drawdownAbs: async () => {
+            await ensureFilteredPricesLoaded();
+            return getDrawdownSnapshotLine({ includeHidden: true, isAbsolute: true });
+        },
         concentration: () => getConcentrationSnapshotText(),
         pe: () => getPESnapshotLine(),
         rolling: () => getRollingSnapshotLine({ includeHidden: true }),

@@ -17,6 +17,7 @@ describe('dataLoader basic history loaders', () => {
     let loadFxDailyRates;
     let loadPerformanceSeries;
     let loadHistoricalPrices;
+    let ensureFilteredPricesLoaded;
     let mockFetch;
 
     beforeEach(() => {
@@ -50,6 +51,7 @@ describe('dataLoader basic history loaders', () => {
         loadFxDailyRates = mod.loadFxDailyRates;
         loadPerformanceSeries = mod.loadPerformanceSeries;
         loadHistoricalPrices = mod.loadHistoricalPrices;
+        ensureFilteredPricesLoaded = mod.ensureFilteredPricesLoaded;
     }
 
     function createMockResponse(data, ok = true, isText = false) {
@@ -171,6 +173,47 @@ describe('dataLoader basic history loaders', () => {
             transactionState = stateMod.transactionState;
             setHistoricalPrices = stateMod.setHistoricalPrices;
             setHistoricalPrices({});
+            transactionState.allTransactions = [];
+            transactionState.filteredTransactions = [];
+            transactionState.activeFilterTerm = '';
+        });
+
+        it('ensureFilteredPricesLoaded is a no-op without active filters', async () => {
+            const calls = setupPriceFetch({ manifest: null });
+            await loadModule();
+            transactionState.allTransactions = [{ security: 'AAPL' }, { security: 'VTI' }];
+            transactionState.filteredTransactions = [{ security: 'AAPL' }, { security: 'VTI' }];
+            transactionState.activeFilterTerm = '';
+            await ensureFilteredPricesLoaded();
+            expect(calls).toHaveLength(0);
+        });
+
+        it('ensureFilteredPricesLoaded is a no-op when the filter text is empty', async () => {
+            const calls = setupPriceFetch({ manifest: null });
+            await loadModule();
+            transactionState.allTransactions = [{ security: 'AAPL' }, { security: 'VTI' }];
+            transactionState.filteredTransactions = [{ security: 'AAPL' }];
+            transactionState.activeFilterTerm = '   ';
+            await ensureFilteredPricesLoaded();
+            expect(calls).toHaveLength(0);
+        });
+
+        it('ensureFilteredPricesLoaded loads prices for the current filtered transactions', async () => {
+            const file = sha('a');
+            const manifest = makeManifest({
+                AAPL: { file: `${file}.json`, sha256: file },
+            });
+            const calls = setupPriceFetch({
+                manifest,
+                shardsByFile: { [`${file}.json`]: { '2024-01-01': 150 } },
+            });
+            await loadModule();
+            transactionState.allTransactions = [{ security: 'AAPL' }, { security: 'VTI' }];
+            transactionState.filteredTransactions = [{ security: 'AAPL' }];
+            transactionState.activeFilterTerm = 'AAPL';
+            await ensureFilteredPricesLoaded();
+            expect(transactionState.historicalPrices.AAPL).toEqual({ '2024-01-01': 150 });
+            expect(calls.some((c) => c.url.includes('index.json'))).toBe(true);
         });
 
         it('returns the current price object immediately for an empty request', async () => {

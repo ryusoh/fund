@@ -17,6 +17,7 @@ import {
     getCompositionSnapshotLine,
     getDrawdownSnapshotLine,
 } from '../snapshots.js';
+import { ensureFilteredPricesLoaded } from '../../dataLoader.js';
 import { toggleZoom } from '../../zoom.js';
 import { requestFadeUpdate, setFadePreserveSecondLast } from '../../fade.js';
 
@@ -257,8 +258,14 @@ const CHART_CONFIGS = {
         base: 'drawdown',
         abs: 'drawdownAbs',
         name: 'Drawdown',
-        snapshot: () => getDrawdownSnapshotLine({ includeHidden: true, isAbsolute: true }),
-        pctSnapshot: () => getDrawdownSnapshotLine({ includeHidden: true, isAbsolute: false }),
+        snapshot: async () => {
+            await ensureFilteredPricesLoaded();
+            return getDrawdownSnapshotLine({ includeHidden: true, isAbsolute: true });
+        },
+        pctSnapshot: async () => {
+            await ensureFilteredPricesLoaded();
+            return getDrawdownSnapshotLine({ includeHidden: true, isAbsolute: false });
+        },
         snapshotLabel: '',
     },
     sectors: {
@@ -390,7 +397,10 @@ async function _handlePercentageView(activeChart, chartManager) {
         msgName = 'composition';
     } else if (baseChart === 'drawdown') {
         const { getDrawdownSnapshotLine } = await import('../snapshots.js');
-        snapshotFn = getDrawdownSnapshotLine;
+        snapshotFn = async () => {
+            await ensureFilteredPricesLoaded();
+            return getDrawdownSnapshotLine({ includeHidden: true, isAbsolute: false });
+        };
         snapshotArgs = { includeHidden: true, isAbsolute: false };
         msgName = 'drawdown';
     } else if (baseChart === 'sectors') {
