@@ -9,6 +9,15 @@ import pytest
 # Add scripts directory to path to import generate_composition_data
 sys.path.append(str(Path(__file__).parent.parent.parent / "scripts"))
 from generate_composition_data import calculate_daily_composition, save_json_data
+from validate_frontend_figures import (  # noqa: E402
+    FIGURE_FILENAMES,
+    compare_figures,
+    validate_figure,
+    validate_figure_directory,
+)
+from validate_frontend_figures import (
+    main as validate_main,
+)
 
 
 @pytest.fixture
@@ -155,3 +164,121 @@ def test_save_json_data_writes_compact_json(tmp_path):
     assert parsed["dates"] == ["2023-01-01", "2023-01-02"]
     assert parsed["total_values"] == [100.0, 200.0]
     assert parsed["series"] == {"AAPL": [60.0, 55.0]}
+
+
+@pytest.fixture
+def valid_figure():
+    return {
+        "dates": ["2023-01-01", "2023-01-02"],
+        "total_values": [100.0, 200.0],
+        "series": {"AAPL": [60.0, 55.0], "MSFT": [40.0, 45.0]},
+    }
+
+
+def test_validate_figure_accepts_valid_payload(valid_figure):
+    assert validate_figure(valid_figure, "composition.json") is valid_figure
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("dates", []),
+        ("dates", ["2023-01-01", "not-a-date"]),
+        ("dates", ["2023-01-02", "2023-01-01"]),  # out of order
+        ("total_values", [100.0]),  # wrong length
+        ("total_values", [100.0, float("nan")]),
+        ("total_values", [100.0, float("inf")]),
+        ("total_values", [100.0, True]),  # bool rejected as number
+        ("series", {"AAPL": [60.0]}),  # wrong length
+        ("series", {"AAPL": [60.0, "oops"]}),
+        ("series", {"AAPL": [60.0, float("inf")]}),
+        ("series", {"AAPL": [60.0, False]}),
+        ("series", {"AAPL": "not-a-list"}),
+    ],
+)
+def test_validate_figure_rejects_invalid_values(valid_figure, field, value):
+    payload = {**valid_figure, field: value}
+    with pytest.raises(ValueError, match="composition.json"):
+        validate_figure(payload, "composition.json")
+
+
+def test_validate_figure_rejects_non_object():
+    with pytest.raises(ValueError, match="top level"):
+        validate_figure([1, 2, 3], "sectors.json")
+
+
+def test_validate_figure_reports_field_path(valid_figure):
+    payload = {**valid_figure, "series": {"AAPL": [60.0, float("nan")]}}
+    with pytest.raises(ValueError, match=r"series\['AAPL'\]\[1\]"):
+        validate_figure(payload, "marketcap.json")
+
+
+def test_compare_figures_returns_none_on_identical(valid_figure):
+    assert compare_figures(valid_figure, json.loads(json.dumps(valid_figure))) is None
+
+
+def test_compare_figures_allows_float_round_off(valid_figure):
+    actual = json.loads(json.dumps(valid_figure))
+    actual["total_values"][1] = 200.0 + 1e-13
+    actual["series"]["AAPL"][1] = 55.0 - 1e-13
+    assert compare_figures(valid_figure, actual) is None
+
+
+def test_compare_figures_rejects_values_outside_tolerance(valid_figure):
+    actual = json.loads(json.dumps(valid_figure))
+    actual["total_values"][1] = 200.0 + 1e-9
+    with pytest.raises(ValueError, match="total_values"):
+        compare_figures(valid_figure, actual)
+
+
+def test_compare_figures_detects_key_mismatch(valid_figure):
+    actual = json.loads(json.dumps(valid_figure))
+    del actual["series"]["AAPL"]
+    actual["series"]["TSLA"] = [60.0, 55.0]
+    with pytest.raises(ValueError, match="missing keys"):
+        compare_figures(valid_figure, actual)
+
+
+def test_compare_figures_detects_date_mismatch(valid_figure):
+    actual = json.loads(json.dumps(valid_figure))
+    actual["dates"][0] = "2023-01-03"
+    with pytest.raises(ValueError, match=r"dates\[0\]"):
+        compare_figures(valid_figure, actual)
+
+
+def test_compare_figures_detects_list_length_mismatch(valid_figure):
+    actual = json.loads(json.dumps(valid_figure))
+    actual["series"]["MSFT"] = [40.0]
+    with pytest.raises(ValueError, match="length"):
+        compare_figures(valid_figure, actual)
+
+
+def test_compare_figures_rejects_bool_vs_number(valid_figure):
+    actual = json.loads(json.dumps(valid_figure))
+    actual["series"]["MSFT"][0] = True
+    with pytest.raises(ValueError, match="bool|mismatch"):
+        compare_figures(valid_figure, actual)
+
+
+def test_figure_directory_validation_and_cli(valid_figure, tmp_path, capsys):
+    for name in FIGURE_FILENAMES:
+        (tmp_path / name).write_text(json.dumps(valid_figure))
+
+    assert validate_figure_directory(tmp_path) == []
+    assert validate_main([str(tmp_path)]) == 0
+    assert "valid" in capsys.readouterr().out
+
+    (tmp_path / "sectors.json").write_text(
+        json.dumps({"dates": [], "total_values": [], "series": {}})
+    )
+    errors = validate_figure_directory(tmp_path)
+    assert len(errors) == 1
+    assert validate_main([str(tmp_path)]) == 1
+    assert "sectors.json" in capsys.readouterr().err
+
+
+def test_figure_directory_cli_fails_on_missing_file(valid_figure, tmp_path, capsys):
+    (tmp_path / "composition.json").write_text(json.dumps(valid_figure))
+    (tmp_path / "sectors.json").write_text(json.dumps(valid_figure))
+    assert validate_main([str(tmp_path)]) == 1
+    assert "marketcap.json" in capsys.readouterr().err
