@@ -31,8 +31,14 @@ jobs:
               with:
                   python-version: '3.11'
 
+            - name: Install figure generation dependencies
+              run: pip install "pandas~=2.3" "pyarrow>=25.0.1"
+
             - name: Generate historical price shards
               run: python scripts/prepare_historical_price_shards.py data/historical_prices.json data/historical_prices
+
+            - name: Regenerate and validate figure data
+              run: python scripts/generate_deploy_figures.py
 
             - name: Stamp service worker cache version
               run: |

@@ -371,3 +371,4 @@ twrr-validate:
 	@# (held ticker without recent prices, coverage regression vs HEAD,
 	@# historical/real-time seam gap). Run after twrr-refresh, before committing.
 	$(PYTHON_BIN) scripts/twrr/step_validate.py
+	$(PYTHON_BIN) scripts/validate_frontend_figures.py data/output/figures
