@@ -236,12 +236,21 @@ describe('getContributionSummaryText', () => {
     let buildContributionSeriesFromTransactions;
     let transactionState;
     let mergeDividendsIntoContribution;
+    let loadHistoricalPrices;
 
     beforeEach(async () => {
         jest.resetModules();
 
         jest.mock('../../../../js/transactions/chart/renderers/yield.js', () => ({
             loadYieldData: jest.fn(),
+        }));
+
+        jest.mock('../../../../js/transactions/dataLoader.js', () => ({
+            loadCompositionSnapshotData: jest.fn(),
+            loadSectorsSnapshotData: jest.fn(),
+            loadGeographySnapshotData: jest.fn(),
+            loadMarketcapSnapshotData: jest.fn(),
+            loadHistoricalPrices: jest.fn(async () => ({ AAPL: { '2023-01-01': 100 } })),
         }));
 
         jest.mock('../../../../js/transactions/chart/data/contribution.js', () => ({
@@ -300,6 +309,9 @@ describe('getContributionSummaryText', () => {
 
         const snapshotsModule = await import('../../../../js/transactions/terminal/snapshots.js');
         getContributionSummaryText = snapshotsModule.getContributionSummaryText;
+
+        const dataLoaderModule = await import('../../../../js/transactions/dataLoader.js');
+        loadHistoricalPrices = dataLoaderModule.loadHistoricalPrices;
     });
 
     it('subtracts dividends from the contribution value', async () => {
@@ -374,6 +386,52 @@ describe('getContributionSummaryText', () => {
         ]);
 
         const text = await getContributionSummaryText();
+        expect(text).toContain('Contribution');
+    });
+
+    it('passes the current filtered transactions to the shared price loader', async () => {
+        hasActiveTransactionFilters.mockReturnValue(true);
+        transactionState.allTransactions = [
+            { tradeDate: '2023-01-01', amount: 1000, netAmount: 1000 },
+            { tradeDate: '2023-01-02', amount: 500, netAmount: 500 },
+        ];
+        transactionState.filteredTransactions = [{ security: 'AAPL' }, { security: 'BRK-B' }];
+        buildContributionSeriesFromTransactions.mockReturnValue([]);
+
+        await getContributionSummaryText();
+
+        expect(loadHistoricalPrices).toHaveBeenCalledWith([
+            { security: 'AAPL' },
+            { security: 'BRK-B' },
+        ]);
+    });
+
+    it('does not load prices when no transaction filter is active', async () => {
+        hasActiveTransactionFilters.mockReturnValue(false);
+        transactionState.allTransactions = [{ tradeDate: '2023-01-01', amount: 1000 }];
+        transactionState.filteredTransactions = [];
+        buildContributionSeriesFromTransactions.mockReturnValue([]);
+
+        await getContributionSummaryText();
+
+        expect(loadHistoricalPrices).not.toHaveBeenCalled();
+    });
+
+    it('treats an empty loader result as the empty-data path', async () => {
+        hasActiveTransactionFilters.mockReturnValue(true);
+        transactionState.allTransactions = [
+            { tradeDate: '2023-01-01', amount: 1000 },
+            { tradeDate: '2023-01-02', amount: 500 },
+        ];
+        transactionState.filteredTransactions = [{ security: 'AAPL' }];
+        buildContributionSeriesFromTransactions.mockReturnValue([]);
+        buildFilteredBalanceSeries.mockReturnValue([]);
+        loadHistoricalPrices.mockResolvedValue({});
+
+        const text = await getContributionSummaryText();
+
+        expect(loadHistoricalPrices).toHaveBeenCalledWith([{ security: 'AAPL' }]);
+        expect(buildFilteredBalanceSeries).toHaveBeenCalledWith([{ security: 'AAPL' }], {}, []);
         expect(text).toContain('Contribution');
     });
 });

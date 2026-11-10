@@ -2,7 +2,6 @@ import {
     transactionState,
     getShowChartLabels,
     setRunningAmountSeries,
-    setHistoricalPrices,
     hasActiveTransactionFilters,
 } from '../../state.js';
 import {
@@ -55,8 +54,8 @@ import {
     constrainSeriesToRange,
 } from '../helpers.js';
 import { smoothFinancialData } from '../../../utils/smoothing.js';
-import { logger } from '../../../utils/logger.js';
 import { toLocalIsoDate } from '../../../utils/date.js';
+import { loadHistoricalPrices } from '../../dataLoader.js';
 
 const pipelineCache = {
     key: null,
@@ -236,20 +235,9 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
         }
 
         let historicalPrices = transactionState.historicalPrices;
-        if (filtersActive && (!historicalPrices || Object.keys(historicalPrices).length === 0)) {
-            try {
-                const response = await fetch('../data/historical_prices.json');
-                if (response.ok) {
-                    historicalPrices = await response.json();
-                    // Cache the fetched data to prevent repeated async fetches
-                    setHistoricalPrices(historicalPrices);
-                } else {
-                    historicalPrices = {};
-                }
-            } catch (error) {
-                logger.warn('Contribution chart rendering failed:', error);
-                historicalPrices = {};
-            }
+        if (filtersActive) {
+            // Single-flight per-ticker shard loader; falls back to the monolith once.
+            historicalPrices = await loadHistoricalPrices(filteredTransactions);
         } else {
             historicalPrices = historicalPrices || {};
         }

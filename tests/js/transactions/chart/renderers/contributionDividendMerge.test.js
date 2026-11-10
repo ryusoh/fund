@@ -89,6 +89,10 @@ jest.mock('../../../../../js/transactions/utils.js', () => ({
     convertValueToCurrency: jest.fn((v) => v),
 }));
 
+jest.mock('../../../../../js/transactions/dataLoader.js', () => ({
+    loadHistoricalPrices: jest.fn(async () => ({})),
+}));
+
 jest.mock('../../../../../js/transactions/calculations.js', () => ({
     getSplitAdjustment: jest.fn(() => 1),
 }));

@@ -66,6 +66,13 @@ jest.mock('../../../../../js/transactions/chart/state.js', () => ({
     chartLayouts: {},
 }));
 
+jest.mock('../../../../../js/transactions/dataLoader.js', () => {
+    const historicalPrices = { ANET: { '2024-01-01': 100 } };
+    return {
+        loadHistoricalPrices: jest.fn(async () => historicalPrices),
+    };
+});
+
 jest.mock('../../../../../js/transactions/chart/interaction.js', () => ({
     updateCrosshairUI: jest.fn(),
     drawCrosshairOverlay: jest.fn(),
@@ -179,6 +186,7 @@ import {
     computeAppreciationSeries,
     mergeDividendsIntoContribution,
 } from '../../../../../js/transactions/chart/data/contribution.js';
+import { loadHistoricalPrices } from '../../../../../js/transactions/dataLoader.js';
 
 describe('Contribution Chart Renderer Cache', () => {
     let mockCtx;
@@ -263,5 +271,27 @@ describe('Contribution Chart Renderer Cache', () => {
 
         await drawContributionChart(mockCtx, mockChartManager, 32);
         expect(computeAppreciationSeries).toHaveBeenCalledTimes(2);
+    });
+
+    it('routes filtered views through the shared price loader', async () => {
+        await drawContributionChart(mockCtx, mockChartManager, 0);
+
+        expect(loadHistoricalPrices).toHaveBeenCalledWith(transactionState.filteredTransactions);
+        expect(buildFilteredBalanceSeries).toHaveBeenCalledWith(
+            transactionState.filteredTransactions,
+            { ANET: { '2024-01-01': 100 } },
+            transactionState.splitHistory
+        );
+    });
+
+    it('keeps both filtered consumers off the direct monolith fetch', () => {
+        const fs = require('fs');
+        const rendererSource = fs.readFileSync(
+            'js/transactions/chart/renderers/contribution.js',
+            'utf8'
+        );
+        const snapshotsSource = fs.readFileSync('js/transactions/terminal/snapshots.js', 'utf8');
+        expect(rendererSource).not.toContain("fetch('../data/historical_prices.json')");
+        expect(snapshotsSource).not.toContain("fetch('../data/historical_prices.json')");
     });
 });

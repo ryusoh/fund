@@ -1,6 +1,5 @@
 import {
     transactionState,
-    setHistoricalPrices,
     getCompositionFilterTickers,
     getCompositionAssetClassFilter,
     hasActiveTransactionFilters,
@@ -19,6 +18,7 @@ import {
     loadSectorsSnapshotData,
     loadGeographySnapshotData,
     loadMarketcapSnapshotData,
+    loadHistoricalPrices,
 } from '../dataLoader.js'; // Adjust path if needed
 import {
     formatCurrency as formatValueWithCurrency,
@@ -34,7 +34,6 @@ import { getConcentrationText } from './stats/analysis.js';
 import { loadPEData, buildPESeries } from '../chart/renderers/pe.js';
 import { loadYieldData } from '../chart/renderers/yield.js';
 import { parseLocalDate, formatCrosshairDateLabel } from '../chart/helpers.js';
-import { logger } from '../../utils/logger.js';
 
 function _isPEDataValid(data) {
     return data && typeof data === 'object' && Array.isArray(data.dates) && data.dates.length > 0;
@@ -1294,25 +1293,7 @@ async function ensureHistoricalPricesAvailable(filtersActive) {
     if (!filtersActive) {
         return transactionState.historicalPrices || {};
     }
-
-    let historicalPrices = transactionState.historicalPrices;
-    if (historicalPrices && Object.keys(historicalPrices).length > 0) {
-        return historicalPrices;
-    }
-
-    try {
-        const response = await fetch('../data/historical_prices.json');
-        if (response.ok) {
-            historicalPrices = await response.json();
-            setHistoricalPrices(historicalPrices);
-        } else {
-            historicalPrices = {};
-        }
-    } catch (error) {
-        logger.warn('Terminal snapshots processing failed:', error);
-        historicalPrices = {};
-    }
-    return historicalPrices;
+    return loadHistoricalPrices(transactionState.filteredTransactions || []);
 }
 
 function _getContributionSource(filtersActive) {
