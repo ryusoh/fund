@@ -212,7 +212,51 @@ asset such as `historical_prices.json`, not the canonical Parquet files.
 Do not rewrite Git history as part of this pilot. If later justified, plan that
 separately with explicit coordination, backup, and verification.
 
-## Action items (code-verified 2026-11-10)
+## Action items (code-verified 2026-10-28, executed 2026-11-10)
+
+### Execution status (2026-11-10)
+
+All non-dropped work orders are implemented, each verified with its stated
+Verify bundle at commit time. Commits are local on `main` (not pushed):
+
+| Item  | Status                                                                                                                                                                                                                                                                                                                               | Commit     |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- |
+| AI-1  | Done                                                                                                                                                                                                                                                                                                                                 | `c85bb353` |
+| AI-2A | Done                                                                                                                                                                                                                                                                                                                                 | `2c43a513` |
+| AI-2B | Done                                                                                                                                                                                                                                                                                                                                 | `c7452eee` |
+| AI-2C | Done — initially STOPped per its guardrail: traced callers in `handlers/transaction.js`, `handlers/misc.js`, and `handlers/plot.js` can all evaluate the synchronous drawdown snapshot before any price load. The race was fixed first by settling filtered prices (`ensureFilteredPricesLoaded`, `df856d42`), then this item landed | `6ff0ac09` |
+| AI-2D | Done                                                                                                                                                                                                                                                                                                                                 | `3df308f3` |
+| AI-3  | Dropped on review (see below)                                                                                                                                                                                                                                                                                                        | —          |
+| AI-4A | Done                                                                                                                                                                                                                                                                                                                                 | `97eeea57` |
+| AI-4B | Done                                                                                                                                                                                                                                                                                                                                 | `769a390b` |
+| AI-4C | Done                                                                                                                                                                                                                                                                                                                                 | `e9d193bc` |
+| AI-4D | Done                                                                                                                                                                                                                                                                                                                                 | `3ae3b50e` |
+| AI-4E | Done                                                                                                                                                                                                                                                                                                                                 | `4b94d01e` |
+
+Post-execution verification: the final tree passes the full JS suite
+(1,667 tests), `make lint`, `make sec`, and `make test` (824 pytest).
+`make verify`'s mypy step reports two pre-existing errors in
+`scripts/data/fetch_forex.py` (present at the session's base commit,
+untouched by this work).
+
+Post-execution notes:
+
+- The bounded price-loading pipeline is live end-to-end: Pages generates
+  `data/historical_prices/` shards at deploy (AI-2D), both filtered
+  consumers load through `loadHistoricalPrices` (AI-2C), and the tracked
+  monolith is now fetched only as the loader's internal fallback, so older
+  deployments without shards keep working.
+- After AI-4E the three derived figures are untracked, so the AI-4C
+  orchestrator runs in clean-generation mode on fresh checkouts; its
+  baseline-comparison mode was exercised against the still-tracked
+  baselines during AI-4D (composition/marketcap exact, sectors within
+  AI-4A tolerance).
+- Operational monitoring of deploy-time generation is via normal
+  post-merge deploys; any generation, comparison, or validation failure
+  stops the Pages run before artifact upload, leaving the previous site
+  active.
+
+### Original work orders
 
 Work one item at a time and commit after each item, but never push. Each `Find`
 string is a unique current anchor; if it does not match, STOP and report rather
