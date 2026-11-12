@@ -8,12 +8,12 @@
 
 ## 1. Executive Summary & Evolutionary History
 
-The `fund` repository implements a production-grade, state-oriented AI agent harness. It bridges autonomous background routines (Jules bots), interactive pair-programming agents (Antigravity, Claude Code, Kimi), automated execution skills, and deterministic quality gates into a cohesive, high-reliability engineering system.
+The `fund` repository implements a production-grade, state-oriented AI agent harness. It bridges interactive pair-programming agents (Antigravity, Claude Code, Kimi), automated execution skills, scheduled GitHub Actions workflows, and deterministic quality gates into a cohesive, high-reliability engineering system. (The unattended Jules routine fleet that originally drove the harness was retired in November 2026; see §5.)
 
 ```mermaid
 timeline
     title Evolution of the Fund Repository Agentic Harness System
-    Generation 1 : Autonomous Jules Lanes (2026-07)
+    Generation 1 : Autonomous Jules Lanes (2026-07, retired 2026-11)
                  : "Measure, Don't Read" Gates
                  : ESLint Bulk Suppressions & Xenon Complexity Ratchet
                  : Stream-of-Consciousness Scan (thinking-check)
@@ -118,7 +118,6 @@ graph TD
 
     subgraph Layer3["3. Execution & Agent Pool"]
         InteractiveAgents["Interactive Agents (main branch)<br/>- Antigravity / Claude Code / Kimi<br/>- Pre-authorized Local Commits"]
-        JulesBots["Unattended Jules Routines (isolated PRs)<br/>- Typist (Types) / Testpilot (Tests)<br/>- Architect (Complexity) / Sentinel (Sec)<br/>- Janitor (Dead Code) / Bolt (Features)"]
         StatelessWorkers["Ephemeral Gated Subagents<br/>- Zero Tacit Context (O(1) Memory)<br/>- Single-Gate Lifespan"]
     end
 
@@ -140,84 +139,53 @@ graph TD
 
 ---
 
-## 4. The Two-Audience Operating Model
+## 4. The Interactive Operating Model
 
-The repository establishes a fundamental distinction between **Unattended Jules Routines** and **Interactive Coding Agents** in `AGENTS.md`.
+`AGENTS.md` governs interactive coding agents working directly with the developer.
 
 ```mermaid
 graph TD
     User([Developer / User])
 
-    subgraph Unattended_Audience["Audience 1: Unattended Jules Routines (.jules/)"]
-        JulesScheduler["Scheduled Cron / CI Dispatch"]
-        JulesWorker["Autonomous Headless Agent"]
-        JulesBranch["Feature Branch (jules/*)"]
-        JulesPR["Pull Request (GitHub PR)"]
-        BinaryReview{"Human Binary Decision:<br/>Approve & Merge OR Close"}
+    ChatSession["Interactive Chat Session<br/>(Antigravity, Claude Code, Kimi)"]
+    DirectMain["Working Tree / main Branch"]
+    AutoSkills["Pre-Authorized Workflow Skills<br/>(/implement-action-items, /tdd, /ship)"]
+    LocalCommit["Local Atomic Commits"]
+    PushAck{"User Acknowledgment<br/>Before Remote Push"}
 
-        JulesScheduler --> JulesWorker --> JulesBranch --> JulesPR --> BinaryReview
-    end
-
-    subgraph Interactive_Audience["Audience 2: Interactive Coding Agents"]
-        ChatSession["Interactive Chat Session<br/>(Antigravity, Claude Code, Kimi)"]
-        DirectMain["Working Tree / main Branch"]
-        AutoSkills["Pre-Authorized Workflow Skills<br/>(/implement-action-items, /tdd, /ship)"]
-        LocalCommit["Local Atomic Commits"]
-        PushAck{"User Acknowledgment<br/>Before Remote Push"}
-
-        User <-->|Pair Programming| ChatSession
-        ChatSession --> DirectMain
-        ChatSession --> AutoSkills
-        AutoSkills --> LocalCommit
-        LocalCommit --> PushAck --> User
-    end
+    User <-->|Pair Programming| ChatSession
+    ChatSession --> DirectMain
+    ChatSession --> AutoSkills
+    AutoSkills --> LocalCommit
+    LocalCommit --> PushAck --> User
 ```
 
-### 4.1 Audience Comparison Matrix
+| Property                | Interactive Coding Agents (Antigravity, Claude, etc.)                                       |
+| :---------------------- | :------------------------------------------------------------------------------------------ |
+| **Human in the Loop**   | Continuous pair-programming and real-time guidance.                                         |
+| **Review Standard**     | Interactive diff review in IDE / terminal.                                                  |
+| **Optimization Target** | Problem resolution speed, architectural depth, thoroughness.                                |
+| **Branching Strategy**  | Works directly on `main`; branches only when directed.                                      |
+| **Commit Authority**    | Local commits pre-authorized for workflow skills; remote push gated on user acknowledgment. |
+| **Scope Limits**        | Full repo access; may edit build configs and Makefiles.                                     |
 
-| Property                | Unattended Jules Routines (`.jules/`)                        | Interactive Coding Agents (Antigravity, Claude, etc.)                                       |
-| :---------------------- | :----------------------------------------------------------- | :------------------------------------------------------------------------------------------ |
-| **Human in the Loop**   | None during execution; zero review iteration.                | Continuous pair-programming and real-time guidance.                                         |
-| **Review Standard**     | Binary approve/close in $\le 10$ seconds. No comments left.  | Interactive diff review in IDE / terminal.                                                  |
-| **Optimization Target** | **Approve rate**, smallest possible diff, zero scope creep.  | Problem resolution speed, architectural depth, thoroughness.                                |
-| **Branching Strategy**  | Never touches `main`; isolated branch $\to$ GitHub PR.       | Works directly on `main`; branches only when directed.                                      |
-| **Commit Authority**    | Commits to PR branch with bot author trailer.                | Local commits pre-authorized for workflow skills; remote push gated on user acknowledgment. |
-| **Scope Limits**        | Strict lane boundaries; forbidden from touching other lanes. | Full repo access; may edit build configs, Makefiles, and `.jules/`.                         |
+Unattended automation is limited to GitHub Actions workflows (data pipelines,
+dependency bumps). They commit as `github-actions[bot]` and deploy through the
+explicit Pages dispatch described in `docs/pages-deploy.md`.
 
 ---
 
-## 5. Jules Personas & The Lane Ownership Matrix
+## 5. Historical: the Jules routine fleet (retired)
 
-To prevent unattended background bots from colliding or causing scope creep, each Jules persona owns a disjoint vertical lane:
-
-```mermaid
-graph LR
-    subgraph Jules_Lanes["Jules Routine Lane Ownership"]
-        Typist["Typist Lane<br/>- JSDoc Strict Annotations<br/>- Zero Logic Changes"]
-        Testpilot["Testpilot Lane<br/>- Missing Test Coverage<br/>- Append-Only in tests/"]
-        Architect["Architect Lane<br/>- Cyclomatic Complexity Refactors<br/>- Behavior Preserving"]
-        Sentinel["Sentinel Lane<br/>- Security Fixes & Leaks<br/>- Empty Catches & Resource Audits"]
-        Janitor["Janitor Lane<br/>- Dead Code & Stale Deps<br/>- Real TODO Cleanup"]
-        Bolt["Bolt Lane<br/>- Features & Performance<br/>- New Optimizations"]
-    end
-
-    Typist -.->|Forbidden from touching| ProdLogic[Runtime Behavior]
-    Testpilot -.->|Forbidden from touching| ProdCode[js/ & scripts/ Prod Files]
-    Architect -.->|Forbidden from touching| Tests[Tests & Features]
-    Sentinel -.->|Forbidden from touching| Complexity[Complexity Refactors]
-    Janitor -.->|Forbidden from touching| Tooling[Harness Scripts & Makefiles]
-```
-
-### Lane Boundary Specifications
-
-| Routine       | Owns Exclusively                                                  | Must NOT Touch                                               | Verification Target                                           |
-| :------------ | :---------------------------------------------------------------- | :----------------------------------------------------------- | :------------------------------------------------------------ |
-| **Typist**    | JS strict-type annotations (JSDoc `@param`, `@returns`).          | Runtime logic, branching, or behavior.                       | `npx tsc -p jsconfig.json` strict error count drops.          |
-| **Testpilot** | Test additions, edge case assertions, coverage floors.            | Production code (`js/`, `scripts/`).                         | `make test` coverage increases; tests are append-only.        |
-| **Architect** | Cyclomatic complexity refactors (breaking up mega-functions).     | Error handling, tests, feature changes.                      | `xenon` / ESLint complexity decreases; tests stay 100% green. |
-| **Sentinel**  | Security vulnerabilities (Bandit), resource leaks, bare `except`. | Complexity refactors or performance tweaks.                  | Bandit clean; error handling verified.                        |
-| **Janitor**   | Dead code removal, stale package dependencies, real TODOs.        | Tooling (`scripts/agents/`, `bin/`, `Makefile`, `.agents/`). | Zero test regressions; dead symbols removed.                  |
-| **Bolt**      | Features, performance optimizations, rendering speed.             | Anything owned by another lane in the same PR.               | Benchmark measurements, `make verify`.                        |
+From 2026-07 until the cutoff on 2026-11-11, six unattended Jules personas
+(Typist, Testpilot, Architect, Sentinel, Janitor, Bolt) each owned a disjoint
+lane — types, tests, complexity, security, dead code, features — and opened
+small PRs that a human approved or closed. That model produced several of the
+gates in §6 (empty-PR rejection, bot-commit hygiene, the complexity ratchet).
+The personas, lane table, and routine prompts were removed from the active tree
+and remain in Git history at `034e6c55`; durable repository knowledge was moved
+to `docs/security-and-cleanup-pitfalls.md` and `AGENTS.md`. See
+`docs/jules-retirement-plan.md` for the retirement decision and scope.
 
 ---
 
@@ -332,7 +300,6 @@ graph TD
 | **`diagnosing-bugs`**        | `/diagnosing-bugs`        | Structured diagnosis loop for hard bugs and performance regressions; generates minimal reproductions before patching.                   |
 | **`sibling-repo-sync`**      | `/sibling-repo-sync`      | Propagates harness, tooling, and gate improvements across the four sibling repositories with perspective-flipped adaptations.           |
 | **`sync-commands`**          | `/sync-commands`          | Compiles `.agents/skills/` into `.claude/commands/` and validates symlink integrity.                                                    |
-| **`jules-persona`**          | `/jules-persona`          | Tunes scheduled prompts and enhances `.jules/<name>.md` personas to match repo house conventions.                                       |
 
 ---
 
@@ -460,7 +427,7 @@ graph TD
 | make verify                          | Full checks: lint + types + sec + tests          |
 | make precommit-fix                   | CI parity gate (web-ci: --max-warnings=0)        |
 | make thinking-check                  | Scan for stream-of-consciousness comments        |
-| make bot-pr-check                    | Verify Jules bot PR commit hygiene               |
+| make bot-pr-check                    | Verify bot-authored commit hygiene               |
 | make depcheck                        | Verify JS modular dependency boundaries          |
 | make sync-check                      | Check generated Claude commands freshness        |
 | make mutate-js / mutate-py           | Run Stryker / Mutmut mutation test ratchets      |

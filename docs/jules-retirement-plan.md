@@ -1,7 +1,32 @@
 # Jules retirement plan
 
-**Status:** Proposed
-**Last updated:** 2026-11-02
+**Status:** Executed (repository cleanup 2026-11-12)
+**Last updated:** 2026-11-12
+
+## Retirement note
+
+- **Cutoff:** Jules sessions could finish through 2026-11-11; the product is
+  read-only until it winds down on 2026-12-31.
+- **Final Jules-era revision:** `034e6c55` — the last commit whose tree still
+  contains `.jules/`, `tests/python/test_jules_personas.py`,
+  `docs/jules-routine-prompts.md`, and the `jules-persona` skill. Recover any
+  of them with `git show 034e6c55:<path>`.
+- **Replacement workflow:** interactive agents (Antigravity, Claude Code, Kimi)
+  per `AGENTS.md` and the shared skills in `.agents/skills/`. No persona was
+  ported; recreate one only for a concrete recurring workflow.
+- **Drain state at cleanup:** no open pull requests (`gh pr list --state open`
+  returned none on 2026-11-12).
+- **Knowledge migrated:** Sentinel and Janitor pitfalls →
+  `docs/security-and-cleanup-pitfalls.md`; the gate-clean rule for
+  `make precommit-fix` → `AGENTS.md` non-negotiable #1. Complexity, typing, and
+  coverage guidance was already covered by `docs/agentic-quality-gates.md` and
+  `docs/js-typing-strategy.md`; the remaining persona content (dated incidents,
+  Bolt/Testpilot routine mechanics) stays in history.
+- **Retained tooling:** `scripts/agents/check_bot_pr_hygiene.py` (bot-commit
+  gate in `make bot-pr-check`/CI), `prior_prs`, `gate_guard`,
+  `check_commit_message`, and the `bot-pr-rescue` skill (reference to personas
+  removed). Reassess `bot-pr-rescue` and the hygiene gate's Jules author
+  marker separately once no Jules branch can still reach the repo.
 
 ## Context
 

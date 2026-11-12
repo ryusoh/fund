@@ -1,5 +1,5 @@
-# Governance surface for the autonomous Jules routines.
-# Routines may read these but must never merge changes to them: require an
+# Governance surface for agent guidance and automation.
+# Bots may read these but must never merge changes to them: require an
 # explicit human review. Enforced only when branch protection has
 # "Require review from Code Owners" enabled for the default branch.
 #
@@ -7,7 +7,6 @@
 # github-actions bumps to other workflows are not gated.
 
 /AGENTS.md                          @ryusoh
-/.jules/                            @ryusoh
 /scripts/agents/                    @ryusoh
 /.github/CODEOWNERS                 @ryusoh
 /.github/workflows/commit-lint.yml  @ryusoh

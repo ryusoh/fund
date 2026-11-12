@@ -205,13 +205,18 @@ def iter_tracked_sources():
     for path in result.stdout.split():
         if path.endswith('.min.js') or any(part in path for part in EXCLUDED_PARTS):
             continue
+        if not Path(path).is_file():
+            continue
         yield path
 
 
 def find_violations(paths):
     """Yield 'path:lineno: message' strings for every violation in the given files."""
     for path in paths:
-        src = Path(path).read_text(encoding='utf-8', errors='replace')
+        p = Path(path)
+        if not p.is_file():
+            continue
+        src = p.read_text(encoding='utf-8', errors='replace')
         if path.endswith('.py'):
             for lineno, text in scan_python_comments(src):
                 yield f'{path}:{lineno}: thinking-out-loud comment: # {text}'

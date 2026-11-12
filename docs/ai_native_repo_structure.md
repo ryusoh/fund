@@ -595,8 +595,8 @@ a design task (generator choice, where validation runs). Not mechanical.
 #### 9. `[skip]` Subagent team definitions under `.claude/agents/` (§16)
 
 `.claude/agents/` does not exist yet. Defining scoped subagents (roles,
-allowed tools) is a persona-design task; see the `jules-persona` skill for
-house conventions before authoring.
+allowed tools) is a persona-design task; the retired `jules-persona` skill's
+conventions remain in Git history at `034e6c55`.
 
 #### 10. `[skip]` Semantic layer + agent telemetry (§12, §14)
 

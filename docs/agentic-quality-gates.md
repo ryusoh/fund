@@ -8,6 +8,10 @@ repo's current structure and agentic workflow, what concrete improvements can we
 adopt from (or inspired by) that gates-instead-of-review approach?** Read before
 adding any new check to `make verify` or a new CI workflow.
 
+> **Historical note (2026-11-12):** the `.jules/` personas and Jules routines cited
+> below were retired (see `docs/jules-retirement-plan.md`); their files remain
+> in Git history at `034e6c55`. The gates themselves are unchanged.
+
 ## TL;DR
 
 - The repo is **already most of the way there**. The two-audience model in
@@ -145,7 +149,7 @@ PRs). Ratchet: `mutation-ratchet.json` floors + `scripts/check_mutation_ratchet.
   loses `testpaths`/`pythonpath`, collects `scripts/test_*.py`, and the
   trampoline's sys.path side effects break collection
   (`test_twrr_acceptance.py` import chain). `also_copy` also lists the repo
-  meta-files conformance tests read (`.jules/`, `AGENTS.md`, `Makefile`,
+  meta-files conformance tests read (`AGENTS.md`, `Makefile`,
   `package.json`, `.github/`, `data/`).
 - Four test files patch `os.environ.get` globally; mutmut's trampoline reads
   `MUTANT_UNDER_TEST` through `os.environ.get` at call time and crashes under

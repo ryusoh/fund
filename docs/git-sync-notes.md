@@ -1,6 +1,6 @@
-# Git sync notes (the Jules / squash-merge workflow)
+# Git sync notes (the squash-merge workflow)
 
-Autonomous routines (Jules) and your own branches land on `main` via
+Bot PRs and your own branches land on `main` via
 **squash-merged PRs**. A branch you worked on becomes a _single_ new commit on
 `origin/main`, so your local unsquashed commits become redundant duplicates of
 content that is now upstream. This causes one recurring, expensive failure.
@@ -34,10 +34,10 @@ resync in one place.)
 
 ## Avoid it entirely: don't PR trivial changes
 
-A one-line config or doc change does **not** need a Jules PR. The PR squash-merges
+A one-line config or doc change does **not** need a PR. The PR squash-merges
 and diverges local `main` for no benefit — that is exactly what triggered the
 cascade above. Make a **direct commit on `main`** for small chores; reserve the
-PR-and-approve flow for the autonomous routines doing real code work.
+PR flow for real code work.
 
 ## `git stash` / `stash pop` is a foot-gun here — the stash list is never empty
 
