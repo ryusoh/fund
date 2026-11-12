@@ -4,6 +4,8 @@ Sample violations live in string literals, never in real comments, so this
 file stays clean under the gate itself.
 """
 
+from types import SimpleNamespace
+
 from scripts.check_thinking_comments import (
     find_violations,
     iter_tracked_sources,
@@ -171,6 +173,23 @@ def test_find_violations_reports_python_and_js(tmp_path):
     assert any('abandoned test body (pass/docstring only): test_x' in v for v in violations)
     assert any('thinking-out-loud comment: // Hmm not sure' in v for v in violations)
     assert any("abandoned test body (empty callback): 'empty'" in v for v in violations)
+
+
+def test_find_violations_skips_missing_file(tmp_path):
+    missing = tmp_path / 'deleted.py'
+    assert list(find_violations([str(missing)])) == []
+
+
+def test_iter_tracked_sources_skips_deleted_files(tmp_path, monkeypatch):
+    present = tmp_path / 'present.py'
+    present.write_text('', encoding='utf-8')
+    missing = tmp_path / 'deleted.py'
+    result = SimpleNamespace(stdout=f'{present}\n{missing}\n')
+    monkeypatch.setattr(
+        'scripts.check_thinking_comments.subprocess.run', lambda *args, **kwargs: result
+    )
+
+    assert list(iter_tracked_sources()) == [str(present)]
 
 
 def test_iter_tracked_sources_excludes_vendor_and_minified():

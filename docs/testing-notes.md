@@ -259,5 +259,5 @@ but flakes ~50% under Stryker's sandbox (passes 3/3 standalone; make/direct
 runs split 3 pass / 2 fail). Root cause is a `requestAnimationFrame` vs
 `setTimeout(0)` ordering race in the test, not in prod code. The mutation
 scaffold mitigates with a documented single retry in `make mutate-js` and the
-weekly workflow. Fixing the test properly is Testpilot-lane work — if you see
-this test fail intermittently anywhere else, this note is why.
+weekly workflow. Fixing the test properly is a separate test-only cleanup — if
+you see this test fail intermittently anywhere else, this note is why.

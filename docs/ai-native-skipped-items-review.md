@@ -11,6 +11,11 @@ item: implement now, implement later (with a concrete trigger), or reject.
 Evidence below is from the repo itself (files, Makefile targets, workflows),
 gathered 2026-08-27. No repo files were modified except this document.
 
+> **Retirement update (2026-11-12):** the Jules routines cited as current in the
+> dated evidence were retired; see `docs/jules-retirement-plan.md`. Item 9's
+> recommendation below no longer depends on the removed personas, conformance
+> test, or `jules-persona` skill.
+
 ## Summary table
 
 | #   | Proposal                                   | Verdict         | One-line reason                                                                                                                               |
@@ -20,7 +25,7 @@ gathered 2026-08-27. No repo files were modified except this document.
 | 6   | Hermetic sandboxing (`.devcontainer/`/Nix) | Reject          | Three environments (local macOS, CI ubuntu, Jules VM) already converge via the Makefile contract; Jules can't use an in-repo container anyway |
 | 7   | AST auditing / Semgrep lockdown            | Implement later | bandit + `npm audit` + dependabot + pre-commit key detection exist; only real gap is unenforced `pip-audit` (cheap fix, see action items)     |
 | 8   | Shared `/schemas` typed contracts          | Implement later | No validation exists, but CI's page smoke test loads every page against real `data/*.json`, catching the catastrophic case                    |
-| 9   | Subagent team under `.claude/agents/`      | Implement later | Jules lanes + `test_jules_personas.py` already cover the unattended side; interactive subagent use is only just emerging                      |
+| 9   | Subagent team under `.claude/agents/`      | Implement later | Interactive delegation is still occasional; the former unattended-side rationale is historical                                                |
 | 10  | Semantic layer + agent telemetry           | Reject          | Nothing exists and nothing needs it yet; repo is small enough that Grep + `docs/` landmine index keep search cost low                         |
 
 ## Item 4 — Root `REPO_MAP.md` (§4.3, §6 Strategy 1)
@@ -173,27 +178,21 @@ asserting minimal shapes of the committed files (in the style of
 - `.claude/agents/` does not exist; `.claude/` contains `commands/`
   (generated, per `make sync-check`), `skills` (symlink to `.agents/skills`),
   `settings.json`, `settings.local.json`, `launch.json`, `worktrees/`.
-- The unattended multi-agent story already exists and is tested: six Jules
-  personas (`.jules/architect.md` … `typist.md`) with lane boundaries in
-  `AGENTS.md`, conformance enforced by `tests/python/test_jules_personas.py`
-  (lanes table must list exactly the live routines).
-- Interactive-side conventions exist too: 10 skills under `.agents/skills/`
-  (including `jules-persona`, which encodes the house persona contract), and
-  `.claude/settings.json` already commits a curated allow-list plus a
-  prettier hook.
-- AGENTS.md's "Concurrent agents sharing one worktree" section shows parallel
-  interactive subagents are only just becoming a real workflow (one worktree
-  exists under `.claude/worktrees/`).
+- At review time, the unattended multi-agent story was defined by six Jules
+  personas with lane boundaries in `AGENTS.md` and a persona conformance test.
+  Those files were removed in the November 2026 retirement.
+- Interactive-side conventions included 10 skills under `.agents/skills/` and a
+  curated allow-list in `.claude/settings.json`.
+- AGENTS.md's "Concurrent agents sharing one worktree" section showed parallel
+  interactive subagents becoming a real workflow.
 
-**Verdict: implement later.** The unattended choreography the repo depends on
-is already defined, lane-disjoint, and CI-enforced; `.claude/agents/*.md`
-subagents would only serve interactive sessions, where delegation is
-occasional. Authoring personas before there is repeated delegation to
-stabilize their scopes means guessing. Trigger: interactive sessions
-routinely run 2+ parallel subagents on this repo (the worktree rules suggest
-this is starting); then author 1–2 scoped read-only subagents (e.g. a
-security reviewer mirroring Sentinel) using the `jules-persona` skill's
-conventions.
+**Verdict: implement later.** `.claude/agents/*.md` subagents would serve only
+interactive sessions, where delegation is still occasional. Authoring personas
+before repeated delegation stabilizes their scopes means guessing. Trigger:
+interactive sessions routinely run 2+ parallel subagents on this repo; then
+author 1–2 scoped read-only subagents under current `AGENTS.md` policies. The
+retired `jules-persona` skill's conventions remain in Git history at `034e6c55`
+if historical context is useful.
 
 ## Item 10 — Semantic layer + agent telemetry (§12, §14)
 

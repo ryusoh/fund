@@ -47,7 +47,19 @@ accounts. Concentrate on:
   tests or docs are the only in-repo caller.
 - Never delete standalone scripts, CLI utilities, test fixtures, or gate helpers
   because they look unused.
-- When deleting production code, delete its tests in the **same commit**: the
-  bot-PR hygiene gate allows test shrinkage only alongside production deletions.
+- A symbol referenced only by its own test is still a dead-code candidate. When
+  deleting production code, delete its tests in the **same commit**: the bot-PR
+  hygiene gate allows test shrinkage only alongside production deletions.
+- Commented-out blocks and unreachable application branches are also cleanup
+  candidates after the reference search proves them unused.
 - Ignore `js/vendor/**` and other third-party code, and never touch generated
   `data/`.
+
+## TODOs and test integrity
+
+- A TODO is actionable only when it names a concrete, currently true gap. If
+  resolving it changes behavior, cover that behavior with a test; leave it when
+  a safe, small change is not possible.
+- Never satisfy a count-based gate with placeholder assertions or by restoring
+  gutted versions of deleted tests. If a gate blocks legitimate work, stop and
+  report the blockage instead of manufacturing coverage.
