@@ -39,10 +39,10 @@ Propagate an improvement made in this repo (`~/dev/fund`) to the sibling repos:
   rules propagate unchanged. Jest only runs under `review_heatmap/tests/`;
   scoped Python verification is `make test-py SUITE=<addon>/tests` /
   `make test-addon ADDON=<dir>`, and pytest must run from the repo root (the
-  root `conftest.py` mocks `aqt`/`anki`). Its architect-lane persona is
-  `.jules/refactoring.md` — there is **no** `architect.md` (verified 2026-09);
-  the Refactoring persona carries the eslint/suppressions workflow and the
-  "stage by name, never `git add -A`" + commit-title sections.
+  root `conftest.py` mocks `aqt`/`anki`). The Jules routines (including
+  `.jules/refactoring.md`, which previously carried the suppressions workflow
+  and commit-title guidance) were retired in November 2026; durable guidance lives
+  in `AGENTS.md`, `docs/lint-and-quality.md`, and `docs/gotchas.md`.
 - `~/dev/networking` — JS + Python; **no** `.pre-commit-config.yaml`; gate =
   `make precommit` (on macOS the parity gate is `make precommit-docker` —
   raw-socket tests fail on the host; gate **exits 0 amid alarming-looking
@@ -50,7 +50,7 @@ Propagate an improvement made in this repo (`~/dev/fund`) to the sibling repos:
   pole: colima start + image build + full in-container Jest/pytest, 10+ min —
   start Docker first, run it once at the end); `Dockerfile.precommit`
   pip-installs `requirements-dev.txt` and runs `npm ci`; its AGENTS.md
-  non-negotiable #6 forbids JULES ROUTINES from adding dependencies or touching
+  non-negotiable #6 forbids automated bot routines from adding dependencies or touching
   build/lint/test config (and #5 pins jest to v29) — interactive agents acting
   on explicit user direction are exempt, note it in the PR body; its sync
   generator is `tools/sync_commands.py` (naive `content.split("---", 2)`
@@ -58,8 +58,7 @@ Propagate an improvement made in this repo (`~/dev/fund`) to the sibling repos:
   mangled); its `ship` skill uses `<primary-branch>`/`<branch_name>`
   placeholders (deliberately no hardcoded `main`), has an audience check and
   asks for acknowledgement before pushing. Its AGENTS.md now correctly names
-  `adblock/` and `gov_bypass/` (verified 2026-10), but its Lanes table still
-  lists Sentinel while `.jules/` has no sentinel persona. Its `ci.yml` already has a "Reject empty
+  `adblock/` and `gov_bypass/` (verified 2026-10). Its `ci.yml` already has a "Reject empty
   pull request" step that hard-fails empty PRs (fund lacked this until
   2026-08). No stylelint — prettier covers CSS. Generated
   output not to hand-edit/commit: `coverage/`, `adblock/dist/`,
@@ -75,12 +74,10 @@ hook, but it only runs `pytest -q || [ $? -eq 5 ]`; anki's `make hooks`
 installs only pre-commit). Fund's PR-title gate (`.github/workflows/
 commit-lint.yml` + `scripts/agents/check_commit_message.py` — ≤72 chars,
 scope regex lower-case `[a-z0-9._/-]` only) exists in NO sibling (verified in
-all three 2026-09): when porting fund persona lessons about commit titles
-(e.g. fund#695), keep the ≤72-char / lower-case-scope guidance generic per
-the target's own AGENTS.md and do NOT cite fund's checker command or regex.
-Their `.jules/` personas already gate on their own CI-parity gate — the
-`make verify` vs `make precommit-fix` split that bit fund's Bolt persona is
-fund-specific.
+all three 2026-09): when porting commit title guidance, keep the ≤72-char /
+lower-case-scope guidance generic per the target's own AGENTS.md and do NOT cite
+fund's checker command or regex. Note: the unattended Jules routine fleet was
+retired across all repos in November 2026 (see `docs/jules-retirement-plan.md`).
 
 This skill exists in all four repos (added 2026-07), each with the perspective
 flipped to its own home repo — a sync can be initiated from any side. When
@@ -131,10 +128,9 @@ Delegate one subagent per repo, in parallel. Brief each with:
    into the repo root (add to .gitignore or delete).
 8. **Finish per repo:** run prettier/fmt over new config files, run the repo's
    own full CI-parity gate green, update its AGENTS.md (command table + short
-   note), update the `.jules/` persona whose lane owns the new metric (if
-   any). **Never commit** — leave changes uncommitted and report: violation
-   counts, resolution proof, files changed, probe exit codes, gate result,
-   skip decisions with evidence.
+   note), and update relevant subsystem/gate documentation. **Never commit** —
+   leave changes uncommitted and report: violation counts, resolution proof,
+   files changed, probe exit codes, gate result, skip decisions with evidence.
 
 **Verification budget.** Scoped checks while iterating (the touched test
 file, prettier, sync-check); run the full CI-parity gate exactly once, at the
