@@ -2,11 +2,16 @@
 
 jest.mock('../../../../js/transactions/state.js', () => ({
     setActiveChart: jest.fn(),
+    setChartDateRange: jest.fn(),
     whenTransactionDataReady: jest.fn(() => Promise.resolve()),
 }));
 
 jest.mock('../../../../js/transactions/layout.js', () => ({
     adjustMobilePanels: jest.fn(),
+}));
+
+jest.mock('../../../../js/transactions/terminal/dateUtils.js', () => ({
+    updateContextYearFromRange: jest.fn(),
 }));
 
 function setupDom() {
@@ -115,5 +120,126 @@ describe('mobileControls', () => {
         await Promise.resolve();
 
         expect(setActiveChart).not.toHaveBeenCalled();
+    });
+
+    describe('pinch timeline controls', () => {
+        function dispatchTouch(section, type, touches, changedTouches = touches) {
+            const event = new Event(type, { bubbles: true, cancelable: true });
+            event.touches = touches;
+            event.changedTouches = changedTouches;
+            section.dispatchEvent(event);
+            return event;
+        }
+
+        async function flushChartUpdate() {
+            await Promise.resolve();
+            await Promise.resolve();
+        }
+
+        test('pinching fingers together shows the all-time timeline', async () => {
+            const chartManager = { update: jest.fn() };
+            initMobileControls({ chartManager });
+            const section = document.getElementById('runningAmountSection');
+            const { setChartDateRange } = require('../../../../js/transactions/state.js');
+            const {
+                updateContextYearFromRange,
+            } = require('../../../../js/transactions/terminal/dateUtils.js');
+
+            dispatchTouch(section, 'touchstart', [
+                { clientX: 100, clientY: 100 },
+                { clientX: 200, clientY: 100 },
+            ]);
+            const moveEvent = dispatchTouch(section, 'touchmove', [
+                { clientX: 120, clientY: 100 },
+                { clientX: 180, clientY: 100 },
+            ]);
+            await flushChartUpdate();
+
+            expect(moveEvent.defaultPrevented).toBe(true);
+            expect(setChartDateRange).toHaveBeenCalledWith({ from: null, to: null });
+            expect(updateContextYearFromRange).toHaveBeenCalledWith({ from: null, to: null });
+            expect(chartManager.update).toHaveBeenCalledTimes(1);
+            expect(adjustMobilePanels).toHaveBeenCalled();
+        });
+
+        test('spreading fingers restores the default timeline once per gesture', async () => {
+            const chartManager = { update: jest.fn() };
+            initMobileControls({ chartManager });
+            const section = document.getElementById('runningAmountSection');
+            const { setChartDateRange } = require('../../../../js/transactions/state.js');
+
+            dispatchTouch(section, 'touchstart', [
+                { clientX: 100, clientY: 100 },
+                { clientX: 200, clientY: 100 },
+            ]);
+            dispatchTouch(section, 'touchmove', [
+                { clientX: 80, clientY: 100 },
+                { clientX: 220, clientY: 100 },
+            ]);
+            dispatchTouch(section, 'touchmove', [
+                { clientX: 60, clientY: 100 },
+                { clientX: 240, clientY: 100 },
+            ]);
+            await flushChartUpdate();
+
+            expect(setChartDateRange).toHaveBeenCalledTimes(1);
+            expect(setChartDateRange).toHaveBeenCalledWith({ from: '2024-01-01', to: null });
+            expect(chartManager.update).toHaveBeenCalledTimes(1);
+        });
+
+        test('small and completed pinch gestures do not switch charts', async () => {
+            const chartManager = { update: jest.fn() };
+            initMobileControls({ chartManager });
+            const section = document.getElementById('runningAmountSection');
+            const { setChartDateRange } = require('../../../../js/transactions/state.js');
+
+            dispatchTouch(section, 'touchstart', [
+                { clientX: 100, clientY: 100 },
+                { clientX: 200, clientY: 100 },
+            ]);
+            dispatchTouch(section, 'touchmove', [
+                { clientX: 98, clientY: 100 },
+                { clientX: 193, clientY: 100 },
+            ]);
+            dispatchTouch(
+                section,
+                'touchend',
+                [],
+                [
+                    { clientX: 20, clientY: 100 },
+                    { clientX: 80, clientY: 100 },
+                ]
+            );
+            await flushChartUpdate();
+
+            expect(setChartDateRange).not.toHaveBeenCalled();
+            expect(setActiveChart).not.toHaveBeenCalled();
+            expect(chartManager.update).not.toHaveBeenCalled();
+
+            dispatchTouch(section, 'touchstart', [{ clientX: 150, clientY: 100 }]);
+            dispatchTouch(section, 'touchend', [], [{ clientX: 90, clientY: 100 }]);
+            await flushChartUpdate();
+
+            expect(setActiveChart).toHaveBeenCalledWith('performance');
+        });
+
+        test('cancelling a pinch resets gesture tracking', async () => {
+            const chartManager = { update: jest.fn() };
+            initMobileControls({ chartManager });
+            const section = document.getElementById('runningAmountSection');
+            const { setChartDateRange } = require('../../../../js/transactions/state.js');
+
+            dispatchTouch(section, 'touchstart', [
+                { clientX: 100, clientY: 100 },
+                { clientX: 200, clientY: 100 },
+            ]);
+            dispatchTouch(section, 'touchcancel', []);
+            dispatchTouch(section, 'touchstart', [{ clientX: 150, clientY: 100 }]);
+            dispatchTouch(section, 'touchend', [], [{ clientX: 90, clientY: 100 }]);
+            await flushChartUpdate();
+
+            expect(setChartDateRange).not.toHaveBeenCalled();
+            expect(setActiveChart).toHaveBeenCalledWith('performance');
+        });
     });
 });
