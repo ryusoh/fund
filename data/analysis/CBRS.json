@@ -3,7 +3,7 @@
     "name": "Cerebras Systems",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-11-12T16:17:56.921626+00:00",
+        "asOf": "2026-11-13T08:44:44.748470+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -28,29 +28,29 @@
         }
     },
     "market": {
-        "price": 103.42,
+        "price": 97.75,
         "eps": -5.14,
-        "forwardEps": 1.2793,
+        "forwardEps": 1.3184,
         "pe": null,
-        "forwardPe": 80.8417,
+        "forwardPe": 74.144,
         "beta": null,
-        "marketCap": 24568872960.0,
+        "marketCap": 23221884928.0,
         "currency": "USD",
-        "marketDataUpdatedAt": "2026-11-12T16:17:56.760458+00:00",
+        "marketDataUpdatedAt": "2026-11-13T08:44:43.127407+00:00",
         "pegRatio": null,
-        "enterpriseValue": 17578498048.0,
+        "enterpriseValue": 16787408896.0,
         "ebitda": -484790016.0,
         "dividendYield": 0.0,
         "fiftyDayAverage": 154.39,
         "twoHundredDayAverage": 192.0465,
-        "averageVolume": 9093020.0,
-        "averageDailyVolume10Day": 10531820.0,
+        "averageVolume": 9094443.0,
+        "averageDailyVolume10Day": 10540930.0,
         "fiftyTwoWeekHigh": 386.34,
         "fiftyTwoWeekLow": 77.84,
-        "evToEbitda": -36.26
+        "evToEbitda": -34.6282
     },
     "risk": {
-        "volatility": 1.1302,
+        "volatility": 1.1301,
         "estimateSource": "historical",
         "correlations": null
     },
@@ -68,7 +68,7 @@
     "scenarios": [
         {
             "id": "bull",
-            "name": "Bull – OpenAI MRA Delivers, Wafer-Scale Decode Wins",
+            "name": "RETIRED – Bull – OpenAI MRA Delivers, Wafer-Scale Decode Wins",
             "prob": 0.25,
             "macroState": null,
             "growth": {
@@ -83,7 +83,7 @@
         },
         {
             "id": "base",
-            "name": "Base – Committed Capacity Delivers, Optionality Lapses",
+            "name": "RETIRED – Base – Committed Capacity Delivers, Optionality Lapses",
             "prob": 0.4,
             "macroState": null,
             "growth": {
@@ -98,7 +98,7 @@
         },
         {
             "id": "bear",
-            "name": "Bear – OpenAI Entanglement Breaks / Decode Reverts to GPU",
+            "name": "RETIRED – Bear – OpenAI Entanglement Breaks / Decode Reverts to GPU",
             "prob": 0.35,
             "macroState": null,
             "growth": {
@@ -115,10 +115,7 @@
     "derived": {
         "expectedCagr": null,
         "expectedMultiple": null,
-        "fairValueRange": [
-            50.0,
-            70.0
-        ],
+        "fairValueRange": null,
         "kelly": {
             "fullKelly": 0.0,
             "scaledKelly": 0.0
@@ -126,8 +123,8 @@
     },
     "industry_thesis": null,
     "belief_state": {
-        "probability": 0.4,
-        "confidence": 0.5,
+        "probability": 0.01,
+        "confidence": 0.9,
         "evidence_for": [
             "RPO $25.4B at 2026-06-30 (vs $24.6B at 2025-12-31), majority attributable to the OpenAI MRA; ~22% recognizable within 24 months [10-Q 2026-08-12; confirm pass 80%].",
             "OpenAI MRA (signed Dec 2025): 750MW committed 2026-2028, option to 2.0GW by 2030; 'valued at more than $20 billion' [S-1 2026-04-17, verbatim-confirmed].",
@@ -137,7 +134,9 @@
             "Liquidity: $7.4B cash+restricted + $1.2B securities + undrawn $850M revolver at 2026-06-30 [10-Q; confirm pass 80%].",
             "Supply-chain wedge: 'We do not use HBM memory, CoWoS packaging or 3nm fabrication technology, all of which are currently supply limited' [Q2'26 release, verbatim].",
             "Demand-side scaling evidence: core cloud revenue +287% YoY (Q2'26); >600MW data-center capacity live or under contract for delivery by end-2027; manufacturing capacity scaling >10x in 2026 via new Flex/Sanmina/Rocket EMS lines; TSMC wafer supply secured [Q2'26 earnings release, primary].",
-            "Bounded physical-reliability evidence: Feldman cites TSMC 105C/10-year qualification, CS-3 junction temperatures <65C average/<=85C maximum, Arrhenius estimates of 33 years at 85C, and <0.5% deployed-wafer decommissioning to rebut Culper's ~2-year physical-life claim. These remain issuer assertions without independent qualification or age-cohort fleet data; they do not establish pricing power, utilization, ROIC, OpenAI decode share, or MRA execution [Cerebras CEO blog 2026-11-05; findings ad06a57b]."
+            "Bounded physical-reliability evidence: Feldman cites TSMC 105C/10-year qualification, CS-3 junction temperatures <65C average/<=85C maximum, Arrhenius estimates of 33 years at 85C, and <0.5% deployed-wafer decommissioning to rebut Culper's ~2-year physical-life claim. These remain issuer assertions without independent qualification or age-cohort fleet data; they do not establish pricing power, utilization, ROIC, OpenAI decode share, or MRA execution [Cerebras CEO blog 2026-11-05; findings ad06a57b].",
+            "Q3 2026 core revenue $230.873M beat the $214-216M guide; core cloud $144.914M (+272% YoY), core GM 41.0%; Q4 core guide $310-330M / 47-49% GM and FY2026 core guide raised to $940-960M / 42-44% GM [Q3 Exhibit 99.1, direct confirm; findings 6fa19047].",
+            "Q3 2026 RPO $26.1B (33% first 24 months / 44% months 25-48 / remainder thereafter); OpenAI arrangement revenue $72.4M; liquidity $7.804820B including restricted cash plus undrawn $850M revolver. These positives do not establish delivery, utilization, or cash returns and do not revive the closed thesis [Q3 10-Q; adapter 80%; arithmetic liquidity total]."
         ],
         "evidence_against": [
             "Concentration: Q2 2026 Customer A 34% / B 32% / C 10% (A = MBZUAI by AR cross-reference; B matches OpenAI MRA revenue magnitude); two customers = 76% of receivables [10-Q s_0001_c06/07].",
@@ -149,24 +148,23 @@
             "Insider selling: 46 Forms 4 in first 4 months post-IPO, zero open-market buys, ~1.29M shares sold $161-250 [EDGAR Forms 4/144].",
             "~$2.25B of data-center leases signed Q2+Q3 2026 not yet commenced — fixed-cost model mismatch vs consumption-priced inference [10-Q s_0001_c19/20].",
             "Customer-warrant economics (2026-10-23 deep dive): OpenAI 33,445,026 Class N @ $0.00001 (grant-date FV $82.02/sh; 10,033,508 vested/exercised; 23,411,518 delivery-contingent tranches deemed not probable); G42 two warrants totaling 3,513,491 @ $0.01 (~$301.8M grant value, no performance conditions, fully exercised); aggregate customer-warrant asset $1,128.4M amortizing as contra-revenue through Oct 2031 [10-Q Note 12 raw; S-1 raw; confirm pass 60% floor + direct extraction].",
-            "Cash reality H1 2026: OCF $(47.5)M, capex $(548.9)M, FCF ~$(596)M; Q2 GAAP gross margin 14% (hardware 2%, cloud 20%) vs core GP $85.2M (~47%); OpenAI loan repayments so far are $86.3M of non-cash service credits, zero cash [10-Q cash-flow/MD&A raw].",
-            "Dilution inventory vs 112.2M Class A (Aug 5 2026): 76.0M anti-dilutive (26.1M warrants, 23.8M options, 16.5M RSUs, 9.0M PRSUs) + 25.8M unvested customer warrants + 42.7M 2026-Plan reserve + 48.9M ESPP; Class N converts 1:1 into voting Class A on transfer; founder PRSUs at $75B/$150B/$250B market-cap hurdles [10-Q cover, Note 5/12 raw; S-1 raw]."
+            "Cash reality H1 2026: OCF $(47.5)M, capex $(548.9)M, FCF ~$(596)M; Q2 GAAP gross margin 14% (hardware 2%, cloud 20%) vs core GP $85.217M on $209.869M core revenue (40.6%; corrected 2026-11-13); OpenAI loan repayments so far were $86.3M of non-cash service credits, zero cash [Q2 Exhibit 99.1; 10-Q cash-flow/MD&A raw].",
+            "Dilution inventory vs 112.2M Class A (Aug 5 2026): 76.0M anti-dilutive (26.1M warrants, 23.8M options, 16.5M RSUs, 9.0M PRSUs) + 25.8M unvested customer warrants + 42.7M 2026-Plan reserve + 48.9M ESPP; Class N converts 1:1 into voting Class A on transfer; founder PRSUs at $75B/$150B/$250B market-cap hurdles [10-Q cover, Note 5/12 raw; S-1 raw].",
+            "THESIS KILL 2026-11-13: Q3 10-Q says delivered OpenAI capacity was below the MRA-contemplated quantity before possible excused-delay adjustments; delays may continue through part of 2027, with credits and conditional tranche-termination mechanics. Resolves cbrs-openai-mra-intact-fy26 FALSE and fires the pre-committed kill trigger; no tranche/full-MRA termination or loan default is established [Q3 10-Q Risk Factors; adapter 80% + direct inspection; findings 6fa19047].",
+            "Q3 capital intensity: nine-month OCF $(388.894)M, capex $1,046.059M, analyst simple FCF $(1,434.953)M; signed but uncommenced data-center leases approximately $8.5B undiscounted [Q3 10-Q cash flows/Note 15; adapter 80%].",
+            "Q3 named concentration MBZUAI 38% / OpenAI 34% / G42 7%; two customers 80% of AR. OpenAI loan $829.082M after $175.489M cumulative non-cash credits, no cash payments. Disclosure controls remained ineffective but deficiencies did not result in a material misstatement [Q3 10-Q; adapter 60-80%]."
         ],
         "open_questions": [
-            "GPT-6.1 Sol Ultrafast on Nvidia — which hypothesis? (a) swapped out: OpenAI found Nvidia better on cost/stability/real-workload TCO after production use; (b) sold out: Cerebras lacked capacity to serve all Ultrafast demand, market mispriced a supply problem as a technology failure; (c) heterogeneous: prefill/decode and latency/cost tiers permanently split across architectures. Read the original SemiAnalysis report to discriminate.",
-            "Is Customer B (32% of Q2 2026 revenue) OpenAI? Filing does not equate them.",
-            "Does CS-3/CS-4 clustering use Ethernet at scale, and whose fabric? (ANET cross-thesis hook.)",
-            "MRA delivery schedule: article claims 250MW by YE2026 / 500MW cumulative YE2027 / 750MW YE2028 — not found in 10-Q or April S-1 text; the S-1's loan-amortization language ('after the delivery of the final tranche of the initial 250 MW of capacity') indirectly corroborates a 250MW initial block but does not confirm the annual schedule; verify against the 424B4 or MRA exhibit.",
-            "AWS warrant payment thresholds: the aggregate AWS payment levels that vest the remaining 2,427,010 shares are undisclosed — they encode how much AWS must spend for its equity upside.",
-            "OpenAI loan amortization vs MRA ramp: the loan amortizes over 3 years after delivery of the final tranche of the initial 250MW — if the ramp slips, the $736.0M current portion and the credit-based repayment mix become a real cash question.",
-            "RPO survivability: how much of the $25.4B is exposed to OpenAI tranche-termination rights?",
-            "Utilization chain: deployment → utilization → cloud revenue → gross margin — which step is the current binding constraint? Q3 print should show whether the 600MW+ contracted capacity is converting.",
-            "G42 post-IPO equity stake and the G42-to-Class-N non-voting mapping (UNVERIFIED).",
-            "Q3 2026 print (~mid-Nov): core revenue vs the $214-216M guide; first print after the Oct 14/28 lockup windows.",
-            "Durability verification: can TSMC qualification parameters and age-stratified CS-3 fleet data (denominator, operating hours, failures, free replacements, retirements and residual values) independently substantiate Feldman's reliability claims?",
-            "Commercial returns after reliability relief: even if physical life exceeds 3-5 years, do realized $/token, renewal pricing, utilization and margins produce ROIC above capital cost after capex, leases, pass-through costs, customer warrants and financing?"
+            "What are contemplated vs delivered, energized, customer-accepted and utilized MW by OpenAI tranche, and which delays are contractually excused?",
+            "What are final net delay credits, day-for-day term shortening, tranche cancellations and the resulting RPO bridge after the filed delivery shortfall?",
+            "Can Cerebras fund the approximately $8.5B uncommenced-lease stack and capex without adverse debt/equity terms, and when do OCF and FCF after capex turn positive?",
+            "Can AWS, Oracle and Microsoft convert agreements and milestones into disclosed revenue without preferential terms destroying margins?",
+            "Does OpenAI's future decode remain on Cerebras? The original SemiAnalysis report remains unread; the Q3 kill decision does not depend on resolving this.",
+            "Did the initial approximately 250MW delivery milestone occur in 2026? Resolve the existing prediction only from its designated FY2026 10-K or Q4 materials.",
+            "Can official Q3 supplemental materials/captions substantiate transcript-only claims about land/power/shell causation, 2H27 recovery, RPO credit deductions and cancellations?",
+            "When will disclosure-control material weaknesses be remediated and tested effectively, and what independent evidence supports fleet reliability and cash ROIC?"
         ],
-        "as_of": "2026-11-07T00:00:00Z"
+        "as_of": "2026-11-13T00:00:00Z"
     },
     "predictions": [
         {
@@ -174,20 +172,20 @@
             "claim": "Q3 2026 core (non-GAAP) revenue lands at or above the $214M guidance low end (reported ~mid-Nov 2026)",
             "target_date": "2026-11-30",
             "probability": 0.55,
-            "resolved": false,
-            "outcome": null,
-            "resolved_date": null,
-            "notes": "Guide was raised in Aug; a miss into the ~Nov 9 lockup expiry compounds the supply overhang with a credibility break."
+            "resolved": true,
+            "outcome": true,
+            "resolved_date": "2026-11-13",
+            "notes": "Resolved TRUE: Q3 2026 core revenue was $230.873M, exceeding the $214M low end and $216M high end [Q3 Exhibit 99.1, direct confirm; findings 6fa19047]."
         },
         {
             "id": "cbrs-openai-mra-intact-fy26",
             "claim": "No disclosure of OpenAI MRA termination, delivery-tranche miss, or material renegotiation in any SEC filing through the FY2026 10-K",
             "target_date": "2027-03-31",
             "probability": 0.6,
-            "resolved": false,
-            "outcome": null,
-            "resolved_date": null,
-            "notes": "The SemiAnalysis Nvidia-for-Ultrafast report (Oct 2026) is the live threat; the MRA grants OpenAI termination rights on missed capacity tranches/SLAs and accelerates the $918M WC loan."
+            "resolved": true,
+            "outcome": false,
+            "resolved_date": "2026-11-13",
+            "notes": "Resolved FALSE: Q3 10-Q says delivered OpenAI capacity was below the MRA-contemplated quantity before possible excused-delay adjustments. The prediction tests disclosure, so the qualifier does not prevent resolution; no tranche/full-MRA termination or loan default is asserted [Q3 10-Q Risk Factors; adapter 80% + direct inspection; findings 6fa19047]."
         },
         {
             "id": "cbrs-fy2027-revenue-triple",
@@ -197,7 +195,7 @@
             "resolved": false,
             "outcome": null,
             "resolved_date": null,
-            "notes": "Requires the OpenAI 750MW ramp plus AWS contribution to land on schedule; RPO schedule has only ~22% recognizable in the first 24 months."
+            "notes": "Original >=$2.6B threshold preserved; do not tighten retrospectively. Q3 release raises FY2026 core guide to $940-960M and says 'expect to triple revenue in 2027' without a numeric FY2027 range; exact 3x arithmetic would be $2.82-2.88B. Q3 RPO schedule is 33% first 24 months, but the filed OpenAI delivery shortfall increases execution risk."
         },
         {
             "id": "cbrs-ye2026-250mw-delivery",
@@ -207,7 +205,7 @@
             "resolved": false,
             "outcome": null,
             "resolved_date": null,
-            "notes": "The per-year schedule (250/500/750MW by YE2026/27/28) comes from a third-party article and was NOT found in the 10-Q or April S-1 — this prediction tests both the schedule's existence and execution. Capacity statements (600MW+ contracted, 10x manufacturing) support feasibility; deployment is the risk."
+            "notes": "Q3's filed OpenAI delivery shortfall materially impairs this prediction but does not resolve it under its designated-source rule. Leave open for FY2026 10-K or Q4 2026 earnings materials; the 700 gross MW contracted figure is not delivered OpenAI MW."
         },
         {
             "id": "cbrs-aws-10pct-customer",
@@ -217,7 +215,7 @@
             "resolved": false,
             "outcome": null,
             "resolved_date": null,
-            "notes": "June 2026 AWS Commercial Agreement has minimum capacity guarantees and 'material percentage of revenue' language, but Bedrock integration is only targeted for Q1 2027."
+            "notes": "Q3 named-customer disclosures identify MBZUAI/OpenAI/G42, not AWS >=10%; no Q3 AWS warrant-asset additions or Q1 2027 Bedrock-date reaffirmation was found. Leave open; do not infer AWS identity from anonymous/new hyperscaler references."
         }
     ],
     "decision_journal": [
@@ -287,6 +285,22 @@
                 "Bear: OpenAI decode migration or delivery failure breaks the anchor economics": 0.35
             },
             "review_date": "2026-11-13"
+        },
+        {
+            "date": "2026-11-13",
+            "action": "CLOSE_LONG",
+            "shares_changed": 0,
+            "situation": "Q3 deep research (findings docs/research/tickers/cerebras-q3-2026.md; committed 6fa19047) verified 15/15 claims in a fresh confirm pass. Core revenue $230.873M beat the $214-216M guide and FY2026 core guidance rose to $940-960M, resolving cbrs-q3-2026-core-revenue TRUE. The Q3 10-Q nevertheless discloses an OpenAI delivery shortfall before possible excused-delay adjustments, with delays potentially continuing through part of 2027 and credit/tranche-termination mechanics. That resolves cbrs-openai-mra-intact-fy26 FALSE and fires the thesis's explicit kill trigger. Nine-month simple FCF was $(1,434.953)M by analyst arithmetic and uncommenced leases reached approximately $8.5B. No tranche/full-MRA termination or loan default is asserted; official call captions/deck were not inspected and transcript-only claims remain quarantined.",
+            "alternatives_rejected": [
+                "Shift Bull/Base/Bear probabilities and keep the old thesis active (rejected: its on-schedule-capacity premise is falsified; reweighting without tranche-level delivery/credit/cancellation evidence creates false precision).",
+                "Retain the $50-70 entry zone after the revenue beat (rejected: the range derives from retired scenarios; fairValueRange is now null and price alone cannot revive the thesis).",
+                "Treat the delivery disclosure as tranche termination, full-MRA termination or loan acceleration (rejected: those events were not disclosed; the kill test and contractual consequences are distinct).",
+                "Use third-party transcript explanations to override the filing (rejected: official captions/deck were unavailable, so call-only causation, recovery, credit and cancellation claims remain unverified)."
+            ],
+            "expected_outcomes": {
+                "No position under the invalidated long thesis; future entry requires a new underwrite": 1.0
+            },
+            "review_date": "2027-03-31"
         }
     ]
 }

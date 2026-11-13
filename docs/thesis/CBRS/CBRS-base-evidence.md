@@ -12,3 +12,9 @@ Initial seed from `docs/research/tickers/cerebras-systems.md` (2026-10-13/14). A
 - RPO recognition schedule is back-loaded: only ~22% within 24 months, 43% in months 25–48 — "more than triple revenue in 2027" requires the OpenAI tranches to land on time. [10-Q s_0001_c08]
 - Warrant amortization is a multi-year contra-revenue drag (through Oct 2031; $44.3M in Q2 2026) — GAAP optics stay suppressed even as core economics approach breakeven. [10-Q s_0001_c07]
 - IPO mechanics: 34.5M Class A @ $185 (2026-05-15), net ~$6.2B; S&P DJI fast-track index entry effective 2026-05-25 (index identity SECONDARY). [10-Q; 424B4] — IPO terms confirm-pass verified @ 0.80.
+
+## 2026-11-13 — Committed-capacity base case invalidated
+
+- The base case required committed OpenAI capacity to deliver on schedule. The Q3 10-Q instead says delivered capacity was below the MRA-contemplated quantity before potential excused-delay adjustments, with delays potentially continuing through part of 2027. [Q3 10-Q Risk Factors; adapter 0.80 + direct inspection]
+- Credits began October 1 before excused-delay adjustments; delays shorten the affected tranche term day-for-day; an uncured shortfall 90 days after the relevant milestone gives either party a termination election. The <5% 2026 terminable-capacity figure is a forecast, not a cap on later delays or credits. [Q3 10-Q Risk Factors]
+- The Q3 revenue beat and FY2026 raise are genuine, but do not repair the delivery premise. The former base scenario is retained only as a historical record; no live probability or fair-value range is carried forward. [Findings `6fa19047`]

@@ -15,3 +15,11 @@ Initial seed from `docs/research/tickers/cerebras-systems.md` (2026-10-13/14). A
 - Stock $146.62 (2026-10-12, −10.7% on the day), 21% below the $185 IPO price; 52wk range $145.75–$385.00; post-Q1 −18%, post-Q2 −12–14% despite a guidance raise. [quote vendors, SECONDARY]
 - TSMC sole-source foundry, purchase-order basis, no long-term supply commitments; UAE export licenses (D:1/D:4 groups) revocable with "rigorous security and compliance obligations." [10-Q; S-1 risk factors]
 - Law-firm investigation into possible securities violations announced 2026-07-21. [SECONDARY, firm PR]
+
+## 2026-11-13 — Q3 delivery miss and enlarged fixed-cost stack
+
+- **The pre-committed kill trigger fired**: the Q3 10-Q discloses an OpenAI capacity-delivery shortfall. Possible excused delays limit the contractual conclusion but do not change the disclosure-based prediction or kill test. No tranche/full-MRA termination or loan default was disclosed. [Q3 10-Q Risk Factors; fresh confirm]
+- Nine-month OCF **$(388.894)M** and capex **$1,046.059M** imply analyst simple FCF **$(1,434.953)M**. Signed but uncommenced data-center leases rose to approximately **$8.5B** of undiscounted future payments. [Q3 10-Q cash flows and Note 15; adapter 0.80]
+- Q3 named revenue shares were MBZUAI **38%**, OpenAI **34%**, G42 **7%**; two customers represented **80%** of AR. OpenAI loan principal was **$829.082M** after **$175.489M** cumulative non-cash credits, with no cash payments. [Q3 10-Q Risk Factors and Note 10]
+- Core net income **$29.823M** coexisted with core operating loss **$(33.108)M**; positive bottom-line core income is not positive operating economics. Disclosure controls remained ineffective, although the filing says the deficiencies did not cause a material misstatement. [Q3 Exhibit 99.1; 10-Q Item 4]
+- Official call captions and the supplemental deck were not inspected. Transcript-only claims about land/power/shell causation, 2H27 recovery, RPO credit deductions, cancellations, and long-term margins remain **UNVERIFIED** and did not drive the kill decision. [Findings `6fa19047`]
