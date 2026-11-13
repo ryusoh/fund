@@ -5,6 +5,7 @@ import shutil
 import tempfile
 import time
 from datetime import date, datetime, timedelta, timezone
+from typing import cast
 
 import pandas as pd
 import yfinance as yf
@@ -140,7 +141,7 @@ def _fetch_historical_close(
             close.index = pd.to_datetime(close.index)
             series = close.dropna()
             if not series.empty:
-                return series
+                return cast(pd.Series, series)
             reason = "no data returned"
         except Exception as e:
             reason = str(e)
@@ -199,7 +200,7 @@ def backfill_missing_daily_rates(today: date | None = None) -> None:
             series = history.get(currency)
             if series is None:
                 continue
-            eligible = series[series.index.date <= target_date]
+            eligible = series[cast(pd.DatetimeIndex, series.index).date <= target_date]
             if not eligible.empty:
                 rates[currency] = round(float(eligible.iloc[-1]), 6)
         if len(rates) != len(currencies) + 1:
