@@ -3,7 +3,7 @@
     "name": "Cerebras Systems",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-11-13T08:44:44.748470+00:00",
+        "asOf": "2026-11-13T15:41:54.314343+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -28,29 +28,29 @@
         }
     },
     "market": {
-        "price": 97.75,
+        "price": 103.11,
         "eps": -5.14,
-        "forwardEps": 1.3184,
+        "forwardEps": 1.3149,
         "pe": null,
-        "forwardPe": 74.144,
+        "forwardPe": 78.4154,
         "beta": null,
-        "marketCap": 23221884928.0,
+        "marketCap": 24495228928.0,
         "currency": "USD",
-        "marketDataUpdatedAt": "2026-11-13T08:44:43.127407+00:00",
+        "marketDataUpdatedAt": "2026-11-13T15:41:54.229830+00:00",
         "pegRatio": null,
-        "enterpriseValue": 16787408896.0,
-        "ebitda": -484790016.0,
+        "enterpriseValue": 17843021824.0,
+        "ebitda": -661307008.0,
         "dividendYield": 0.0,
-        "fiftyDayAverage": 154.39,
-        "twoHundredDayAverage": 192.0465,
-        "averageVolume": 9094443.0,
-        "averageDailyVolume10Day": 10540930.0,
+        "fiftyDayAverage": 152.6546,
+        "twoHundredDayAverage": 191.304,
+        "averageVolume": 9098012.0,
+        "averageDailyVolume10Day": 11189160.0,
         "fiftyTwoWeekHigh": 386.34,
         "fiftyTwoWeekLow": 77.84,
-        "evToEbitda": -34.6282
+        "evToEbitda": -26.9814
     },
     "risk": {
-        "volatility": 1.1301,
+        "volatility": 1.1289,
         "estimateSource": "historical",
         "correlations": null
     },
