@@ -21,4 +21,5 @@ export default {
     incrementalFile: 'reports/stryker-incremental.json',
     tempDirName: '.stryker-tmp',
     cleanTempDir: true,
+    ignorePatterns: ['/venv', '/.claude', '/.agents', '/mutants'],
 };

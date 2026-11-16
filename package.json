@@ -99,7 +99,23 @@
             }
         },
         "transform": {
-            "^.+\\.js$": "babel-jest"
+            "^.+\\.js$": [
+                "babel-jest",
+                {
+                    "presets": [
+                        [
+                            "@babel/preset-env",
+                            {
+                                "targets": {
+                                    "node": "current"
+                                }
+                            }
+                        ]
+                    ],
+                    "configFile": false,
+                    "babelrc": false
+                }
+            ]
         },
         "moduleNameMapper": {
             "^d3$": "<rootDir>/js/vendor/d3.v7.mjs",

@@ -170,7 +170,7 @@ module.exports = [
         },
     },
     {
-        files: ['scripts/**/*.js', 'babel.config.js', 'tests/js/__mocks__/**/*.js'],
+        files: ['scripts/**/*.js', 'tests/js/__mocks__/**/*.js'],
         languageOptions: {
             sourceType: 'commonjs',
             globals: {
