@@ -142,3 +142,9 @@ def test_fetch_vt_sectors_success_parse_error(mock_get, mock_environ_get):
 
     result = uvs.fetch_vt_sectors()
     assert result is None
+
+
+def test_vt_sectors_workflow_pins_supported_python_runtime():
+    """A floating 3.x runtime can select Python 3.15 whose native stack segfaults."""
+    workflow = Path('.github/workflows/update-vt-sectors.yml').read_text()
+    assert "python-version: '3.12'" in workflow
