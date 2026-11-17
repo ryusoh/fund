@@ -3,7 +3,7 @@
     "name": "Alphabet",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-11-16T17:28:30.321099+00:00",
+        "asOf": "2026-11-17T07:25:28.115444+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -29,20 +29,20 @@
     },
     "market": {
         "forwardEps": 15.1807,
-        "pe": 14.8226,
-        "forwardPe": 18.6982,
+        "pe": 14.6872,
+        "forwardPe": 18.5274,
         "beta": 1.226,
-        "marketCap": 3489683734528.0,
-        "enterpriseValue": 3499496833024.0,
+        "marketCap": 3457810432000.0,
+        "enterpriseValue": 3361066450944.0,
         "ebitda": 185515999232.0,
-        "dividendYield": 0.3,
+        "dividendYield": 0.31,
         "currency": "USD",
         "fiftyTwoWeekHigh": 404.47,
         "fiftyTwoWeekLow": 271.535,
-        "marketDataUpdatedAt": "2026-11-16T17:28:30.154956+00:00",
-        "evToEbitda": 18.8636,
+        "marketDataUpdatedAt": "2026-11-17T07:25:26.487874+00:00",
+        "evToEbitda": 18.1174,
         "eps": 19.15,
-        "price": 283.8526,
+        "price": 281.26,
         "fiftyDayAverage": 325.1106,
         "twoHundredDayAverage": 336.4115,
         "averageVolume": 19597421.0,
@@ -50,7 +50,7 @@
         "pegRatio": 1.03
     },
     "risk": {
-        "volatility": 0.3295,
+        "volatility": 0.3305,
         "estimateSource": "historical",
         "correlations": null
     },
@@ -113,8 +113,8 @@
         }
     ],
     "derived": {
-        "expectedCagr": 0.1249,
-        "expectedMultiple": 3.2451,
+        "expectedCagr": 0.126,
+        "expectedMultiple": 3.275,
         "fairValueRange": null,
         "kelly": {
             "fullKelly": null,
@@ -150,10 +150,10 @@
             "claim": "Google Cloud reports annual operating margin > 12% in FY2025/2026",
             "target_date": "2026-11-15",
             "probability": 0.8,
-            "resolved": false,
-            "outcome": null,
-            "resolved_date": null,
-            "notes": "Tests structural profitability and scale leverage of GCP and TPU fleet."
+            "resolved": true,
+            "outcome": true,
+            "resolved_date": "2026-11-17",
+            "notes": "Resolved TRUE on review 2026-11-17: FY2025 10-K reported Google Cloud revenue of $58,705M and operating income of $13,910M, a calculated 23.69% operating margin, above 12% [10-K Note 15 / Segment Profitability; confirm pass 80% + direct extraction]."
         },
         {
             "id": "goog-search-rev-growth-fy25",
