@@ -488,8 +488,9 @@ Detailed notes can live in separate files under `docs/thesis/GOOG/`.
 
 - What happened:
     - The [FY2025 10-K](https://www.sec.gov/Archives/edgar/data/1652044/000165204426000018/goog-20251231.htm) reported Google Cloud revenue of $58.705B and operating income of $13.910B. The calculated annual operating margin was 23.69%, exceeding the 12% prediction threshold (Note 15 / Segment Profitability; confirm pass 80% plus direct extraction).
+    - The [2026-11-05 8-K](https://www.sec.gov/Archives/edgar/data/1652044/000119312526449835/d174184d8k.htm) reported the closing of Alphabet's **€6B euro-denominated senior notes offering** (confirm pass 80%). This confirms the external-financing mechanism already documented in the Q3 review.
 - Impact on predictions and scenarios:
-    - Resolved `goog-cloud-margin-fy25` TRUE. Probabilities, EPS CAGRs, and exit multiples remain unchanged because the Q3 2026 thesis already incorporates stronger Cloud profitability.
+    - Resolved `goog-cloud-margin-fy25` TRUE. Probabilities, EPS CAGRs, and exit multiples remain unchanged because the Q3 2026 thesis already incorporates stronger Cloud profitability and external financing.
 
 #### 2026-10-29 – Q3 2026 earnings: operating strength, weaker per-share bridge
 

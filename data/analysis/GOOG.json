@@ -3,7 +3,7 @@
     "name": "Alphabet",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-11-17T07:25:28.115444+00:00",
+        "asOf": "2026-11-17T08:00:31.876563+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -39,7 +39,7 @@
         "currency": "USD",
         "fiftyTwoWeekHigh": 404.47,
         "fiftyTwoWeekLow": 271.535,
-        "marketDataUpdatedAt": "2026-11-17T07:25:26.487874+00:00",
+        "marketDataUpdatedAt": "2026-11-17T08:00:30.861728+00:00",
         "evToEbitda": 18.1174,
         "eps": 19.15,
         "price": 281.26,
@@ -144,6 +144,13 @@
         ],
         "as_of": "2026-10-29T00:00:00Z"
     },
+    "reviewed_filings": [
+        {
+            "url": "https://www.sec.gov/Archives/edgar/data/1652044/000119312526449835/d174184d8k.htm",
+            "reviewed_date": "2026-11-17",
+            "note": "Reviewed the 2026-11-05 closing of Alphabet's €6B euro-denominated senior notes offering; external-financing mechanism confirmed with no scenario change."
+        }
+    ],
     "predictions": [
         {
             "id": "goog-cloud-margin-fy25",

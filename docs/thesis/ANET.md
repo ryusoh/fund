@@ -497,6 +497,18 @@ Detailed notes live under `docs/thesis/ANET/`.
 
 ### 8.2 High-level update entries (reverse chronological)
 
+#### 2026-11-17 – Q3 10-Q: demand visibility and bullwhip exposure confirmed
+
+- What happened:
+    - The [Q3 10-Q](https://www.sec.gov/Archives/edgar/data/1596532/000159653226000254/anet-20260930.htm) reported remaining performance obligations of **$8.6B**, with approximately **91%** expected to be recognized within two years. Deferred revenue ended at **$6,839.5M**.
+    - Evaluation inventory reached **$874.3M**, versus **$403.7M** at FY2025 year-end. Non-cancellable purchase commitments were **$11.4B**, including **$9.3B** expected within 12 months. Adapter confirm passes returned 80% for the RPO and evaluation-inventory claims.
+- Impact on scenarios:
+    - **Bull 0.35 / Base 0.50 / Bear 0.15 unchanged; EPS CAGRs, exit P/Es, and driver inputs unchanged.** The filing confirms the existing demand-visibility and bullwhip mechanisms rather than adding a new scenario.
+- Action:
+    - **HOLD.** Acknowledge both the Q3 10-Q and the previously reviewed earnings 8-K; no position, decision-journal, or review-date change.
+- TODO:
+    - Track RPO conversion, customer acceptance, evaluation-inventory conversion, and cash returns on the near-term purchase commitments.
+
 #### 2026-11-04 – Q3 FY2026 beat-and-raise; drivers rebased, scenarios unchanged
 
 - What happened:

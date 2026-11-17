@@ -3,7 +3,7 @@
     "name": "Aehr Test Systems",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-11-16T17:28:29.191395+00:00",
+        "asOf": "2026-11-17T08:00:02.690598+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -30,17 +30,17 @@
         }
     },
     "market": {
-        "price": 50.53,
+        "price": 50.98,
         "eps": -0.23,
         "forwardEps": 1.6825,
         "pe": null,
-        "forwardPe": 30.0327,
+        "forwardPe": 30.3001,
         "beta": 3.33,
-        "marketCap": 1657120768.0,
+        "marketCap": 1671878528.0,
         "currency": "USD",
-        "marketDataUpdatedAt": "2026-11-16T17:28:28.874612+00:00",
+        "marketDataUpdatedAt": "2026-11-17T08:00:01.328770+00:00",
         "pegRatio": 0.55,
-        "enterpriseValue": 1773549184.0,
+        "enterpriseValue": 1576780416.0,
         "ebitda": -11344000.0,
         "dividendYield": 0.0,
         "fiftyDayAverage": 77.964,
@@ -49,10 +49,10 @@
         "averageDailyVolume10Day": 3674030.0,
         "fiftyTwoWeekHigh": 147.4,
         "fiftyTwoWeekLow": 18.7,
-        "evToEbitda": -156.3425
+        "evToEbitda": -138.9969
     },
     "risk": {
-        "volatility": 1.3024,
+        "volatility": 1.3017,
         "estimateSource": "historical",
         "correlations": null
     },
@@ -115,8 +115,8 @@
         }
     ],
     "derived": {
-        "expectedCagr": 0.1077,
-        "expectedMultiple": 1.6676,
+        "expectedCagr": 0.1057,
+        "expectedMultiple": 1.6529,
         "fairValueRange": [
             45.0,
             50.0
@@ -141,22 +141,30 @@
         "evidence_against": [
             "Valuation remains the core constraint: the conservative $0.895 guided-minimum EPS calculation and revised $150M revenue guide do not clear the 12% hurdle at the post-print pipeline price; dated valuation is preserved in the 2026-11-04 decision_journal entry.",
             "Q1 operating cash flow was -$3.054M despite $9.357M non-GAAP net income; receivables and inventory consumed $10.686M and $9.037M of cash [Q1 FY2027 SEC Ex-99.1].",
-            "Q1 customer concentration is undisclosed; 'more than a dozen potential customers' is pipeline commentary, and the second Sonoma processor increases exposure to the same lead hyperscaler.",
+            "Q1 customer concentration re-intensified: Customer A and B were 47.5% and 25.1% of revenue (72.6% combined), and 44.3% and 22.7% of gross accounts receivable [Q1 FY2027 10-Q; confirm pass 80%].",
+            "Q1 inventory rose to $53.120M from $44.410M at June 26, reinforcing working-capital and demand-timing exposure [Q1 FY2027 10-Q].",
             "Most customer POs are cancellable/reschedulable with limited penalties; effective backlog includes post-quarter orders and has no fiscal-quarter delivery schedule [10-K FY2026 Item 1A; Q1 FY2027 SEC Ex-99.1].",
             "Q1 stock compensation was $1.880M and shares outstanding rose 0.56% from FYE2026; historical cash was dilution-funded and remaining shelf capacity is unverified.",
             "Structural category risk: customer yield improvements or sampling (vs 100% burn-in) reduce demand [10-K Item 1A].",
             "SiC overcapacity expected to persist until 2027-2028 (Yole via PCIM 2026-07-29); Q1 supplied no quantified SiC, GaN, HBM, or NAND production revenue."
         ],
         "open_questions": [
-            "Q1 FY2027 10-Q customer/product/geographic concentration, inventory composition, receivables, equity detail, subsequent events, and backlog timing.",
+            "What are Customer A/B identities and relationship durability, and will any single customer remain below 30% of FY2027 full-year revenue?",
             "Second AI supplier evaluation-cell purchase status, installation/validation timing, production criteria, and high-volume production decision.",
             "Remaining S-3/ATM shelf capacity and post-quarter dilution intent.",
             "Named wafer-level burn-in competitors and whether the 'only vendor offering both' claim holds.",
             "Official audio/caption confirmation of transcript-only consumables, margin, capacity, and market-opportunity claims.",
             "Deceased officer identity and key-person exposure (Sep 2026 proxy)."
         ],
-        "as_of": "2026-11-04T00:00:00Z"
+        "as_of": "2026-11-17T00:00:00Z"
     },
+    "reviewed_filings": [
+        {
+            "url": "https://www.sec.gov/Archives/edgar/data/1040470/000165495426009601/aehr_10q.htm",
+            "reviewed_date": "2026-11-17",
+            "note": "Reviewed Q1 FY2027 customer concentration, receivables, and inventory; logged 72.6% top-two revenue concentration and $53.120M inventory."
+        }
+    ],
     "predictions": [
         {
             "id": "aehr-q1fy27-revenue",

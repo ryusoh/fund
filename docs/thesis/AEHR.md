@@ -246,7 +246,7 @@ Valuation-relevant context after Q1 FY2027 (reported 2026-11-02):
 
 - Q2–Q4 revenue vs the **$38.998M quarterly average** required to reach $150M after Q1; nine-month revenue below ~$105M would require >$45M in Q4.
 - Bookings/backlog cadence and fiscal-quarter delivery timing (watch for cancellation/rescheduling language).
-- Customer count >10% and top-customer share in each 10-K/10-Q; Q1 concentration remains undisclosed pending the 10-Q.
+- Customer count >10% and top-customer share in each 10-K/10-Q; Q1 Customer A/B were 47.5%/25.1%, so track full-year concentration and relationship durability.
 - Gross-margin durability after Q1's 47.5% GAAP / 48.5% non-GAAP recovery.
 - Operating cash flow, receivables, and inventory conversion versus non-GAAP earnings.
 - Second-supplier FOX-XP installation, validation, and any HVM production order.
@@ -271,6 +271,18 @@ Append-only log. Machine-readable records: `data/analysis/AEHR.evidence.jsonl`. 
 - Bear evidence file: `docs/thesis/AEHR/AEHR-bear-evidence.md`
 
 ### 8.2 High-level update entries (reverse chronological)
+
+#### 2026-11-17 – Q1 FY2027 10-Q: concentration and inventory reviewed
+
+- What happened:
+    - The [Q1 FY2027 10-Q](https://www.sec.gov/Archives/edgar/data/1040470/000165495426009601/aehr_10q.htm) disclosed Customer A at **47.5%** and Customer B at **25.1%** of quarterly revenue (**72.6% combined**). They represented **44.3%** and **22.7%** of gross accounts receivable, respectively (adapter confirm pass 80%).
+    - Inventory increased to **$53.120M** from **$44.410M** at June 26. The concentration disclosure corrects the earlier "undisclosed" placeholder and preserves the working-capital caution from the earnings review.
+- Impact on scenarios:
+    - **Bull 0.25 / Base 0.50 / Bear 0.25 unchanged; EPS CAGRs and exit P/Es unchanged.** One quarter does not resolve the FY2027 full-year concentration prediction.
+- Action:
+    - **WATCH / 0 shares.** Log the concentration and inventory evidence as bearish; no decision-journal or review-date change.
+- TODO:
+    - Establish Customer A/B identity and relationship durability, full-year concentration, and subsequent inventory conversion.
 
 #### 2026-11-04 – Q1 FY2027 print: execution upgraded, WATCH retained
 
@@ -320,14 +332,14 @@ Append-only log. Machine-readable records: `data/analysis/AEHR.evidence.jsonl`. 
 ## 9. Open Questions / Research To-Do
 
 - Unresolved uncertainties (mirrors `belief_state.open_questions`):
-    - Q1 FY2027 10-Q concentration, inventory, receivables, equity detail, subsequent events, and backlog timing.
+    - Customer A/B identity and relationship durability; whether any single customer remains below 30% of FY2027 full-year revenue.
     - Identity/durability of lead hyperscale AI relationships; second-supplier evaluation, validation, and HVM conversion.
     - Remaining S-3/ATM shelf capacity and post-quarter dilution intent.
     - Named WLBI competitors; validity of the "only vendor offering both" claim.
     - Official audio/caption confirmation of transcript-only consumables, margin, capacity, and market-opportunity claims.
     - Deceased-officer identity and key-person exposure (Sep 2026 proxy, DEF 14A filed 2026-09-09).
 - Planned research:
-    - Re-run filings ingest and `/thesis-update AEHR` when the Q1 FY2027 10-Q posts.
+    - Track FY2027 concentration and inventory conversion in subsequent filings.
     - Consider authoring `docs/thesis/industry/semiconductor-test.md` if a second test-chain name joins coverage.
     - ~~Fix vendored XBRL value extraction~~ — done 2026-10-13: XBRL statements return values and the FY2026 figures were cross-checked against the 10-K XBRL (see initial findings doc §Filings-layer evaluation).
 
