@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -82,6 +84,35 @@ def test_tracked_tickers_excludes_non_ticker_configs(analysis_dir: Path) -> None
     for name in ("index.json", "theme_timeline.json", "watchlist.json", "event_flags.json"):
         (analysis_dir / name).write_text(json.dumps({"tickers": []}), encoding="utf-8")
     assert tracked_tickers(analysis_dir) == ["AAPL"]
+
+
+def test_downloader_import_skips_heavy_tool_stack() -> None:
+    code = """
+import builtins
+
+real_import = builtins.__import__
+
+
+def block_heavy_imports(name, *args, **kwargs):
+    if name == "pandas" or name.startswith("pandas."):
+        raise ModuleNotFoundError("pandas must not be imported by the event scanner")
+    if name.startswith("scripts.filings.fins.tools"):
+        raise ModuleNotFoundError("the full tool stack must stay out of the downloader import")
+    return real_import(name, *args, **kwargs)
+
+
+builtins.__import__ = block_heavy_imports
+from scripts.filings.fins.downloaders.sec_downloader import SecDownloader
+assert SecDownloader is not None
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", code],
+        cwd=Path(__file__).resolve().parents[2],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
 
 
 def test_edgar_form_filtering_and_lookback_boundary(

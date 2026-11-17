@@ -7,7 +7,7 @@
 
 - **Ticker / Name**: GOOG – Alphabet Inc.
 - **Date**: 2025-11-15
-- **Last updated**: 2026-10-29 (Q3 2026 earnings)
+- **Last updated**: 2026-11-17 (FY2025 Cloud margin prediction resolution)
 - **Time Horizon**: 10 years
 - **Benchmark (annual)**: 6.5% (approx. long-run equity market return)
 - **Target CAGR (Hurdle)**: 12%
@@ -483,6 +483,13 @@ Detailed notes can live in separate files under `docs/thesis/GOOG/`.
 - Bear evidence file: `docs/thesis/GOOG/GOOG-bear-evidence.md`
 
 ### 8.2 High-level update entries (reverse chronological)
+
+#### 2026-11-17 – FY2025 Cloud margin prediction resolved TRUE
+
+- What happened:
+    - The [FY2025 10-K](https://www.sec.gov/Archives/edgar/data/1652044/000165204426000018/goog-20251231.htm) reported Google Cloud revenue of $58.705B and operating income of $13.910B. The calculated annual operating margin was 23.69%, exceeding the 12% prediction threshold (Note 15 / Segment Profitability; confirm pass 80% plus direct extraction).
+- Impact on predictions and scenarios:
+    - Resolved `goog-cloud-margin-fy25` TRUE. Probabilities, EPS CAGRs, and exit multiples remain unchanged because the Q3 2026 thesis already incorporates stronger Cloud profitability.
 
 #### 2026-10-29 – Q3 2026 earnings: operating strength, weaker per-share bridge
 

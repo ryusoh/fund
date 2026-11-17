@@ -19,6 +19,8 @@ jobs:
             - uses: actions/setup-python@v7
               with:
                   python-version: '3.13'
+            - name: Install event scanner dependency
+              run: python3 -m pip install httpx
             - name: Flag stale unresolved predictions
               run: python3 scripts/analysis/prediction_sweeper.py --fail-on-stale
             - name: Flag new filings and upcoming review dates
