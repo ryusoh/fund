@@ -3,7 +3,7 @@
     "name": "Cerebras Systems",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-11-16T17:28:29.979032+00:00",
+        "asOf": "2026-11-17T08:00:23.708331+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -28,17 +28,17 @@
         }
     },
     "market": {
-        "price": 100.8,
-        "eps": -5.14,
+        "price": 100.99,
+        "eps": -5.17,
         "forwardEps": 1.8584,
         "pe": null,
-        "forwardPe": 54.2411,
+        "forwardPe": 54.3433,
         "beta": null,
-        "marketCap": 24494739456.0,
+        "marketCap": 24540909568.0,
         "currency": "USD",
-        "marketDataUpdatedAt": "2026-11-16T17:28:29.752673+00:00",
+        "marketDataUpdatedAt": "2026-11-17T08:00:22.950773+00:00",
         "pegRatio": null,
-        "enterpriseValue": 20508768256.0,
+        "enterpriseValue": 18630352896.0,
         "ebitda": -661307008.0,
         "dividendYield": 0.0,
         "fiftyDayAverage": 151.0202,
@@ -47,10 +47,10 @@
         "averageDailyVolume10Day": 14019640.0,
         "fiftyTwoWeekHigh": 386.34,
         "fiftyTwoWeekLow": 77.84,
-        "evToEbitda": -31.0125
+        "evToEbitda": -28.172
     },
     "risk": {
-        "volatility": 1.1374,
+        "volatility": 1.1372,
         "estimateSource": "historical",
         "correlations": null
     },
@@ -166,6 +166,18 @@
         ],
         "as_of": "2026-11-13T00:00:00Z"
     },
+    "reviewed_filings": [
+        {
+            "url": "https://www.sec.gov/Archives/edgar/data/2021728/000162828026073494/cbrs-20260930.htm",
+            "reviewed_date": "2026-11-13",
+            "note": "Reviewed in the Q3 thesis update and findings commit 6fa19047; OpenAI delivery shortfall resolved the MRA prediction FALSE and closed the long thesis."
+        },
+        {
+            "url": "https://www.sec.gov/Archives/edgar/data/2021728/000162828026073366/cbrs-20261112.htm",
+            "reviewed_date": "2026-11-13",
+            "note": "Reviewed with the Q3 earnings release in findings commit 6fa19047; core revenue beat recorded without reviving the closed thesis."
+        }
+    ],
     "predictions": [
         {
             "id": "cbrs-q3-2026-core-revenue",

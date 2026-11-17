@@ -208,6 +208,46 @@ def test_fail_open_on_downloader_runtime_error(
     assert "Warning: EDGAR leg failed for AAPL: EDGAR unreachable" in capsys.readouterr().err
 
 
+def test_reviewed_filings_are_acknowledged_individually(
+    fake_downloader: type[_FakeDownloader],
+    analysis_dir: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    fake_downloader.payload = _submissions(
+        [
+            ("8-K", "2026-06-10", "0000320193-26-000001", "a.htm"),
+            ("10-Q", "2026-06-11", "0000320193-26-000002", "b.htm"),
+        ]
+    )
+    reviewed_url = "https://www.sec.gov/Archives/edgar/data/320193/000032019326000001/a.htm"
+    unreviewed_url = "https://www.sec.gov/Archives/edgar/data/320193/000032019326000002/b.htm"
+    config = {
+        "decision_journal": [{"date": "2026-06-01", "review_date": "2027-01-01"}],
+        "reviewed_filings": [
+            {"url": reviewed_url, "reviewed_date": "2026-06-12"},
+            {"url": unreviewed_url},
+        ],
+    }
+    config_path = analysis_dir / "AAPL.json"
+    config_path.write_text(json.dumps(config), encoding="utf-8")
+
+    args = ["--data-dir", str(analysis_dir), "--as-of", "2026-06-15", "--fail-on-flag"]
+    assert main(args) == 1
+    out = capsys.readouterr().out
+    assert reviewed_url not in out
+    assert unreviewed_url in out
+    assert "Summary: 1 event flag(s) found across 1 ticker(s)." in out
+
+    config["reviewed_filings"][1]["reviewed_date"] = "2026-06-13"
+    config_path.write_text(json.dumps(config), encoding="utf-8")
+    assert main(args) == 0
+    assert "Summary: 0 event flags found." in capsys.readouterr().out
+
+    config_path.write_text("[]", encoding="utf-8")
+    assert main(args) == 1
+    assert unreviewed_url in capsys.readouterr().out
+
+
 def test_edgar_skipped_without_user_agent(
     fake_downloader: type[_FakeDownloader],
     analysis_dir: Path,

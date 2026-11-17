@@ -73,6 +73,28 @@ def tracked_tickers(data_dir: Path) -> list[str]:
     return sorted(p.stem for p in data_dir.glob("*.json") if p.name not in SKIP_FILES)
 
 
+def reviewed_filing_urls(data_dir: Path, tickers: list[str]) -> set[str]:
+    """Return exact filing URLs explicitly acknowledged with a review date."""
+    urls: set[str] = set()
+    for ticker in tickers:
+        try:
+            data = json.loads((data_dir / f"{ticker}.json").read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(data, dict):
+            continue
+        entries = data.get("reviewed_filings")
+        if not isinstance(entries, list):
+            continue
+        for entry in entries:
+            if not isinstance(entry, dict) or not entry.get("reviewed_date"):
+                continue
+            url = entry.get("url")
+            if isinstance(url, str) and url:
+                urls.add(url)
+    return urls
+
+
 def _edgar_url(cik: str, accession: str, primary_document: str) -> str:
     accession_clean = accession.replace("-", "")
     return f"{EDGAR_ARCHIVES_BASE}/{int(cik)}/{accession_clean}/{primary_document}"
@@ -153,6 +175,8 @@ def scan_review_dates(
             sys.stderr.write(f"Warning: could not read {file_path}: {e}\n")
             continue
 
+        if not isinstance(data, dict):
+            continue
         journal = data.get("decision_journal")
         if not isinstance(journal, list) or not journal:
             continue
@@ -278,6 +302,8 @@ def main(argv: list[str] | None = None) -> int:
     workspace = resolve_filings_workspace()
 
     flags = scan_edgar_leg(tickers, workspace, today, args.lookback_days)
+    reviewed_urls = reviewed_filing_urls(args.data_dir, tickers)
+    flags = [flag for flag in flags if flag["type"] != "filing" or flag["url"] not in reviewed_urls]
     flags += scan_review_dates(args.data_dir, tickers, today, REVIEW_WARN_DAYS)
 
     for flag in flags:

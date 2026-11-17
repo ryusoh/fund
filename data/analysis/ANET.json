@@ -3,7 +3,7 @@
     "name": "Arista Networks",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-11-16T17:28:29.577791+00:00",
+        "asOf": "2026-11-17T08:00:14.035445+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -29,19 +29,19 @@
     },
     "market": {
         "forwardEps": 6.037,
-        "pe": 49.9336,
-        "forwardPe": 30.8518,
+        "pe": 50.1394,
+        "forwardPe": 30.979,
         "beta": 1.637,
-        "marketCap": 235311857664.0,
-        "enterpriseValue": 234897653760.0,
+        "marketCap": 236281511936.0,
+        "enterpriseValue": 221922508800.0,
         "ebitda": 5304200192.0,
         "currency": "USD",
         "fiftyTwoWeekHigh": 217.41,
         "fiftyTwoWeekLow": 114.52,
-        "marketDataUpdatedAt": "2026-11-16T17:28:29.373514+00:00",
-        "evToEbitda": 44.2852,
+        "marketDataUpdatedAt": "2026-11-17T08:00:12.941140+00:00",
+        "evToEbitda": 41.839,
         "eps": 3.73,
-        "price": 186.2525,
+        "price": 187.02,
         "fiftyDayAverage": 192.9262,
         "twoHundredDayAverage": 167.3465,
         "averageVolume": 6301017.0,
@@ -50,7 +50,7 @@
         "dividendYield": 0.0
     },
     "risk": {
-        "volatility": 0.5743,
+        "volatility": 0.574,
         "estimateSource": "historical",
         "correlations": null
     },
@@ -183,8 +183,8 @@
         }
     ],
     "derived": {
-        "expectedCagr": 0.1047,
-        "expectedMultiple": 1.6449,
+        "expectedCagr": 0.1037,
+        "expectedMultiple": 1.6381,
         "fairValueRange": [
             100.0,
             130.0
@@ -201,8 +201,8 @@
         "evidence_for": [
             "FY2026 revenue guidance raised a fourth time to ~$13.3B (+48%); initial FY2027 outlook is 38-40% growth (~$18.5B) with AI fabrics ~$7B and campus ~$2B [Q3'26 official captions 1090-1095; Arista 2027 Outlook p15].",
             "Q3 2026 revenue $3,657.6M (+58.5% YoY, +20.5% QoQ), beating the ~$3.3B guide by 10.8%; GAAP/non-GAAP GM 63.6%/64.0%, op margin 44.9%/49.1%, diluted EPS $1.22/$1.20 [Q3'26 SEC Ex-99.1 pp1,3-4; direct-source confirm pass].",
-            "Demand visibility remains substantial: deferred revenue $6,839.5M at Q3 (+27.3% from FY2025 year-end despite -0.4% QoQ); latest RPO anchor $8.4B at 2026-06-30 with ~91% recognizable in 2 years [Q3'26 SEC Ex-99.1 p5; Q2 10-Q s_0002_c13].",
-            "Supply planning supports the raised outlook: purchase commitments $11.4B with ~80% expected for use within 12 months; management reports long-term silicon, PCB and memory agreements [Q3'26 earnings deck p7; official call captions].",
+            "Demand visibility remains substantial: Q3 RPO was $8.6B with approximately 91% expected within two years; deferred revenue was $6,839.5M (+27.3% from FY2025 year-end despite -0.4% QoQ) [Q3 10-Q; confirm pass 80%].",
+            "Supply planning supports the raised outlook: non-cancellable purchase commitments were $11.4B, of which $9.3B is expected within 12 months; management reports long-term silicon, PCB and memory agreements [Q3 10-Q; official call captions].",
             "AI breadth and ecosystem: EtherLink exceeded 100 cumulative customers by Q2'26; AMD, Arm, Broadcom, d-Matrix, Meta, Microsoft and Qualcomm are named partners in open rack-scale architectures [Q2'26 call; Q3'26 SEC Ex-99.1 p1].",
             "EOS NetDL software stickiness demonstrated across top tier-1 cloud titans.",
             "Ultra Ethernet Consortium (UEC) standardization solidifies multi-vendor Ethernet fabric traction."
@@ -213,19 +213,31 @@
             "Gross margin remains below prior year despite sequential recovery: Q3'26 GAAP/non-GAAP 63.6%/64.0% vs 64.6%/65.2% a year earlier; FY2027 non-GAAP guide stays 62-64% [Q3'26 SEC Ex-99.1 p4; Arista 2027 Outlook p15].",
             "Premium valuation limits margin of safety on capex digestion shocks; the position-size override remains a separate governance risk and must be assessed on pipeline-refreshed market data, not stale pre-print multiples.",
             "Guidance remains supply-constrained with about two quarters of visibility; not every FY2027 order has been placed, so supply execution remains a direct revenue risk [Q3'26 official call captions].",
-            "Bullwhip exposure increased: Q3 inventory rose 26.6% QoQ to $3,209.8M and purchase commitments rose 17.5% to $11.4B, while deferred revenue slipped 0.4% to $6,839.5M [Q3'26 SEC Ex-99.1 p5; Q3'26 earnings deck pp6-7].",
+            "Bullwhip exposure increased: Q3 inventory rose 26.6% QoQ to $3,209.8M and purchase commitments rose 17.5% to $11.4B, while deferred revenue slipped 0.4% to $6,839.5M; evaluation inventory reached $874.3M versus $403.7M at FY2025 year-end [Q3'26 SEC Ex-99.1 p5; Q3 10-Q; confirm pass 80%].",
             "Anchor customers are building exit ramps: Meta extended its Broadcom custom-silicon partnership through 2029; Microsoft-authored SONiC added 800GbE; white-box market growing ~18.5% CAGR (secondary estimate).",
             "Capital-return pause: zero buybacks in 9M 2026 versus $983.0M in the prior-year period; diluted-share assumptions should remain flat rather than assume 1-2% annual shrinkage [Q3'26 SEC Ex-99.1 pp3,6]."
         ],
         "open_questions": [
-            "What does the Q3 10-Q show for gross deferred-revenue churn, RPO, inventory composition, purchase-commitment maturities and strategic-investment gains?",
+            "How much of the $8.6B RPO converts on schedule, and how do evaluation inventory and $9.3B near-term purchase commitments convert into cash without acceptance delays?",
             "What is the pace of optical migration from 800G DSP to 1.6T LPO/CPO?",
             "Will enterprise/campus segment revenue diversify total revenue beyond 40% non-cloud?",
             "What do third-party share data (Dell'Oro/Crehan/IDC) show for Spectrum-X vs EtherLink ports in 2026 AI back-end builds?",
             "Does the FY2026 10-K disclose a third >=10% customer (prediction anet-third-10pct-customer-fy26)?"
         ],
-        "as_of": "2026-11-04T00:00:00Z"
+        "as_of": "2026-11-17T00:00:00Z"
     },
+    "reviewed_filings": [
+        {
+            "url": "https://www.sec.gov/Archives/edgar/data/1596532/000159653226000254/anet-20260930.htm",
+            "reviewed_date": "2026-11-17",
+            "note": "Reviewed Q3 RPO, deferred revenue, evaluation inventory, and purchase commitments; existing demand-visibility and bullwhip mechanisms confirmed."
+        },
+        {
+            "url": "https://www.sec.gov/Archives/edgar/data/1596532/000159653226000252/anet-20261103.htm",
+            "reviewed_date": "2026-11-04",
+            "note": "Reviewed in the Q3 FY2026 earnings thesis update; revenue beat and guidance raise recorded with scenarios unchanged."
+        }
+    ],
     "predictions": [
         {
             "id": "anet-ai-rev-fy25",
