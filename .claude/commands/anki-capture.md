@@ -4,122 +4,71 @@ description: Capture durable knowledge from a fund research or thesis session as
 
 # Anki Capture Skill (/anki-capture)
 
-Turns a fund chat session's durable artifact (a `docs/research/` findings doc
-or a `docs/thesis/<TICKER>.md` update) into high-density flashcards in the
-Anki **金融** deck. Design context: `docs/research/compounding-research-engine.md`.
+Turn a committed fund artifact (`docs/research/` findings doc or
+`docs/thesis/<TICKER>.md` update) into 1–5 high-density Chinese-primary
+flashcards in the Anki **金融** deck. Design context:
+`docs/research/compounding-research-engine.md`.
 
-## Core rules
+## Core contract
 
-- **Cards are downstream of docs.** Author cards only from an artifact that
-  already exists in git (or is about to be committed this session). Never
-  card-ify chat text that was not persisted.
-- **Code gates, LLM authors.** You write card prose as JSONL; the networking
-  repo's validator, density gate, dedup, and AnkiConnect import decide what
-  enters the deck. Never write to Anki any other way (never raw-SQLite
-  `collection.anki2`; never hand-edit `~/dev/networking/research/.anki_coverage.json`).
-- **1–5 cards per session.** If everything seems card-worthy, you are
-  card-ifying trivia. Pick what a future you must not forget.
-
-## What is card-worthy here (read this first)
-
-The user's financial fundamentals are strong — the marginal card is almost
-never a finance concept (the legacy CFA-style theory cards already cover
-those). The user's research is **first-principles industry and company
-research**, so card-worthy material is:
-
-- **Industry mechanics**: how a supply chain / technology transition / cost
-  curve actually works (e.g. LPO vs. CPO trade-offs, who captures margin in
-  the AI data-center networking stack).
-- **Company structural variables**: the specific numbers, dependencies, and
-  causal links a thesis hinges on (customer concentration, a product cycle's
-  timing, a unit-economics driver).
-- **Quantitative anchors**: TAM/share/margin figures with their derivation,
-  so the number is recallable with its reasoning, not as bare trivia.
-
-Not card-worthy: dictionary definitions of financial terms, generic valuation
-theory, anything already in the deck's theory base.
+- **Downstream of committed docs:** author cards strictly from an artifact in
+  git (or being committed this session) so every claim traces to persisted
+  source lines.
+- **LLM authors, code gates:** write JSONL to `.agents/state/anki_cards.jsonl`
+  (gitignored; overwrite fresh each run) and let the networking repo's
+  validator, density gate, dedup, and AnkiConnect importer control what enters
+  Anki.
+- **1–5 high-leverage cards per session:** focus on first-principles industry
+  and company research — **industry mechanics** (supply chains, tech
+  transitions, cost curves), **company structural variables** (concentration,
+  product cycles, unit-economics drivers), and **quantitative anchors** with
+  their derivation. Skip basic finance definitions and CFA-level theory
+  already in the deck.
 
 ## Pipeline
 
-The staging file is `.agents/state/anki_cards.jsonl` **in this repo**
-(gitignored; overwrite — never append — each run; stale lines re-import as
-duplicates).
-
-All networking-repo tools require the repo root on `sys.path` and write some
-state cwd-relative (the density gate drops `research/anki_density_verdicts.jsonl`
-under the current directory — run from the fund repo it pollutes the fund
-worktree). So prefix every command with `PYTHONPATH` and run them from the
-networking repo:
+Networking-repo scripts expect the repo root on `sys.path` and write
+cwd-relative state (`research/anki_density_verdicts.jsonl`), so run every
+command from `~/dev/networking`:
 
 ```bash
 cd ~/dev/networking && export PYTHONPATH=~/dev/networking
-```
 
-```bash
-# 0. Optional but recommended: list current 金融 hub concepts so card fronts
-#    can reuse their names verbatim (creates PageRank edges on the next
-#    graph rebuild).
+# 0. Optional: reuse existing 金融 hub concept names verbatim (builds PageRank edges)
 python3 ~/dev/anki/graph/analyze.py --deck F --top 20 --hubs
-
-# 0b. Optional: retention-gap hubs (high-PageRank concepts whose cards keep
-#    lapsing) — prefer authoring better/denser cards for these over new
-#    topics. Fails open if Anki is not running.
+# 0b. Optional: prioritize high-PageRank retention-gap hubs (fails open if Anki is closed)
 python3 ~/dev/networking/tools/research/anki_retention.py --gaps --top 10
 
-# 1. Author cards (you, the agent) → /Users/lz/dev/fund/.agents/state/anki_cards.jsonl
-#    One JSON object per line: {chunk_id, front, back, tags, citation}
-#    chunk_id := "fund/<relpath>:card-<n>"   (e.g. "fund/docs/thesis/ANET.md:card-1")
-#    citation := "<relpath>#L<start>-L<end>"  (lines of the source passage in THIS repo)
+# 1. Author JSONL → /Users/lz/dev/fund/.agents/state/anki_cards.jsonl
+#    Schema: {chunk_id, front, back, tags, citation}
+#    chunk_id := "fund/<relpath>:card-<n>"   citation := "<relpath>#L<start>-L<end>"
 
 # 2. Structural validation (hard gate)
 python3 ~/dev/networking/tools/research/anki_card_validator.py \
     /Users/lz/dev/fund/.agents/state/anki_cards.jsonl
 
-# 3. Density gate (against the pinned 金融 baseline)
+# 3. Density gate (against pinned 金融 baseline; re-author any enrich/consolidate flags)
 python3 ~/dev/networking/tools/research/anki_density_gate.py \
     --cards /Users/lz/dev/fund/.agents/state/anki_cards.jsonl
-#    Re-author any card flagged enrich/consolidate, then re-run 2 and 3.
 
-# 3.5. LLM-as-judge pre-screen (you, the agent — no code): for each staged
-#    card, re-read the source lines its citation points to and score a
-#    4-point rubric: accuracy (claim matches source), citation match (those
-#    lines actually support it), completeness (no load-bearing omission),
-#    format (contract below). Claims must trace to the persisted doc, not to
-#    session memory: a number a subagent reported that never landed in the
-#    findings doc is a citation-match fail (2026-10-14: `$44.3M` warrant
-#    amortization and an HBM bandwidth figure were dropped for this). Rewrite
-#    any failing card, then re-run gates 2-3. (~1 hallucination per 21
-#    LLM-authored cards is measured in the literature; this pass catches them
-#    before human review.)
+# 4. Judge pre-screen (you, in chat): re-read each cited line range and verify
+#    (a) accuracy, (b) citation match against the persisted doc (not session memory),
+#    (c) completeness, and (d) format. Rewrite failures and re-run steps 2–3.
 
-# 4. Human review: show the user the JSONL diff before importing.
+# 5. Human review: show the JSONL diff to the user before importing.
 
-# 5. Import (validator re-runs internally; refuses on any issue)
+# 6. Import (re-runs validator internally; --auto-launch starts Anki; dedupes by front hash)
 python3 ~/dev/networking/tools/research/anki_generator.py --import --deck "金融" \
     --cards /Users/lz/dev/fund/.agents/state/anki_cards.jsonl --auto-launch
 ```
 
-`--auto-launch` starts Anki if it is not running. Import is deduped by
-normalized-front content hash, but never re-import the same file twice.
+### Revising or one-shot cards
 
-### Revising an already-imported card
-
-Never hand-edit the note in Anki (the card would drift from its source doc)
-and never delete + re-import (loses scheduling). Edit the staged JSONL,
-re-run gates 2–3, then update the note in place:
-
-```bash
-python3 ~/dev/networking/tools/research/anki_generator.py --update --deck "金融" \
-    --cards /Users/lz/dev/fund/.agents/state/anki_cards.jsonl --auto-launch
-```
-
-`--update` matches each card to its coverage-ledger `note_id` and rewrites
-Front/Back/tags via AnkiConnect, preserving review history. Cards whose note
-was deleted in Anki are re-added; cards with no ledger entry are added as new;
-content-identical cards are skipped. Validator and density gates apply exactly
-as in `--import`.
-
-For a single ad-hoc card (no batch worth staging), the one-shot path is:
+- **Update in place** (preserves review history and stays synced with source
+  docs): edit the staged JSONL, re-run steps 2–3, then run `anki_generator.py`
+  with `--update` instead of `--import`. It matches notes via the coverage
+  ledger's `note_id`, skips unchanged cards, and re-adds deleted/new ones.
+- **Single ad-hoc card:**
 
 ```bash
 python3 ~/dev/networking/tools/research/anki_generator.py \
@@ -127,94 +76,54 @@ python3 ~/dev/networking/tools/research/anki_generator.py \
     --deck "金融" --tags "research finance" --auto-launch
 ```
 
-## Card format contract (machine-enforced; violations are hard rejects)
+## Format contract & validator quirks
 
-Authoritative spec: `~/dev/networking/docs/research/anki-card-pipeline-spec.md`
-§8. The validator (`~/dev/networking/tools/research/anki_card_validator.py`)
-enforces:
+Spec: `~/dev/networking/docs/research/anki-card-pipeline-spec.md` §8;
+enforced by `anki_card_validator.py`:
 
-- **Front:** `<strong>中文概念</strong>: 具体机制问题？` — a Chinese concept
-  name plus a concrete question (never a topic label). English in the title is
-  limited to acronyms / single-token standard names (`DCF`, `LPO`);
-  multi-word English glosses are machine-banned.
-- **Back:** ≥2 dense sections, each headed `<b>section name:</b>`;
-  Chinese-primary prose; LaTeX `\(...\)` for formulas. Prefer mechanism and
-  quantitative content (formula, driver, threshold, trade-off) over
-  definitional fluff.
+- **Front:** `<strong>中文概念</strong>: 具体机制问题？` — Chinese concept
+  name + concrete mechanism question. Allowed English in the front: acronyms
+  and single-token names (`WLBI`, `backlog`). Multi-word or hyphenated terms
+  (`burn-in`) fail the front tokenizer — keep the front pure Chinese and gloss
+  on first mention in the back (`老化测试（burn-in）`), so the central concept
+  always carries an English anchor for graph links.
+- **Back:** ≥2 dense sections headed `<b>section name:</b>`, Chinese-primary
+  prose, LaTeX `\(...\)` for formulas, mechanism/quantitative substance over
+  definitions.
 - **English annotations:** cap of 2 non-acronym parenthetical glosses per
-  back; when in doubt, do not annotate.
-- **Acronyms:** expand every acronym on first use as an English parenthetical
-  whose word initials subsequence-match (`DCF (Discounted Cash Flow)`); a
-  Chinese gloss does not count. Only `COMMON_ACRONYMS` in the validator are
-  exempt.
-- **Citation:** the back must end with a `源码与文档引用 (Source Citation):`
-  section containing a line-anchored link into the fund repo:
+  back. The counter checks any parenthetical containing an English word (even
+  mostly-Chinese ones), so keep incidental English words outside parentheses.
+- **Acronyms:** expand on first use with an English parenthetical whose
+  initials subsequence-match (`DCF (Discounted Cash Flow)`). The scanner
+  flags every uppercase token — including tickers (`AEHR`) and product names
+  (`FOX`) — unless exempt in `COMMON_ACRONYMS` or
+  `~/dev/networking/research/.anki_deck_acronyms.json` (built by
+  `anki_deck_acronyms.py` for acronyms already taught in 金融). Pre-check
+  candidate tokens against that JSON or paraphrase around tickers/units
+  (`该公司`, `每秒 21 拍字节`).
+- **Citation:** back ends with `源码与文档引用 (Source Citation):` linking to
+  line ranges in this repo:
   `[docs/thesis/ANET.md#L10-L20](file:///Users/lz/dev/fund/docs/thesis/ANET.md#L10-L20)`.
-- **Tags (canonical vocabulary only):** every card carries `research` +
-  `finance`, optionally one or two of `valuation`, `moat`, `earnings`,
-  `industry`, `macro` (or networking concept tags when the card is
-  infrastructure-domain). Invented tags are rejected.
+- **Tags:** canonical vocabulary only — `research` + `finance`, plus 0–2 of
+  `valuation`, `moat`, `earnings`, `industry`, `macro` (or networking concept
+  tags for infra cards).
 
-## Gotchas (learned on the first real run, 2026-10-13)
+## Density metric debugging
 
-- **Validator acronym scan is a dumb uppercase-token match.** Tickers
-  (`AEHR`) and product names (`FOX`) are flagged as "unexpanded acronyms";
-  write around them (该公司, or drop the product name). Genuinely new
-  acronyms (`WLBI`, `PLBI`) must be expanded on first use — but acronyms
-  the 金融 deck already teaches are exempt via a cache
-  (`research/.anki_deck_acronyms.json` in the networking repo, built by
-  `anki_deck_acronyms.py` scoped to the 金融 deck: exempt = expanded
-  before in the deck, or ≥ 25 notes). `AI`, `GPU`, `HBM` and ~1,500
-  others are exempt; rebuild the cache occasionally as the deck grows.
-  **Pre-check candidate acronyms against the cache before authoring**
-  (2026-10-14: `PB`, `ASC`, `MRA`, `CFIUS` were not exempt and cost a
-  validation round): load the JSON and test membership, or just avoid
-  non-exempt tokens (`每秒 21 拍字节` instead of `21 PB/s`).
-- **The English-annotation counter is substring-based, not term-based.**
-  Any parenthetical containing an English word counts toward the cap of 2,
-  even a mostly-Chinese one (`（…Bedrock 集成目标 2027 年首季）` counted).
-  Keep English tokens out of parentheses unless it is a deliberate gloss.
-- **Core concept names must carry an English anchor, but hyphenated terms are
-  front-banned.** The front allows acronyms and single-token names only —
-  `(WLBI)`, `(backlog)` pass; `(burn-in)` is rejected as multi-word (the
-  tokenizer splits on hyphens). For hyphenated/multi-word terms, keep the
-  front pure Chinese and gloss on first mention in the back instead:
-  `老化测试（burn-in）`. Never let a card's central concept
-  (老化测试, 晶圆级方案) go without any English original or acronym — the
-  deck's graph links and English-source cross-reference depend on it.
-- **The density metric** (`~/dev/networking/tools/research/anki_density.py`) is
-  `0.4·compression + 0.2·MTLD + 0.2·concept + 0.2·domain`. Practical levers
-  when a card is flagged `enrich`:
-    - Adding prose can LOWER the score — MTLD (lexical diversity) is usually
-      the binding constraint for Chinese text, so cut repeated words instead
-      of adding sentences.
-    - Every `file://` citation link is tokenized and drags MTLD down — a card
-      that passes can fall back under threshold when the judge pass (3.5) adds
-      citation links. Leave headroom above the threshold, and re-run both
-      gates after judge-pass edits.
-    - Debug with the component breakdown before rewriting:
+`anki_density.py` scores
+`0.4·compression + 0.2·MTLD + 0.2·concept + 0.2·domain`. On `enrich` flags:
 
-        ```bash
-        python3 - <<'EOF'
-        import json
-        from tools.research.anki_density import card_density
-        from tools.research.anki_density_baseline import compute_baseline, DEFAULT_BASELINE_CACHE_PATH
-        b = compute_baseline(deck="金融", k=10, cache_path=DEFAULT_BASELINE_CACHE_PATH)
-        for l in open("/Users/lz/dev/fund/.agents/state/anki_cards.jsonl"):
-            c = json.loads(l)
-            r = card_density(c["front"], c["back"], b.lexicon)
-            print(c["chunk_id"], r.composite, r.d_comp, r.d_lex, r.d_concept, r.d_domain)
-        EOF
-        ```
+- MTLD (lexical diversity) is usually the binding constraint for Chinese; cut
+  repeated words rather than adding prose.
+- `file://` citation links lower MTLD, so leave headroom before step 4 and
+  re-run steps 2–3 after adding citations.
+- Inspect per-component scores with:
 
-- **Verdicts and pipeline state anchor to the networking repo** — read them at
-  `~/dev/networking/research/anki_density_verdicts.jsonl`, not under the fund
-  repo. (Pre-fix runs from the fund repo may have left a stray `research/`
-  directory behind; delete it if you find one.)
+```bash
+python3 -c 'import json; from tools.research.anki_density import card_density; from tools.research.anki_density_baseline import compute_baseline, DEFAULT_BASELINE_CACHE_PATH; b=compute_baseline(deck="金融",k=10,cache_path=DEFAULT_BASELINE_CACHE_PATH); [print(c["chunk_id"], *(round(x,3) for x in (r.composite,r.d_comp,r.d_lex,r.d_concept,r.d_domain))) for l in open("/Users/lz/dev/fund/.agents/state/anki_cards.jsonl") for c in [json.loads(l)] for r in [card_density(c["front"],c["back"],b.lexicon)]]'
+```
 
 ## After import
 
-- Report what was imported (count, fronts).
-- The new cards join the 金融 knowledge graph on the next
-  `make precommit-fix YOLO=1` run in `~/dev/anki` (graph export is backgrounded
-  there); no manual rebuild needed.
+Report imported count and fronts. New cards enter the 金融 knowledge graph
+automatically on the next `make precommit-fix YOLO=1` in `~/dev/anki`.

@@ -27,11 +27,13 @@ git status --short
 
 ## Mode A — ship the working tree on main
 
-1. **Verify:** `make precommit && make verify`. If it fails only on
-   formatting/lint, run `make fix` and re-verify.
-2. **Commit:** stage and commit all pending work with a real
-   conventional-commit message describing the change (never "WIP" or
-   "fix quality gate"). Include fix-up changes from step 1 in the same commit.
+1. **Verify:** `make precommit-fix && make verify` (the CI gate plus
+   mypy/bandit/sync-check); the fixer's reformat of your files is part of the
+   change.
+2. **Commit:** stage the files that make up this change by name and commit
+   with a real conventional-commit message describing it. If `git status`
+   shows dirty files you can't attribute to this work, ask before including
+   them (the checkout is shared).
 3. **Push:** `git pull --rebase origin main && git push origin main`.
 
 ## Mode B — ship a branch (and its worktree, if any)

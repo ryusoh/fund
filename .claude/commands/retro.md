@@ -20,19 +20,19 @@ Work through these steps:
    `docs/ai_native_repo_structure.md` as the framework (e.g. §2 fast scoped
    verification, §7B knowledge capture, §11 edit precision, §15 cache-stable
    context, §17 the compounding loop). For each, name the artifact that would
-   have prevented it: a knowledge doc under `docs/`, a line in `CLAUDE.md`, a
+   have prevented it: a knowledge doc under `docs/`, a line in `AGENTS.md`, a
    `Makefile` target, a test / lint / CI gate, or a script/skill.
 
-3. **Check what already exists first.** Read the relevant `CLAUDE.md`, `Makefile`,
-   `docs/`, and `.claude/` before adding anything, so you patch real gaps instead
-   of duplicating. Don't put repo knowledge in chat or memory if it belongs in a
-   version-controlled file.
+3. **Check what already exists first.** Read the relevant `AGENTS.md` section,
+   `Makefile`, `docs/`, and skills before adding anything, so you patch real
+   gaps instead of duplicating. Repo knowledge belongs in a version-controlled
+   file rather than chat or memory.
 
-4. **Implement the safe, high-leverage fixes now.** Knowledge capture, auto-loaded
-   context updates, scoped commands, deduplication, and tests/gates are usually
-   safe to just do. Keep `CLAUDE.md`/`AGENTS.md` small and stable (every edit
-   busts the prompt cache for future sessions). Promote standards up the ratchet:
-   prose → checklist → lint/type rule → CI-blocking check.
+4. **Implement the safe, high-leverage fixes now.** Knowledge capture, scoped
+   commands, deduplication, and tests/gates are usually safe to just do.
+   Promote standards up the ratchet: prose → checklist → lint/type rule →
+   CI-blocking check — a gate makes the prose redundant, so shrink the prose
+   when you add one.
 
 5. **Ask before anything heavy or hard to reverse** — new dependencies, browser or
    tool installs, CI changes, file moves, anything outward-facing. Present the
@@ -44,11 +44,15 @@ Work through these steps:
 
 7. **Distill the session into a skill delta (ACE step).** Ask: "what did this
    session teach about _how_ to do X?" If the answer generalizes beyond this
-   task, apply a **delta edit to an existing `.agents/skills/*/SKILL.md` or
-   `AGENTS.md`** — add or tighten a line, never rewrite the file, and never
-   spawn a near-duplicate skill. Prefer editing an existing skill over creating
-   one; skill bloat and stale guidance are the failure modes. Run
-   `make sync-check` after any skill edit.
+   task, edit the existing `.agents/skills/*/SKILL.md` or `AGENTS.md` it
+   belongs to rather than spawning a near-duplicate skill. Every line in an
+   auto-loaded file is paid for in every session, so a line earns its place
+   only if it is a repo/environment fact a capable model can't infer, a user
+   preference, or cheaper than rediscovery. Write it as the fact or goal
+   ("`data/` is pipeline output — regenerate it"), not a new prohibition or an
+   incident story (dates and PR numbers belong in commit messages and docs).
+   When the section you touch already covers the point, merge or replace
+   instead of appending. Run `make sync-check` after any skill edit.
 
 Guiding test (§17A): _a correction given today should be impossible to need next
 month_ — because it now lives in the repo, not in this conversation.

@@ -5,85 +5,49 @@ description: Test-driven development. Use when the user wants to build features 
 
 # Test-Driven Development
 
-TDD is the red → green loop. This skill is the reference that makes that loop
-produce tests worth keeping: what a good test is, where tests go, the
-anti-patterns, and the rules of the loop. Consult it before and during the loop.
+Goal: a red → green loop that leaves behind tests worth keeping — tests that
+read like a specification and survive refactors. Read the subsystem doc first
+so test names use the repo's domain vocabulary.
 
-Before exploring, read the relevant subsystem doc under `docs/` so test names and
-interface vocabulary match this repo's domain language (CLAUDE.md maps doc →
-area).
+## Where TDD pays off here
 
-## Where this fits in `fund` — and where it does NOT
+Strongest on the Python pipeline (`scripts/`) and portfolio math
+(`docs/fermat-pascal-kelly-system.md`): deterministic input → output with clean
+seams. For visual work (glass, layout, colour) a green test is necessary but
+not sufficient — follow AGENTS.md "Visual changes". For date logic, remember
+the suite runs `TZ=UTC` while the browser is UTC+8 (`docs/testing-notes.md`).
 
-TDD earns its keep on the **Python data pipeline** (`scripts/`) and **portfolio
-math** (`docs/fermat-pascal-kelly-system.md`) — deterministic input→output code
-with clean seams.
+Loop with `npx jest <path>` / `venv/bin/pytest <path>`; finish with
+`make test`.
 
-It is **weak on this repo's highest-value bugs, which are visual.** Glass /
-refraction / lighting are Chromium-only; unit tests cannot see a transparent edge
-or misaligned rim (`docs/liquid-glass.md`). Don't write a green test and claim a
-visual change works — verify in Chrome (`make serve`, open the page) or
-`make screenshot URL=/<page>/`, and for fidelity-sensitive effects have the user
-view the live page. A passing test is necessary, not sufficient, here.
+## Good tests
 
-Watch the **TZ blind spot**: the suite runs `TZ=UTC`, your browser is UTC+8, so a
-`toISOString()` day-key test passes while the browser is wrong. Read
-`docs/testing-notes.md` before trusting a green date test.
+- Assert observable output through public interfaces — the generated
+  `data/*.json` shape, a rendered value, a returned figure.
+- Take expected values from an independent source of truth (a worked example,
+  a known-good literal, the spec), so the test can disagree with the code.
+- Mock at the system boundary; prefer real fixtures (captured payloads, small
+  sample datasets) for collaborators the repo owns.
 
-## Test runners
+## Seams
 
-- Scoped JS, tight edit→verify loop: `npx jest <path/to/test>` (silent, no coverage).
-- Scoped Python: `venv/bin/pytest <path>` (also `ruff`/`black`/`mypy` in `venv/bin/`).
-- Full suite before declaring done: `make test` (matches CI); `make verify` for the
-  stricter local superset.
+A seam is the public boundary you test at. Before writing tests, propose the
+seams under test and agree them with the user ("What's the public interface,
+and which seams matter?") so effort lands on critical paths.
 
-## What a good test is
+## The loop
 
-Tests verify behavior through public interfaces, not implementation details. Code
-can change entirely; tests shouldn't. A good test reads like a specification —
-"user can checkout with valid cart" — and survives refactors. In practice here:
+Work in vertical slices: one seam → one failing test → the minimal code that
+passes it → repeat. Each slice is a tracer bullet; writing all tests up front
+verifies imagined behaviour. Refactoring happens in review after the loop.
 
-- **Assert on observable output**, not internal structure: the generated
-  `data/*.json` shape, a rendered value, a returned figure — not a private helper.
-- **Expected values come from an independent source of truth** — a worked example,
-  a known-good literal, the spec — never recomputed the way the code computes them.
-- **Mock at the boundary, not the internals.** Prefer real fixtures (a captured
-  payload, a small sample dataset) over mocking a collaborator you own.
-
-## Seams — where tests go
-
-A **seam** is the public boundary you test at: where you observe behavior without
-reaching inside. **Test only at pre-agreed seams.** Before writing any test, write
-down the seams under test and confirm them with the user — you can't test
-everything, and agreeing seams up front is how effort lands on critical paths and
-complex logic. Ask: "What's the public interface, and which seams should we test?"
-
-## Anti-patterns
-
-- **Implementation-coupled** — mocks internal collaborators, tests private methods,
-  or verifies through a side channel. Tell: breaks on refactor though behavior is
-  unchanged.
-- **Tautological** — the assertion recomputes the expected value the way the code
-  does (`expect(add(a,b)).toBe(a+b)`, a hand-derived snapshot), so it can never
-  disagree with the code.
-- **Horizontal slicing** — all tests first, then all implementation. Bulk tests
-  verify _imagined_ behavior and go insensitive to real changes. Work in **vertical
-  slices**: one test → one implementation → repeat, each a tracer bullet.
-
-## Rules of the loop
-
-- **Red before green.** Failing test first, then only enough code to pass it. No
-  speculative features.
-- **One slice at a time.** One seam, one test, one minimal implementation per cycle.
-- **Refactoring is not part of the loop.** It belongs to review — run `/code-review`
-  after the red → green cycle, not during it.
+Smells to correct: tests that break on a refactor with unchanged behaviour
+(coupled to internals), and assertions that recompute the expected value the
+way the code does (tautological).
 
 ## Resume protocol
 
-When resuming an in-progress TDD loop or recovering from context compaction:
-
-1. **Never trust conversation memory** for slice progress.
-2. **Inspect authoritative state**:
-    - Run `git status --short` and `git log -n 3 --oneline`.
-    - Run the scoped test suite to observe red/green status directly.
-3. **Re-anchor the loop**: State the current slice, active failing test assertion, and minimal implementation target before editing code.
+After an interruption or compaction: `git status --short`,
+`git log -n 3 --oneline`, and the scoped test run show the real state. State
+the current slice, its failing assertion, and the minimal implementation
+target before editing.

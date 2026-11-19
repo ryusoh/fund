@@ -6,158 +6,118 @@ argument-hint: '[workflow run number, run URL, or workflow name]'
 
 Rescue this failed GitHub Actions workflow end to end: **{{args}}**
 
-Invocation explicitly authorizes edits, tests, commits, pushes, PR creation,
-squash merges, workflow dispatches/reruns, generated-data recovery, and cleanup.
-Do not ask for further confirmation. Stop only for a real blocker such as
-unavailable authentication, missing required secrets, or evidence that recovery
-would corrupt or fabricate data; report that blocker precisely.
+Invocation authorizes the full loop — edits, tests, commits, pushes, PR
+creation, squash merge, workflow dispatch/rerun, generated-data recovery, and
+cleanup — without pausing for confirmation. Stop only on a real blocker
+(missing auth or secrets, or risk of corrupting/fabricating data) and report
+it precisely.
 
-## 1. Anchor the target and current state
+## 1. Anchor target and state
 
-Re-resolve the run from GitHub rather than trusting a stale page or run title.
-A workflow `run_number` (for example #523) is not the API `run.id`.
+Resolve the run live from GitHub (`run_number` like `#523` differs from the
+API `run.id`). Use authenticated `gh` when available, or public GitHub APIs for
+metadata plus an authenticated browser for logs, PRs, and manual dispatch;
+keep credentials out of command output and URLs.
 
-```bash
-git status --short
-git branch --show-current
-git log --oneline -3
-```
+- Run `git status --short`, `git branch --show-current`, and
+  `git log --oneline -3`.
+- Record workflow path, run number/ID, head SHA/branch, failing jobs/steps,
+  and URL. Compare recent runs across the last-success → first-failure
+  boundary (runtime/dependency versions and error signatures).
+- Read the workflow YAML and governing subsystem docs (`docs/pages-deploy.md`
+  for data/deploy workflows).
+- Check overlapping PRs with `venv/bin/python -m scripts.agents.prior_prs` (or
+  the public pulls API if `gh` is unauthenticated).
 
-- Record the workflow name/path, run number and ID, head SHA/branch, failing
-  jobs/steps, conclusion, and HTML URL.
-- Check recent runs to find the last success and first consecutive failure.
-  Compare dependency/runtime versions and error signatures across that boundary.
-- Read the workflow YAML and the subsystem docs governing its scripts/data
-  before editing. Read `docs/pages-deploy.md` when the workflow commits data or
-  dispatches deployment.
-- Check open/recently closed PRs for overlapping work. Use
-  `venv/bin/python -m scripts.agents.prior_prs`; if unauthenticated `gh` makes it
-  fail, query the public pulls API instead.
-- Create a todo list covering diagnosis, fix/regression tests, shipping, fresh
-  workflow execution, and output recovery. Keep exactly one item in progress.
+## 2. Reproduce before theorizing
 
-Use authenticated `gh` when available. Otherwise use public GitHub APIs for run
-metadata and an authenticated browser for logs, PR creation/merge, and manual
-dispatch. Never print credentials or place API keys in URLs.
+Read the failing step log bottom-up: Actions echoes every shell line (even
+untaken `if` branches), so anchor on the step ending in
+`##[error]Process completed with exit code 1`. A fast failure precedes tests;
+a segfault before the first print points to imports or native code.
 
-## 2. Establish the failure before theorizing
+Build the tightest deterministic local loop (watch it fail before the fix,
+pass after):
 
-Read the actual failing step log bottom-up. Capture the first actionable error,
-final exit status, runtime/dependency versions, and whether the script started
-producing output. Do not mistake echoed shell text or annotations for the root
-error. A fast failure usually precedes the test suite; a segfault before the
-first program print points to imports/native code, not later business logic.
+1. Scoped regression test at the real call site.
+2. Pipeline run writing to temporary paths.
+3. Isolated env matching the failing dependency versions.
+4. Replay of a captured provider response or artifact.
+5. Workflow rerun only when no local seam exists.
 
-Build the tightest deterministic loop that exercises this exact symptom:
+Keep temporary venvs/logs inside the workspace and delete them afterward. For
+tricky failures use `diagnosing-bugs`; for date bugs check
+`docs/testing-notes.md` and relevant timezones.
 
-1. scoped regression test at the real call site;
-2. pipeline invocation with temporary output paths;
-3. clean isolated environment reproducing resolved dependency versions;
-4. replay of a captured provider response or generated artifact;
-5. workflow rerun only when no local seam exists.
+Classify before editing:
 
-Watch the loop fail before the fix and pass afterward. Keep temporary virtual
-environments, logs, and outputs inside the workspace and delete them afterward.
-For a difficult diagnosis, invoke `diagnosing-bugs` and rank 3–5 falsifiable
-hypotheses before probing. For a date-sensitive issue, read
-`docs/testing-notes.md` and test relevant timezones.
-
-Classify the result before changing files:
-
-- **Repository defect:** fix the smallest root cause and add a regression test.
-- **Runtime/dependency rollover:** correlate the first failure with resolved
-  versions; pin a supported runtime or remove/replace the incompatible
-  dependency rather than hiding the error.
+- **Repository defect:** minimal root-cause fix + regression test.
+- **Runtime/dependency rollover:** correlate versions at the failure boundary;
+  pin a supported runtime (workflow-local over global when sufficient) or
+  replace the incompatible dependency.
 - **Provider outage/rollover:** add or repair an independent authenticated
-  fallback, bounded retries, and exact-session validation as appropriate.
-- **Transient GitHub/infrastructure failure with no code defect:** rerun the
-  failed jobs; do not invent a code change or open an empty PR.
-- **Validation rejection:** preserve the gate. Repair upstream data/fetching;
-  never weaken freshness, coverage, seam, or integrity checks to obtain green.
+  fallback, bounded retries, and exact-session validation.
+- **Transient GitHub/infra failure:** rerun the failed jobs; skip creating a
+  code change or empty PR.
+- **Validation rejection:** keep freshness, coverage, seam, and integrity
+  gates intact; repair upstream fetching/data.
+- **Red PR check:** `pr-title` (`commit-lint.yml`) checks the event payload,
+  so `gh run rerun` replays the old title — retrigger with a fresh event
+  (force-push, or close + reopen). For a Dependabot bump failing on an
+  existing file, reproduce with `npm ci` on the PR lockfile in a worktree,
+  then accept the fixer output or exclude the file citing the upstream issue;
+  push an additive commit so Dependabot's signed commit stays intact.
 
-## 3. Fix and prove it
+## 3. Fix, prove, and ship
 
-Make one concern-sized change on a branch off current `main`. Stage only files
-owned by this rescue; concurrent agents and the user may share the worktree.
-Never discard foreign changes or use destructive git cleanup.
+Follow AGENTS.md (shared checkout, single concern on a branch off `main`,
+one conventional commit, PR body with What & why / Verification / Visual).
 
-For each behavior fix, include a test that fails before and passes after.
-Prefer structural prevention over prose: runtime pins, dependency removal,
-bounded fallback logic, schema checks, or validation. Avoid global version pins
-when a workflow-local pin fixes the incompatibility with less collateral risk.
+- Prefer structural prevention (runtime pins, dependency removal, bounded
+  fallbacks, schema validation) over prose.
+- Exercise the real recovery path (actual dependencies and temp output files
+  when network/credentials allow), distinguishing mocked outage coverage from
+  live-provider evidence.
+- Run `make precommit-fix` on the finished committed tree. If the command hits
+  a local timeout, finish every remaining phase separately and report that
+  explicitly.
+- Push, open a PR (draft only if visual review is needed), wait for all
+  required checks including diff coverage (amend + `--force-with-lease` on
+  fixes), then squash-merge and verify the merged SHA on GitHub.
+- Return to a clean `main` (`git pull --rebase origin main`), keeping any
+  branch or worktree that holds unshipped or foreign work.
 
-Exercise the real recovery path, not just mocks. For fetch pipelines, run with
-actual current dependencies and temporary output files when credentials/network
-allow. Clearly distinguish mocked outage coverage from live-provider evidence.
+## 4. Execute on merged `main` and recover all missing outputs
 
-Run `make precommit-fix` on the finished committed tree before opening a PR.
-If the local command exceeds its execution cap, complete every remaining phase
-separately and report exactly that—never claim the capped command returned green.
-Check the final diff for formatter damage, scratch artifacts, and unrelated edits.
+Dispatch the workflow on merged `main` (rerunning the old failed SHA does not
+test the fix), resolve the new run number/ID from its head SHA, and monitor
+install, fetch/generation, validation, data commit, and deploy dispatch using
+bounded backoff. If it fails, loop back to step 2 automatically.
 
-## 4. Ship without pausing
+Compare committed outputs against the expected coverage interval from the last
+valid output through the current completed period:
 
-- Create one real conventional commit; do not push empty/no-op commits.
-- Push the branch and open a non-draft PR unless human visual review is required.
-- Use a conventional PR title and include What & why, Lane, exact Verification
-  output, and Visual status in the body.
-- Wait for all required checks, including diff coverage. If red, inspect logs,
-  fix on the same branch, rerun the gate, amend/squash, and force-push with lease.
-- Squash-merge only after required checks pass. Confirm the merged SHA through
-  GitHub rather than inferring success from a button click.
-- Confirm the local tree is clean, switch to `main`, and run:
+- Regenerate `data/` via the workflow's authoritative pipeline/backfill path.
+- For append-only workflows with multi-period gaps, implement and test
+  historical backfill from an authoritative provider — a latest-only rerun
+  leaves the gap open.
+- Use real provider data only (explicit carry-forward is valid only when it is
+  the pipeline's documented behavior and passes validation).
+- Verify chronological order, unique periods, held-item/series coverage,
+  freshness, historical continuity, and application gates.
+- Confirm the bot data commit SHA on `main`, and for Pages-backed data verify
+  deployment dispatch and the live artifact.
 
-```bash
-git pull --rebase origin main
-```
+## 5. Evidence report
 
-Do not delete branches or worktrees while they contain unshipped or foreign work.
+The rescue finishes only when the fixed workflow succeeds and outputs are
+verified (if a provider lacks part of the history, name the exact unrecovered
+interval). Clean up temp files, re-anchor with `git status` and `git log`, and
+report:
 
-## 5. Execute the fixed workflow
-
-Dispatch the workflow on merged `main`; do not treat rerunning the old failed SHA
-as proof of the fix. Resolve and record the new run number and ID from its head
-SHA. Monitor every material stage: dependency installation, fetch/generation,
-validation, generated-data commit/push, and deployment dispatch.
-
-If this run fails, return to step 2 with its new logs and continue automatically.
-Respect provider rate limits and use bounded backoff rather than tight polling or
-retry loops. Do not weaken checks or manually mark a run successful.
-
-## 6. Recover all missing outputs, not just the latest row
-
-Determine the expected coverage interval from the last valid committed output,
-the schedule, and the current completed period. Compare actual generated files
-against that interval.
-
-- Prefer the workflow's authoritative regeneration/backfill path on Actions.
-  Generated `data/` files must come from the pipeline, not hand edits.
-- If the workflow only appends the current period, inspect for a multi-period
-  gap. Implement and test historical backfill from an authoritative provider
-  when necessary; a successful latest-only rerun is not complete gap recovery.
-- Never invent prices, dates, or missing history. Explicit carry-forward is only
-  valid when it is the pipeline's documented behavior and passes validation.
-- Verify chronological ordering, no duplicate periods, expected held-item/series
-  coverage, freshness, historical continuity, and application-specific gates.
-- Confirm the bot data commit SHA and the exact output artifacts on `main`.
-  For Pages-backed data, confirm deployment dispatch and inspect the deployed
-  artifact when a same-file race could leave the site one commit behind.
-
-## 7. Finish only with evidence
-
-The rescue is incomplete until the fixed workflow has actually succeeded and
-required outputs are verified. If a provider cannot supply part of the missing
-history, report the precise unrecovered interval instead of claiming full recovery.
-
-Respond with:
-
-1. root cause and failing step;
-2. code/config fix and regression evidence;
-3. PR number and merge commit;
-4. fresh run number/result and generated-data commit;
-5. recovered interval/artifacts and validation/deployment result;
-6. any external limitation or unrecovered data, without guarantees that every
-   future third-party outage is impossible.
-
-Clean up temporary environments and diagnostic files. Update the todo list and
-re-anchor from `git status` and `git log` before reporting completion.
+1. Root cause and failing step.
+2. Code/config fix and regression evidence.
+3. PR number and merge commit.
+4. Fresh run number/result and generated-data commit.
+5. Recovered interval/artifacts and validation/deployment result.
+6. Any external limitation or unrecovered interval.

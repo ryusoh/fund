@@ -4,105 +4,67 @@ description: Orchestrate multi-agent deep research fanning out to parallel subag
 
 # Deep Research Skill (/deep-research)
 
-Orchestrates multi-agent parallel investigations for complex, thesis-affecting questions.
-Employs an orchestrator-worker architecture with parallel specialized subagents, followed
-by synthesis, a deterministic confirm pass against primary sources, and output to a
-persisted findings doc in `docs/research/`.
+Multi-agent parallel research for complex, thesis-affecting questions
+(`$ARGUMENTS`). Reserve for thesis-affecting work — fan-out costs ~15× a
+single-agent chat turn. Design context: `docs/research/frontier-enhancements.md`
+(WO-6b).
 
-Design context: `docs/research/frontier-enhancements.md` (WO-6b) and
-Anthropic production multi-agent research architecture patterns.
+## Workflow
 
-## Orchestration architecture
+0. **Disambiguate the subject before fan-out:** this repo is a fund, so treat
+   a bare uppercase token as a **stock ticker first**. When a token collides
+   with a non-ticker acronym, check thematic adjacency against
+   `data/analysis/`, `docs/thesis/`, and `docs/thesis/industry/`. If two
+   readings both touch portfolio holdings or industry docs, ask the user one
+   clarifying question before launching subagents.
+1. **Parallel read-only fan-out (4 subagents):**
+    - **Filings:** query SEC filings via
+      `venv/bin/python -m scripts.analysis.filings_adapter` (`ingest` first
+      for new tickers — `docs/filings-adapter.md`). Extract financials, risk
+      disclosures, customer concentration, and management commentary. For
+      earnings 8-Ks, `ingest` often fetches only the body and misses Exhibit
+      99.1 — inspect the filing index and fetch the SEC exhibit directly
+      before confirming earnings numbers.
+    - **Internal state:** audit `data/analysis/<TICKER>.json`,
+      `*.evidence.jsonl`, and `docs/thesis/**` for prior beliefs, prediction
+      track records, and open questions.
+    - **Web (primary sources only):** regulatory disclosures, IR decks,
+      earnings-call transcripts, and standards bodies (skip blogs and
+      aggregators).
+    - **Red team (adversarial):** argue the strongest case against
+      `data/analysis/<TICKER>.json` `belief_state`, attack load-bearing
+      claims, and list concrete falsifiers ranked by thesis-killing potential.
+2. **Synthesis:** merge all four outputs into a claim-to-source map where
+   every quantitative claim carries an exact locator or URL. Preserve the red
+   team's disconfirming case in its own dedicated section. If workers disagree
+   on verification status, reconcile against the strongest primary source
+   before synthesizing.
+3. **Fresh-context confirm pass:** launch a **new** subagent (independent of
+   synthesis) to verify every quantitative SEC claim via
+   `venv/bin/python -m scripts.analysis.filings_adapter verify --ticker <T> --claim "<claim>"`
+   (threshold confidence ≥ 0.60) and directly inspect critical web citations.
+4. **Persist findings first:** write to `docs/research/tickers/<topic>.md`
+   (keeps ticker research separate from engineering docs at `docs/research/`).
+   Sections: executive summary, baseline vs. new evidence, red-team case,
+   claim-by-claim evidence with anchors, open questions / unverified claims,
+   and action items. Commit findings before updating `docs/thesis/<TICKER>.md`
+   or `data/analysis/*.json`.
 
-For the given research question `$ARGUMENTS`:
+## Quarterly primary-source sweep & evidence discipline
 
-0. **Resolve the subject before fan-out (2026-10-13 lesson):** a bare uppercase token is
-   a **stock ticker first** — this repo is a fund. If the token collides with a well-known
-   non-ticker acronym (2026-10-13: `CBRS` = Cerebras Systems the stock, not Citizens
-   Broadband Radio Service the spectrum band), disambiguate by **thematic adjacency**:
-   check `data/analysis/`, `docs/thesis/`, and `docs/thesis/industry/` for which reading
-   touches an existing holding or industry doc. A reading with zero adjacency to anything
-   in the portfolio is almost certainly a misread — a ~15×-token fan-out on the wrong
-   subject was the cost. If two readings both have real adjacency, ask the user one
-   question before launching subagents; never fan out on an unresolved ambiguity.
-
-1. **Parallel subagent fan-out:** Launch specialized read-only subagents:
-    - **Filings subagent:** Queries SEC filings via `venv/bin/python -m scripts.analysis.filings_adapter`
-      (`sections`, `read`, `verify` — the direct script path fails with `ModuleNotFoundError`;
-      the `-m` form is required). If the ticker is not yet in the filings workspace
-      (`list` raises "do not have this company"), ingest it first:
-      `venv/bin/python -m scripts.analysis.filings_adapter ingest --ticker <T>`
-      (idempotent; see `docs/filings-adapter.md`). Extracts hard financial numbers,
-      risk disclosures, customer concentration, and management commentary.
-    - **Internal state subagent:** Audits `data/analysis/<TICKER>.json`, `*.evidence.jsonl`,
-      and `docs/thesis/**`. Tracks prior beliefs, falsifiable prediction track records,
-      and open questions.
-    - **Web subagent:** Investigates primary external sources only: regulatory disclosures,
-      investor relations presentations, earnings call transcripts, and industry standards bodies.
-      Secondary blog posts and unverified aggregators are excluded.
-    - **Red-team subagent:** Same question, adversarial stance. Argue the strongest case
-      AGAINST the thesis's current position (`data/analysis/<TICKER>.json` belief_state is
-      its target), attack the load-bearing claims the other subagents' outputs rest on,
-      and enumerate falsifiers — what specific evidence would flip the conclusion.
-      Reports disconfirming evidence first, ranked by thesis-killing potential.
-
-2. **Synthesis pass:** Consolidate all four subagent outputs into a coherent claim-to-source
-   mapping. The red team's disconfirming case must survive into the findings doc as its
-   own section — do not average it away.
-   Every quantitative claim or thesis assertion must carry its exact locator or cited URL.
-
-3. **Confirm pass:**
-    - Run in a **fresh context** (a new subagent or a cleared session): the agent that
-      synthesized the claims never verifies its own synthesis.
-    - Verify every quantitative claim against SEC filings using
-      `venv/bin/python -m scripts.analysis.filings_adapter verify --ticker <T> --claim "<claim>"`.
-      Enforce confidence ≥ 0.60.
-    - Re-verify critical web claims by direct source inspection.
-
-4. **Persist findings:**
-    - Write the cited findings doc to `docs/research/tickers/<topic>.md` for company/security-specific
-      research (keeps ticker findings separate from general engineering research at the
-      `docs/research/` top level).
-    - Structure: executive summary, baseline vs new evidence, claim-by-claim breakdown with
-      source anchors, open questions / unverified claims, and action items.
-    - Only after findings are committed may `docs/thesis/<TICKER>.md` or `data/analysis/*.json`
-      be updated.
-
-## Quarterly primary-source sweep
-
-Once per quarter per covered ticker — and always before a thesis-affecting run on a
-subject that has reported since the last sweep — the web subagent's source list must
-include the latest earnings-call transcript and any investor/analyst-day deck from the
-company's IR site. Also check supplemental earnings/outlook decks and official webcast
-caption streams before treating call claims as transcript-only. Official automated
-captions may support management intent, but numeric ASR must be cross-checked against
-SEC filings or official decks. These are the highest-signal primary sources this pipeline
-otherwise touches only ad hoc. Management Q&A language is primary evidence for guidance
-intent and capital-allocation posture, never for hard numbers (those anchor to filings).
-If workers disagree about verification status, the orchestrator must reconcile the
-conflict against the strongest available primary source before synthesis rather than
-preserving contradictory verified/unverified labels.
-
-## Guardrails
-
-- **Reserve for thesis-affecting questions:** Multi-agent fan-out costs ~15× tokens compared
-  to single-agent chat. Do not invoke for simple queries or quick lookups.
-- **Leakage and forecast discipline:** Per Paleka et al., never self-evaluate forecast quality
-  or Brier scores within the research agent; forecasting track records require prospective,
-  dated resolution.
-- **Authoritative sources only:** Rely on primary sources with verified locators; speculative
-  rumors or ungrounded claims must be flagged explicitly as unverified.
-- **Fallback-transcript quarantine (all workers, including red team):** When no official
-  transcript or captions are available, numeric claims and verbatim quotes from automated
-  transcripts remain UNVERIFIED. Do not mix them into confirmed fact tables or build
-  thesis-killing rankings on them; carry them only as open questions pending primary-source
-  confirmation.
-- **Earnings 8-K exhibits:** `ingest` commonly downloads the 8-K body but not Exhibit 99.1.
-  For earnings runs, inspect the filing index and directly fetch the SEC exhibit before
-  confirming financial claims; an adapter PASS/FAIL against the body alone is not evidence
-  for or against exhibit-only claims. Require numeric anchors in the actual source and
-  record the limitation only after a minimal repro.
-- **Repro reported tool failures before acting on them:** a subagent's "tool X is broken"
-  claim needs a minimal direct repro by the orchestrator before it becomes an action item —
-  field misreads present as defects (2026-10-12: `query_xbrl_facts` reported as returning
-  null values was healthy; the null lived in `get_financial_statement`'s period columns).
+- **Quarterly sweep:** once per quarter per covered ticker (and before any
+  thesis-affecting run after a new print), include the latest earnings-call
+  transcript, IR/analyst-day decks, supplemental outlook decks, and official
+  webcast captions. Treat management Q&A as primary evidence for guidance
+  intent and capital allocation, while anchoring hard numbers to SEC filings
+  or official decks.
+- **Automated-transcript quarantine (all workers, including red team):** when
+  only an automated fallback transcript is available, keep its numeric claims
+  and verbatim quotes marked `UNVERIFIED` in open questions until confirmed by
+  a primary source.
+- **Prospective forecast discipline (Paleka et al.):** evaluate forecast
+  quality and Brier scores only through prospective, dated resolution — leave
+  self-scoring out of research runs.
+- **Repro tool failures before escalating:** if a subagent reports a local
+  tool or adapter as broken, run a minimal direct repro in the orchestrator
+  first (field misreads often look like tool defects).

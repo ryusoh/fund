@@ -23,10 +23,12 @@
   `docs/js-typing-strategy.md`; the remaining persona content (dated incidents,
   Bolt/Testpilot routine mechanics) stays in history.
 - **Retained tooling:** `scripts/agents/check_bot_pr_hygiene.py` (bot-commit
-  gate in `make bot-pr-check`/CI), `prior_prs`, `gate_guard`,
-  `check_commit_message`, and the `bot-pr-rescue` skill (reference to personas
-  removed). Reassess `bot-pr-rescue` and the hygiene gate's Jules author
-  marker separately once no Jules branch can still reach the repo.
+  gate in `make bot-pr-check`/CI), `prior_prs`, `gate_guard`, and
+  `check_commit_message`. The `bot-pr-rescue` skill was retired on 2026-11-19
+  (last Jules PR #768 opened 2026-11-10; no open PRs); its Dependabot and
+  `pr-title` lessons moved to `gh-action-rescue`. The hygiene gate keys on the
+  `google-labs-jules` author and skips every other commit, so it is now
+  inert — reassess it separately.
 
 ## Context
 

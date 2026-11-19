@@ -10,19 +10,17 @@ re-checkable instead of living only in chat.
 
 ## Run it in the background
 
-Delegate the investigation to a background agent (Agent tool, `run_in_background:
-true`) so you can keep working while it runs. Give the agent the question, the
-primary sources to prefer, and the output location decided below.
+Delegate the investigation to a background subagent so you can keep working
+while it runs. Give it the question, the primary sources to prefer, and the
+output location decided below.
 
 ## Investigate
 
 - Consult **official documentation, source code, specifications, and first-party
-  APIs** — not secondary interpretations, blog posts, or Q&A sites. Trace every
-  claim to its authoritative origin.
-- For questions about this repo's own subsystems, the primary source is the code
-  under `js/` / `scripts/` plus the governing doc under `docs/` (see CLAUDE.md).
-- For anything about Claude / the Anthropic API, the `claude-api` skill is the
-  primary source — use it rather than answering from memory.
+  APIs**, tracing every claim to its authoritative origin rather than to
+  secondary write-ups.
+- For this repo's own subsystems, the primary source is the code under `js/` /
+  `scripts/` plus the governing doc under `docs/` (AGENTS.md maps them).
 
 ## Document
 

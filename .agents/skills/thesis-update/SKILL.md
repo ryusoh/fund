@@ -5,115 +5,86 @@ description: Update an investment thesis and scenario analysis from new filings 
 
 # Thesis Update Skill (/thesis-update)
 
-Update an investment thesis (`docs/thesis/<TICKER>.md`), scenario analysis (`data/analysis/<TICKER>.json`), and sequential evidence log (`data/analysis/<TICKER>.evidence.jsonl`) directly in this chat session without external API keys.
+Update `docs/thesis/<TICKER>.md`, `data/analysis/<TICKER>.json`, and
+`data/analysis/<TICKER>.evidence.jsonl` directly in chat with local repo tools
+(no external LLM APIs). Usage:
+`/thesis-update <TICKER> [optional: filing ref, topic, or clip]`. Design
+context: `docs/ai_update_flow.md`, `docs/research/compounding-research-engine.md`.
 
-Design context: `docs/ai_update_flow.md` and `docs/research/compounding-research-engine.md`.
+## Ownership & data boundaries
 
-## Core Philosophy
+- **LLM authors reasoning; code owns volatile data & gates:**
+  `sync_configs` owns `market`, `position.shares`, and `derived`
+  (`expectedCagr` / `expectedMultiple`, computed via the `lab.js` formula).
+  Keep live prices, multiples, and engine outputs out of `belief_state`,
+  scenario notes, evidence arrays, and thesis body prose — dated valuations
+  belong strictly in historical logs (`decision_journal` and thesis §8.2).
+- **Guided non-GAAP EPS:** when intentionally modeling guided non-GAAP EPS
+  (especially with negative trailing GAAP EPS), set
+  `model.preferences.overrides.eps` from a sourced calculation rather than
+  substituting vendor `market.forwardEps`.
+- **Primary-source anchor:** verify empirical SEC claims via the confirm pass
+  (confidence ≥ 0.60 with primary text spans) before promoting them.
 
-- **The Chat Agent IS the Engine**: You (the AI coding assistant) perform all interpretation, scenario adjustment, and patch generation directly within this conversation. Never call external LLM APIs or standalone external model scripts; use local repository tools.
-- **LLM Authors, Code Gates**: You draft the synthesis and patch; local scripts (`scripts.analysis.filings_adapter`, `scripts.analysis.sync_configs`, Jest, Pytest) enforce determinism and factuality.
-- **Evidence Has an Anchor**: Any numerical or material assertion from SEC reports must be verified against primary filing text via the confirm pass before being promoted into the thesis.
-- **Pipeline Owns Volatile Data, Markdown Owns Reasoning**: Never hand-write live market data (price, P/E, market cap, shares, portfolio weight) or engine outputs (`derived.expectedCagr` / `derived.expectedMultiple`) into JSON or thesis docs. `sync_configs` owns the `market` block and `position.shares`, and auto-recomputes `derived` from scenarios + market data on every run (lab.js engine formula). Thesis docs carry durable reasoning (scenarios, beliefs, falsifiers); dated prices/valuations belong only in §8.2 log entries and `decision_journal` entries, where they are historical records.
-- **Guided EPS and volatile-field placement:** When intentionally modeling company-guided non-GAAP EPS—especially with negative trailing GAAP EPS—set `model.preferences.overrides.eps` from a sourced calculation and do not substitute vendor `market.forwardEps`. Keep live prices, valuation multiples, and engine outputs out of `belief_state`, scenario notes, and evidence arrays; dated calculations belong only in `decision_journal` and thesis §8.2.
+## Protocol
 
-## Usage
+### 1. Gather inputs & confirm facts
 
-```text
-/thesis-update <TICKER> [optional: specific filing ref, topic, or clip]
-```
-
-Example: `/thesis-update ANET` or `/thesis-update GOOG "TPU v6 and cloud margins"`
-
-## Execution Protocol
-
-### Step 1: Gather Inputs & Primary Sources
-
-1. Read existing thesis files:
-    - `docs/thesis/<TICKER>.md`
-    - `data/analysis/<TICKER>.json`
-    - `data/analysis/<TICKER>.evidence.jsonl`
-2. Check for new input material:
-    - User-provided text in the prompt, or
-    - `docs/thesis/<TICKER>/<TICKER>-inbox.md`, or
-    - Primary SEC filing data via the local filings adapter:
-
-        ```bash
-        # List available filings
-        python3 -m scripts.analysis.filings_adapter list --ticker <TICKER>
-
-        # Extract filing evidence candidates
-        python3 -m scripts.analysis.filings_adapter candidates --ticker <TICKER>
-        ```
-
-### Step 2: Confirm Pass (Factuality Verification)
-
-If the new insight cites specific empirical claims from SEC filings (e.g., customer concentration percentages, revenue segments, supply chain risks), execute the confirm pass:
+Read `docs/thesis/<TICKER>.md`, `data/analysis/<TICKER>.json`, and
+`data/analysis/<TICKER>.evidence.jsonl`. Pull new material from the user
+prompt, `docs/thesis/<TICKER>/<TICKER>-inbox.md`, or SEC filings:
 
 ```bash
-python3 -m scripts.analysis.filings_adapter verify --ticker <TICKER> --claim "<EXACT CLAIM TEXT>"
+venv/bin/python -m scripts.analysis.filings_adapter list --ticker <TICKER>
+venv/bin/python -m scripts.analysis.filings_adapter candidates --ticker <TICKER>
+venv/bin/python -m scripts.analysis.filings_adapter verify --ticker <TICKER> --claim "<EXACT CLAIM TEXT>"
 ```
 
-Ensure the claim is verified (confidence >= 60% with primary text spans) before including it in the record.
+### 2. Synthesize in chat
 
-### Step 3: In-Chat Synthesis
+Present:
 
-Synthesize the incremental findings in the chat response:
+1. **Classification:** Bull / Base / Bear / Neutral.
+2. **Key insight:** 3–5 concise bullets on moat, unit economics, or tail risks.
+3. **Scenario impact:** proposed edits to `prob` (summing to 1.0), `epsCagr`,
+   exit P/E, `belief_state` (`confidence`, `evidence_for`, `evidence_against`,
+   `open_questions`), dated `predictions`, and `decision_journal`. If a
+   scenario has a `drivers` block, reconcile modeled vs. actual revenue per
+   driver, update inputs with sources, register each named falsification
+   driver as a dated `predictions` entry for `prediction_sweeper.py`, and
+   align start/end periods before comparing fixed-fiscal-year driver CAGR
+   against the engine's rolling five-year `epsCagr`.
 
-1. **Classification**: Bull / Base / Bear / Neutral.
-2. **Key Insight**: 3–5 concise bullets focused on moat, unit economics, or tail risks.
-3. **Scenario Impact**:
-    - Assess whether changes are required to `data/analysis/<TICKER>.json`:
-        - Probabilities (`prob` across bull/base/bear, summing to 1.0)
-        - EPS CAGRs or exit P/E multiples
-        - Belief state (`confidence`, `evidence_for`, `evidence_against`, `open_questions`)
-        - Dated falsifiable predictions (`predictions`)
-        - Decision journal entry (`decision_journal`)
-        - If any scenario carries a `drivers` block: reconcile its derived values against
-          the new print (actual vs modeled revenue per driver), update driver inputs with
-          sources, and register each named falsification driver as a dated entry in
-          `predictions` so `prediction_sweeper.py` enforces resolution. Align start and
-          end periods before comparing driver-implied CAGR with scenario `epsCagr`; a
-          fixed-fiscal-year driver horizon is not directly comparable to the engine's
-          rolling five-year horizon.
+### 3. Apply surgical patches
 
-### Step 4: Apply Surgical Patches
+Patch the smallest unique block in each file (if a match fails, re-read and
+shrink the anchor):
 
-- **Small anchors only:** Patch the smallest unique block containing the requested change; never retype pipeline-owned JSON blocks or large unchanged Markdown sections. If an exact match fails, re-read and shrink the anchor rather than retrying a larger hand-copied block.
+1. **`data/analysis/<TICKER>.json`:**
+    - For watchlist / initial coverage outside current holdings, register
+      `<TICKER>` in `data/analysis/watchlist.json` first (`sync_configs`
+      prunes configs outside holdings ∪ watchlist — `docs/ai_update_flow.md`
+      §1.1).
+    - Apply belief/scenario edits, then run:
+      `venv/bin/python -m scripts.analysis.sync_configs --ticker <TICKER>`
+      Always pass `--ticker` so only this ticker refreshes (leave full
+      refreshes to the nightly bot; if an unscoped run happens, commit
+      incidental refreshes separately as `chore(data)`).
+    - Inspect `market.eps`, `marketDataUpdatedAt`, and price timeliness
+      afterward; if they predate the new print, flag that `derived.expectedCagr`
+      still reflects pre-earnings market inputs.
+2. **`docs/thesis/<TICKER>.md`:** edit the specific numbered sections (e.g.
+   §4.2, §8.2 dated log) and link `docs/thesis/industry/` docs when relevant.
+3. **`data/analysis/<TICKER>.evidence.jsonl`:** append one JSON line with
+   date, direction, strength, citation locator, `valid_from` (defaults to
+   record date), and `valid_to` (`null` while active; set `valid_to` when
+   later evidence supersedes a record so history stays append-only).
 
-1. **Update `data/analysis/<TICKER>.json`**:
-    - Apply any numerical or belief-state changes.
-    - If `<TICKER>` is not a current holding (watchlist/initial coverage), register it in
-      `data/analysis/watchlist.json` first — `sync_configs` deletes configs outside
-      holdings ∪ watchlist as orphans. See `docs/ai_update_flow.md` §1.1.
-    - Run `python3 -m scripts.analysis.sync_configs --ticker <TICKER>` to normalize and
-      validate the JSON schema. The sync also refreshes the `market` block, syncs
-      `position.shares` from holdings, and recomputes `derived.expectedCagr` /
-      `derived.expectedMultiple` — never edit those by hand.
-      The `--ticker` scope refreshes only that ticker's market
-      block — an unscoped run refreshes every tracked ticker and dirties their configs
-      with incidental market updates (leave a full refresh for the nightly bot; if one
-      happens anyway, commit those incidental refreshes separately as `chore(data)`).
-      After syncing, inspect `market.eps`, `marketDataUpdatedAt`, and price timeliness.
-      If these inputs predate the new earnings print, do not describe the recomputed
-      `derived.expectedCagr` as a post-earnings valuation signal.
-2. **Update `docs/thesis/<TICKER>.md`**:
-    - Make surgical edits to specific numbered sections (e.g. §4.2, §8.2 dated log).
-    - Link any industry layer docs (`docs/thesis/industry/`) if relevant.
-3. **Append to `data/analysis/<TICKER>.evidence.jsonl`**:
-    - Add a single JSON line recording the dated evidence with direction, strength, and citation locator. Include valid_from (when the fact became true; defaults to the record's date) and valid_to (null while the fact holds; set it when later evidence supersedes or refutes the claim — never delete the old record).
-
-### Step 5: Verify & Gate
-
-Run tests to verify that math, schema, and page smoke pass:
+### 4. Verify & hand off
 
 ```bash
 npx jest tests/js/pages/analysis/ && venv/bin/pytest tests/python/test_sync_configs_currency.py tests/python/test_sync_configs_watchlist.py
 ```
 
-### Step 6: Compounding Handoff
-
-Prompt the user:
-
-- Ask for acknowledgement before staging/committing the updated files.
-- Suggest running `/anki-capture` to turn the newly validated thesis insights into permanent flashcards in the Anki 金融 deck.
+Ask the user for acknowledgement before staging/committing, and suggest
+`/anki-capture` to convert the new thesis insights into 金融 deck flashcards.
