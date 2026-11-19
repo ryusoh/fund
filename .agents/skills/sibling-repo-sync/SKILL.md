@@ -8,30 +8,33 @@ Propagate an improvement made in this repo (`~/dev/fund`) to the sibling repos:
 
 - `~/dev/ryusoh.github.io` — JS-only static site (plain `<script>` tags, no ES
   modules, no Python **data** pipeline — but it DOES have Python tooling:
-  `tools/sync_commands.py` plus a pytest suite `tools/__tests__/test_skills.py`
-  mirroring the Jest skill tests; no repo-local `venv/` — pytest resolves to
+  `tools/sync_commands.py` plus a pytest suite under `tools/__tests__/`
+  (`test_skills.py`, `test_prior_prs.py`, `test_check_bot_pr_hygiene.py`, etc.);
+  no repo-local `venv/` — pytest resolves to
   the user-level `/Users/lz/dev/.venv`, and the pytest tests are NOT wired
   into the Makefile gates — but they ARE wired into a **pre-push** pre-commit
   hook (`pytest -q || [ $? -eq 5 ]`); a mypy hook scoped to
   `^scripts/|^tests/python/` currently matches nothing); CI-parity gate = `make precommit-fix` (runs
-  `.pre-commit-config.yaml` hooks, sync-check, Jest + coverage, etc.) —
-  `make gate` is the same parity check WITHOUT the trailing `git add -u`,
-  prefer it when the tree holds uncommitted work; Makefile
+  `.pre-commit-config.yaml` hooks, sync-check, bot-pr-check, Jest + coverage, etc.) —
+  `make gate` (`check test`) runs `sync-pages-check` and skips `.pre-commit-config.yaml`
+  hooks AND the trailing `git add -u` (prefer it while iterating or when the tree holds uncommitted work);
+  its sync generator `tools/sync_commands.py` uses naive `content.split("---", 2)`
+  (avoid `---` horizontal rules in skill bodies); Makefile
   `lint-js` uses `--max-warnings=0`; default branch is **`master`**, not `main`;
   `package-lock.json` is authoritative, `pnpm-lock.yaml` drifts by convention
-  (regenerated out-of-band) — don't regenerate it; its sync generator is
-  `tools/sync_commands.py` (not `scripts/`); `precommit-fix` stages auto-fixes
+  (regenerated out-of-band) — don't regenerate it; `precommit-fix` stages auto-fixes
   via `git add -u` — uncommitted work may get staged; its `ship` skill has no
   Mode A/B split (single numbered flow on `master`, gates `make check` +
   `make test`, asks for acknowledgement before pushing); run prettier there
   via `./scripts/run-npx.sh prettier`; NO screenshot/smoke/serve make targets
   (unlike fund).
 - `~/dev/anki` — JS + Python (Anki addons); **no** `.pre-commit-config.yaml`;
-  CI gate = `make precommit SKIP=1` (fmt-check lint typecheck-js quality-py
-  check sync-check); aliases via package.json `imports` (`#js/*`, `#ui/*`);
+  CI gate = `make precommit SKIP=1` (`VERIFY_GATE`: `fmt-check lint typecheck-js
+quality-py check sync-check thinking-check bot-pr-check`); aliases via package.json `imports` (`#js/*`, `#ui/*`);
   Python addon dirs are REAL packages (`__init__.py` present) — import-linter
   works here; its sync generator is `tools/sync_commands.py` and its
-  frontmatter parser is naive (single-line `description`/`argument-hint` only);
+  frontmatter parser is naive (single-line `description`/`argument-hint` only,
+  plus `content.split("---", 2)` — never put `---` horizontal rules in skill bodies);
   `precommit-fix` has a `YOLO=1`/`MSG=` mode that runs `git add -A` — hazard
   for uncommitted work. It HAS a generated `data/` dir with a "never hand-edit"
   rule (AGENTS.md non-negotiable #4, stats generators under `data/anki/`) and
@@ -45,24 +48,27 @@ Propagate an improvement made in this repo (`~/dev/fund`) to the sibling repos:
   in `AGENTS.md`, `docs/lint-and-quality.md`, and `docs/gotchas.md`.
 - `~/dev/networking` — JS + Python; **no** `.pre-commit-config.yaml`; gate =
   `make precommit` (on macOS the parity gate is `make precommit-docker` —
-  raw-socket tests fail on the host; gate **exits 0 amid alarming-looking
+  raw-socket tests fail on the host; host `make test-py` / `lint` / `thinking-check`
+  require `PY=/Users/lz/dev/.venv/bin/python3` when default `python3` lacks `pytest`/`xenon`;
+  gate **exits 0 amid alarming-looking
   noise** — judge by exit code, not the log; the cold path is the wall-clock
   pole: colima start + image build + full in-container Jest/pytest, 10+ min —
   start Docker first, run it once at the end); `Dockerfile.precommit`
   pip-installs `requirements-dev.txt` and runs `npm ci`; its AGENTS.md
-  non-negotiable #6 forbids automated bot routines from adding dependencies or touching
-  build/lint/test config (and #5 pins jest to v29) — interactive agents acting
-  on explicit user direction are exempt, note it in the PR body; its sync
+  non-negotiable #6 ("Dependency and build-config discipline") prohibits unrequested
+  changes to dependencies or build/lint/test config without explicit task need
+  (and #5 pins jest to v29); its sync
   generator is `tools/sync_commands.py` (naive `content.split("---", 2)`
   frontmatter parser — a `---` horizontal rule in a skill body would be
   mangled); its `ship` skill uses `<primary-branch>`/`<branch_name>`
   placeholders (deliberately no hardcoded `main`), has an audience check and
-  asks for acknowledgement before pushing. Its AGENTS.md now correctly names
-  `adblock/` and `gov_bypass/` (verified 2026-10). Its `ci.yml` already has a "Reject empty
+  asks for acknowledgement before pushing. Its `AGENTS.md` covers `adblock/`
+  (there is no `gov_bypass/` directory). Its `ci.yml` already has a "Reject empty
   pull request" step that hard-fails empty PRs (fund lacked this until
   2026-08). No stylelint — prettier covers CSS. Generated
   output not to hand-edit/commit: `coverage/`, `adblock/dist/`,
-  `nas_proxy/out/`, command logs.
+  `nas_proxy/out/`, `.claude/commands/` (generated by `tools/sync_commands.py`,
+  gated by `make sync-check`), and command logs.
 
 Verify these facts against each repo's current AGENTS.md/Makefile before
 relying on them — they drift.
