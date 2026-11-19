@@ -3,7 +3,7 @@
     "name": "Pinduoduo",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-11-19T14:35:30.707932+00:00",
+        "asOf": "2026-11-19T16:48:41.862432+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -29,19 +29,19 @@
     },
     "market": {
         "forwardEps": 12.3504,
-        "pe": 9.5793,
-        "forwardPe": 6.8953,
+        "pe": 9.7694,
+        "forwardPe": 7.0322,
         "beta": -0.079,
-        "marketCap": 121216450560.0,
-        "enterpriseValue": 53382591022.07,
+        "marketCap": 123621982208.0,
+        "enterpriseValue": 55788122670.07,
         "ebitda": 14886732027.04,
         "currency": "USD",
         "fiftyTwoWeekHigh": 125.36,
         "fiftyTwoWeekLow": 71.94,
-        "marketDataUpdatedAt": "2026-11-19T14:35:29.839533+00:00",
-        "evToEbitda": 3.5859,
+        "marketDataUpdatedAt": "2026-11-19T16:48:41.729868+00:00",
+        "evToEbitda": 3.7475,
         "eps": 8.89,
-        "price": 85.16,
+        "price": 86.85,
         "fiftyDayAverage": 79.2448,
         "twoHundredDayAverage": 89.4369,
         "averageVolume": 6181375.0,
@@ -50,7 +50,7 @@
         "dividendYield": 0.0
     },
     "risk": {
-        "volatility": 0.3449,
+        "volatility": 0.3519,
         "estimateSource": "historical",
         "correlations": null
     },
@@ -113,8 +113,8 @@
         }
     ],
     "derived": {
-        "expectedCagr": 0.0729,
-        "expectedMultiple": 1.422,
+        "expectedCagr": 0.0687,
+        "expectedMultiple": 1.3943,
         "fairValueRange": null,
         "kelly": {
             "fullKelly": null,
