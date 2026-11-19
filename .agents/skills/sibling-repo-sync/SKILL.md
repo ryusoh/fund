@@ -16,8 +16,8 @@ against each repo's current `AGENTS.md` and `Makefile`, as details drift).
 - **Fund-only (absent in all siblings):** `.husky/pre-push`
   fast-forward/deletion guard, `.github/workflows/commit-lint.yml` +
   `scripts/agents/check_commit_message.py` (keep commit-title guidance generic
-  per target `AGENTS.md`). Jules routines were retired across all four repos
-  in November 2026.
+  per target `AGENTS.md`). Jules routines and `bot-pr-rescue` are retired
+  across all four repos.
 - This skill exists in all four repos with perspective flipped to the home
   repo; sync improvements to this skill back to the other three copies.
 
@@ -27,12 +27,15 @@ against each repo's current `AGENTS.md` and `Makefile`, as details drift).
   modules, no Python data pipeline); Python tooling lives under
   `tools/sync_commands.py` + `tools/__tests__/` (pytest via
   `/Users/lz/dev/.venv`, wired into a pre-push hook `pytest -q || [ $? -eq 5 ]`,
-  unwired in Makefile; mypy hook targets `^scripts/|^tests/python/` which
-  matches nothing). Default branch: **`master`**. CI gate:
-  `make precommit-fix` (runs `.pre-commit-config.yaml` hooks, `sync-check`,
-  `bot-pr-check`, Jest+coverage, and `git add -u` — use `make gate` while
+  unwired in Makefile; mypy hook targets `^scripts/|^tests/python/`, catching
+  a legacy `scripts/sync_commands.py` while missing `tools/`). Default branch:
+  **`master`**. CI gate: `make precommit-fix` (runs `.pre-commit-config.yaml`
+  hooks, `sync-check`, `bot-pr-check`, Jest+coverage, and `git add -u` — use
+  `make gate`, which also runs `sync-pages-check`/`thinking-check`, while
   iterating or with dirty trees). `lint-js` uses `--max-warnings=0`; prettier
-  runs via `./scripts/run-npx.sh prettier`. `package-lock.json` is
+  runs via `./scripts/run-npx.sh prettier`. `tests/js/doc-tool-references.test.js`
+  verifies bare `scripts/`/`tools/`/`bin/` paths in `AGENTS.md` and skills, so
+  prefix cross-repo paths with `~/dev/<repo>/`. `package-lock.json` is
   authoritative (`pnpm-lock.yaml` drifts out-of-band). Its `ship` skill is a
   single `master` flow (`make check` + `make test`, asks before push). No
   screenshot/smoke/serve targets.
@@ -44,8 +47,12 @@ sync-check thinking-check bot-pr-check`); `precommit-fix` with `YOLO=1`/
   import-linter works). Has a generated `data/` dir (`data/anki/`) and
   Conventional Commits. Jest runs only under `review_heatmap/tests/`; scoped
   Python tests run from repo root (`conftest.py` mocks `aqt`/`anki`) via
-  `make test-py SUITE=<addon>/tests` or `make test-addon ADDON=<dir>`.
-  Durable guidance: `AGENTS.md`, `docs/lint-and-quality.md`, `docs/gotchas.md`.
+  `make test-py SUITE=<addon>/tests` or `make test-addon ADDON=<dir>`. Doc
+  gates: `tools/test_doc_tool_references.py` checks `tools/*` and `bin/*`
+  citations in `AGENTS.md`/skills; `tests/test_docs_liquid_guard.py` blocks
+  bare `{{` in Pages-visible markdown; `tests/test_docs_index.py` requires
+  every `docs/*.md` to be linked in `docs/README.md`. Durable guidance:
+  `AGENTS.md`, `docs/lint-and-quality.md`, `docs/gotchas.md`.
 - **`~/dev/networking`** — JS + Python; no `.pre-commit-config.yaml`. CI gate:
   `make precommit` (on macOS: `make precommit-docker`, because raw-socket
   tests fail on host; host `make test-py`/`lint`/`thinking-check` need
@@ -55,9 +62,13 @@ sync-check thinking-check bot-pr-check`); `precommit-fix` with `YOLO=1`/
   Docker early and run once at the end. `Dockerfile.precommit` installs
   `requirements-dev.txt` + `npm ci`. `AGENTS.md` #6 restricts unrequested
   dep/config edits (#5 pins jest v29); covers `adblock/` (no `gov_bypass/`).
-  No stylelint (prettier handles CSS). `ci.yml` already rejects empty PRs.
-  `ship` uses `<primary-branch>`/`<branch_name>` placeholders and asks before
-  push. Generated outputs: `coverage/`, `adblock/dist/`, `nas_proxy/out/`,
+  No stylelint or `markdownlint-cli2` (Prettier via `make fmt-check` covers
+  CSS/MD; unanchored `research/` in `.prettierignore` also ignores
+  `.agents/skills/research/`). `tools/__tests__/test_doc_tool_references.py`
+  validates cited `tools/*.py`/`bin/*` paths and `test_docs_naming.py` enforces
+  kebab-case `docs/*.md`. `ci.yml` already rejects empty PRs. `ship` uses
+  `<primary-branch>`/`<branch_name>` placeholders and asks before push.
+  Generated outputs: `coverage/`, `adblock/dist/`, `nas_proxy/out/`,
   `.claude/commands/`, command logs.
 
 ## Process
