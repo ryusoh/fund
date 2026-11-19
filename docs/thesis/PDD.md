@@ -6,8 +6,8 @@
 # PDD – Investment Thesis
 
 - **Ticker / Name**: PDD – PDD Holdings Inc.
-- **Date**: 2025-11-15
-- **Time Horizon**: 10 years
+- **Date**: 2026-11-19 (initiated 2025-11-15)
+- **Time Horizon**: 5 years
 - **Benchmark (annual)**: 6.5% (global equity proxy)
 - **Target CAGR (Hurdle)**: 12%
 
@@ -86,8 +86,8 @@ Valuation-relevant context (as of thesis initiation): large net cash position; E
         - Currently negative unit economics (shipping, subsidies, marketing).
         - Goal is to move towards breakeven via higher repeat purchase, better logistics, and higher merchant monetization.
 - Returns on capital:
-    - Historically very high ROE and ROIC in domestic business (light capex, high margin).
-    - Returns temporarily depressed by Temu and ecosystem reinvestment.
+    - Historically very high ROE and ROIC in domestic business (light capex, high margin), though net PP&E and software jumped sharply in 9M 2026 without a cash-flow capex breakdown in quarterly Form 6-Ks.
+    - Returns depressed by Temu overseas losses (FY2025 Form 20-F Note 15 revealed a Non-PRC pre-tax loss swing) and domestic merchant-ecosystem reinvestment.
 - Cyclicality:
     - Value focus makes PDD somewhat counter-cyclical to consumption cycles (benefits from trading down).
     - Sensitive to macro downturns in terms of overall retail volumes and merchant health, but relative share can rise when consumers become more price-sensitive.
@@ -95,17 +95,16 @@ Valuation-relevant context (as of thesis initiation): large net cash position; E
 ### 2.3 Management & capital allocation
 
 - Management quality:
-    - Founder-driven culture (Colin Huang), now delegated to professional management with strong execution track record.
-    - Management communication has been relatively candid and conservative (warning on profit volatility even after strong quarters).
+    - Founder-driven culture (Colin Huang), now delegated to professional management (Co-CEOs Lei Chen and Jiazhen Zhao) with strong operational execution, though financial disclosure remains opaque (single-segment reporting under ASU 2023-07 with no Pinduoduo vs. Temu split, GMV, or quarterly capex line).
+    - Management communication has been candid and conservative (repeatedly warning on profit fluctuations during strategic investment cycles).
 - Capital allocation:
-    - Very growth-biased:
-        - Heavy reinvestment in subsidies, supply chain upgrades, and Temu expansion.
-        - No dividend or buybacks despite large cash pile.
-    - Little M&A; most capital into organic initiatives and ecosystem funds.
+    - Exclusively retention- and reinvestment-biased:
+        - Heavy reinvestment in merchant support, supply chain upgrades, and Temu localized fulfillment.
+        - Zero dividends and zero share repurchases despite massive consolidated cash and debt-security holdings and zero financial debt (2025 convertible notes retired in cash Dec 2025).
+    - Structural cash-trapping constraints (FY2025 Form 20-F): Cayman parent holds minimal cash directly, a large share of cash and long-term financial investments sits inside the VIE, substantial net assets are legally restricted under PRC law, no subsidiaries paid dividends to Cayman parent in 2023–2025, and onshore repatriations face SAFE procedures plus up to 10% PRC dividend withholding tax.
 - Alignment:
-    - Significant insider ownership; founder still large shareholder.
-    - Governance is typical China ADR dual-class; some discount warranted for regulatory and governance opacity.
-    - No clear shareholder-friendly capital return policy yet; management prioritizes long-term growth.
+    - Significant insider ownership (Colin Huang, Tencent, PDD Partnership).
+    - Governance relies on Cayman Foreign Private Issuer exemptions and PDD Partnership board-nomination rights; management explicitly discloses no cash management policy and no present plan to pay dividends — warranting a persistent governance and capital-return discount until policy changes.
 
 ---
 
@@ -139,19 +138,24 @@ Valuation-relevant context (as of thesis initiation): large net cash position; E
 ### 3.2 Risk map and thesis killers
 
 - Structural risks:
-    - China regulatory risk (platform regulation, data security, worker protections).
-    - US/EU trade and national security policy (tariffs, restrictions on Chinese apps/imports).
-    - Structural competition from Alibaba/JD/Douyin domestically and Amazon/Shein/TikTok globally.
+    - China regulatory risk (platform pricing rules effective April 2026 barring forced lowest-price clauses, data security, merchant governance).
+    - US/EU trade and customs escalation: US indefinite suspension of $800 postal de minimis (`19 CFR 145.31`, effective June 24, 2026); EU abolition of €150 de minimis with €3/item flat duty (effective July 1, 2026) plus €2/item customs handling fee (effective November 1, 2026).
+    - EU Digital Services Act (DSA) enforcement: €200M fine under DSA Art. 34 (May 28, 2026) followed by Nov 17, 2026 preliminary breach findings under DSA Art. 35 carrying fine exposure up to 6% of worldwide annual turnover and structural compliance mandates.
+    - Structural competition from Alibaba/JD/Douyin domestically and Amazon/Shein/TikTok Shop globally.
 - Financial risks:
-    - Temu losses persist longer than expected, structurally depressing margins.
-    - Ongoing “price war” in China e-commerce forcing permanent subsidy and margin compression.
+    - Temu losses persist under local-to-local warehousing (after FY2025 Non-PRC pre-tax loss and elevated DTA valuation allowance).
+    - Tightening domestic S&M-to-growth trade-off forcing either subsidy re-escalation or stalled consolidated top-line growth.
+    - PRC tax-rate cliff: both core PRC entities (`Shanghai Xunmeng` and `Walnut Street Shanghai`) hold preferential 15% HNTE tax rates expiring in 2026.
+    - Unhedged FX exposure on offshore/onshore cash balances and volatile non-operating investment marks.
 - Governance / headline risks:
-    - ADR structure and China-US audit/oversight risk.
-    - Potential future controversies on labor conditions, counterfeit goods, or app security.
-- Explicit thesis-kill triggers:
-    - Clear evidence Temu cannot reach breakeven in any major market (e.g. multi-year retreat and write-downs).
-    - Prolonged domestic stagnation: Pinduoduo GMV and revenue flat/declining for several years.
-    - Major regulatory shock: US/EU bans or severely restricts Temu; serious China regulatory action structurally limiting PDD’s business model.
+    - ADR/VIE structure, Cayman HoldCo minimal direct cash, legally restricted PRC net assets, and permanent zero-capital-return value-trap risk.
+    - Single-segment reporting opacity (no Temu breakdown, no GMV, no quarterly capex line).
+- Explicit thesis-kill triggers (ranked falsifiers tracked in `data/analysis/PDD.json` `predictions`):
+    - Persistent negative consolidated revenue growth (<0% YoY for two consecutive quarters) or Q4 2026 Transaction Services contraction deeper than -15% YoY.
+    - Back-to-back annual Non-PRC pre-tax losses in FY2026 Form 20-F Note 15 (worse than -RMB 3.0B) or another >RMB 1.5B DTA valuation allowance increase.
+    - Final EU DSA Art. 35 fine ≥ €1.0B or binding operational restrictions / marketplace suspension in the EU.
+    - Permanent zero capital return past RMB 500B+ cash & short-term investments with Cayman HoldCo cash <1%.
+    - Failure to renew core PRC 15% HNTE certificates pushing consolidated ETR ≥ 22.0% sustainably, or domestic S&M re-escalation >28% of revenue alongside Online Marketing growth <+5% YoY.
 
 ---
 
@@ -161,165 +165,133 @@ This section documents how I choose the JSON `scenarios` block and why.
 
 ### 4.1 Shared baseline assumptions
 
-- Starting EPS: ~10–11 USD
-- Starting PE: ~12–13×
-- Time horizon: 10 years
+- Starting EPS & PE: pipeline-owned in `data/analysis/PDD.json` (`market` block; see §1.3).
+- Time horizon: 5 years (aligned with `data/analysis/PDD.json` `model.preferences.horizon`).
 - Balance sheet / share count:
-    - Net cash position remains positive throughout.
-    - Some buybacks possible in later years if growth opportunities narrow, but base case assumes modest dilution/buybacks overall.
-- Macro / regime assumptions (if relevant):
-    - Global GDP grows at low–mid single digits.
-    - China consumption growth moderate; no long-lasting depression or hyperinflation.
-    - Tariffs remain elevated vs 2010s but not catastrophically escalated; no outright trade embargo.
-- For macro-linked names (optional split):
-    - Macro layer:
-        - Continued US-China strategic rivalry and elevated tariffs; no full decoupling.
-    - Company layer:
-        - PDD continues to prioritize growth and ecosystem moats over maximizing near-term margin.
+    - Zero financial debt and net cash position remain intact throughout; modest ~0.5%–1% annual SBC share creep unless buybacks begin.
+- Macro / regime assumptions:
+    - China consumption growth remains subdued; domestic value positioning continues taking relative share.
+    - US and EU de minimis exemptions remain permanently abolished; Temu must operate through bulk commercial import and local/semi-managed fulfillment under ongoing DSA compliance oversight.
+    - Elevated US-China strategic rivalry persists without full trade embargo or forced ADR delisting.
 
 ---
 
-### 4.2 Bull Case – Global Dominance in Value E-commerce
+### 4.2 Bull Case – Domestic Compounder + Temu Stabilization + Capital Return Unlock
 
 - JSON mapping:
-    - `prob`: 0.25
-    - `growth.epsCagr`: 0.18
-    - `valuation.exitPe`: 18
+    - `prob`: 0.15
+    - `growth.epsCagr`: 0.14
+    - `valuation.exitPe`: 14
 
 #### 4.2.1 Narrative (world description)
 
-- Pinduoduo cements a near-duopoly in Chinese e-commerce value segment, with strong brand and high engagement.
-- Take rate and ad monetization increase meaningfully as merchants increasingly rely on the platform.
-- Temu overcomes tariff/logistics hurdles, builds local warehouses, and becomes the default low-price shopping destination in many countries.
-- Temu reaches breakeven or better earlier than consensus (around mid-decade) and then contributes meaningful profit.
-- PDD is viewed as the global champion of value e-commerce, with diversified profit streams and a long runway in emerging markets.
+- Pinduoduo cements domestic value-segment leadership, growing ad monetization and operating profit at high-single to low-double digits while keeping disciplined S&M ratios.
+- Core PRC entities renew 15% HNTE preferential tax rates, stabilizing effective tax rates in the mid-to-high teens.
+- Temu successfully adapts to US/EU local-to-local fulfillment, resolves EU DSA Article 35 without crippling fines, and reaches modest sustainable profitability.
+- Management initiates meaningful shareholder capital return (buybacks or dividends), partially narrowing the China ADR / VIE governance discount.
 
 #### 4.2.2 Key assumptions
 
 - Revenue / volume:
-    - Consolidated revenue CAGR in mid-teens or higher (~15–18%).
-    - Pinduoduo revenue grows high single-digit to low-teens; Temu grows much faster off a smaller base.
+    - Consolidated revenue re-accelerates to low-double-digit CAGR after lapping the 2026 US/EU customs shock.
 - Margin structure:
-    - Consolidated operating margin stabilizes in mid-20s despite Temu, as Temu moves to breakeven and China margins remain strong.
+    - Consolidated operating margin stabilizes in the mid-to-high 20s as S&M discipline holds and Temu moves past peak compliance/fulfillment drag.
 - Capital allocation:
-    - Majority of cash reinvested into Temu, supply chain, and ecosystem early.
-    - Later in the period, as Temu breakeven approaches, buybacks and/or selective returns of capital begin.
-- Optionality realized:
-    - Temu becomes a structurally profitable global business with significant GMV.
-    - Additional services (merchant financing, payments) contribute incremental profit.
+    - Management begins deploying a portion of annual OCF into buybacks or dividends, reducing share count and establishing a payout track record.
 
 #### 4.2.3 Why these numbers are reasonable
 
-- EPS CAGR rationale (18%):
-    - Revenue CAGR ~15–18% plus modest margin expansion and share count stability supports high-teens EPS growth.
-- Exit PE rationale (18×):
-    - Reflects a global platform still growing double digits with a wide moat and diversified geography.
+- EPS CAGR rationale (14%):
+    - Low-double-digit operating profit growth plus modest buyback accretion and HNTE tax continuity supports mid-teens EPS growth over 5 years.
+- Exit PE rationale (14×):
+    - Still discounted relative to global e-commerce peers for China/VIE risk, but meaningfully re-rated from single digits once capital return and Temu stability are proven.
 
 #### 4.2.4 Evidence & supporting material (Bull)
 
 - Company:
-    - Historical ability to scale Pinduoduo rapidly with high margins.
-    - Temu’s early global traction and top-of-store rankings in multiple markets.
-- Industry / macro:
-    - Large remaining global TAM for low-price e-commerce; secular shift to online purchases.
-- My interpretation:
-    - If management executes on logistics and regulatory adaptation, and tariffs don’t get significantly worse, this outcome is realistic.
+    - Q3 2026 Online Marketing grew +12.1% YoY (while Alibaba China e-commerce fell -5% YoY) and GAAP operating margin jumped to 28.8% on disciplined S&M spend.
+    - Massive cash generation (RMB 85.1B 9M 2026 OCF) with zero debt gives ample capacity to initiate buybacks whenever management chooses.
 - Links / files:
-    - docs/thesis/PDD/PDD-bull-evidence.md
+    - `docs/research/tickers/pdd-2026q3-earnings.md`
+    - `docs/thesis/PDD/PDD-bull-evidence.md`
 
 ---
 
-### 4.3 Base Case – Steady Growth, Mixed Success for Temu
+### 4.3 Base Case – Resilient Domestic Cash Cow, Breakeven Temu, Persistent Cash Discount
 
 - JSON mapping:
     - `prob`: 0.50
-    - `growth.epsCagr`: 0.12
-    - `valuation.exitPe`: 15
+    - `growth.epsCagr`: 0.07
+    - `valuation.exitPe`: 10.5
 
 #### 4.3.1 Narrative (world description)
 
-- Pinduoduo’s domestic business matures but continues to grow at or slightly above China nominal GDP.
-- PDD maintains share in value e-commerce but faces persistent competition that caps margin expansion.
-- Temu achieves modest but not dominant success: meaningful user base in several countries, slowly improving economics, but not a runaway winner.
-- Overall, PDD is a solid, moderately growing platform with a “China plus some overseas” profile.
+- Pinduoduo remains China's most efficient value-commerce platform, taking incremental share in a sluggish macro and sustaining mid-to-high single-digit domestic earnings growth.
+- Temu survives US/EU customs reforms via semi-managed local fulfillment, but higher tariffs, handling fees, and DSA compliance keep international economics near breakeven rather than a major profit engine.
+- Effective tax rate drifts slightly higher (high teens to ~20%–21%) and capital return remains absent or token, capping valuation re-rating near peer China internet multiples.
 
 #### 4.3.2 Key assumptions
 
 - Revenue / volume:
-    - Consolidated revenue CAGR ~10–12%.
-    - Pinduoduo mid single-digit to low double-digit; Temu double-digit but slowing.
+    - Consolidated revenue CAGR mid-to-high single digits (domestic MSD–HSD offsetting choppy flat-to-LSD international contribution).
 - Margin structure:
-    - Consolidated operating margin in low–mid 20s (some pressure from international).
+    - Consolidated operating margin holds in the low-to-mid 20s, fluctuating with seasonal promotions and merchant-support cycles.
 - Capital allocation:
-    - Continued heavy reinvestment early; moderate buybacks later if cash piles up.
-- Optionality realized:
-    - Temu reaches roughly breakeven overall but not a major profit driver by year 10.
+    - Cash continues accumulating onshore/in VIE with minimal or very late capital return.
 
 #### 4.3.3 Why these numbers are reasonable
 
-- EPS CAGR rationale (12%):
-    - Revenue CAGR ~10–12% and relatively stable margins with light buybacks supports low-teens EPS growth.
-- Exit PE rationale (15×):
-    - Reasonable “normal” multiple for a mid-teens grower with China/geopolitical risk.
+- EPS CAGR rationale (7%):
+    - Reflects realistic mature domestic compounding net of higher ETR, modest capex/depreciation step-up, lower deposit yields on cash, and minimal buyback support.
+- Exit PE rationale (10.5×):
+    - Calibrated to mature China internet peers (Alibaba/JD range); without active capital return, a 15× multiple is not justified.
 
 #### 4.3.4 Evidence & supporting material (Base)
 
 - Company:
-    - Recent consensus estimates (mid-teens earnings growth over next few years).
-    - Management signaling continued investment but also discipline.
-- Industry / macro:
-    - E-commerce growth normalizing post-COVID; persistent but manageable competition.
-- My interpretation:
-    - This is the anchor scenario: no heroics for Temu, no catastrophe either; decent compounding from a low starting multiple.
+    - 9M 2026 revenue grew +6.2% YoY with GAAP operating profit +17.3% YoY and OCF +2.8% YoY, while 9M net income fell -7.4% YoY on non-operating losses and higher ETR.
 - Links / files:
-    - docs/thesis/PDD/PDD-base-evidence.md
+    - `docs/research/tickers/pdd-2026q3-earnings.md`
+    - `docs/thesis/PDD/PDD-base-evidence.md`
 
 ---
 
-### 4.4 Bear Case – Stalling Out, Temu Struggles, Margins Squeezed
+### 4.4 Bear Case – Regulatory Pincer, Top-Line Stagnation, Permanent Cash Black Box
 
 - JSON mapping:
-    - `prob`: 0.25
-    - `growth.epsCagr`: 0.03
-    - `valuation.exitPe`: 10
+    - `prob`: 0.35
+    - `growth.epsCagr`: -0.02
+    - `valuation.exitPe`: 7
 
 #### 4.4.1 Narrative (world description)
 
-- Pinduoduo’s domestic growth stalls; intense competition and saturation force ongoing subsidies and lower monetization.
-- Temu’s economics remain ugly: tariffs, logistics costs, and competition prevent profitability in major markets.
-- PDD continues to burn cash on international expansion or is forced to retrench, with little to show for it.
-- The market views PDD as an ex-growth, high-risk China platform with limited global upside.
+- Q3 2026's revenue stall (+0.06% YoY) proves structural rather than transient: EU's stacking €3 duty + €2 handling fee and DSA Article 35 enforcement shrink Temu's European footprint while local-to-local fails to earn positive unit economics in the US.
+- Domestic competition forces S&M back above 28% of revenue to defend traffic, compressing operating margins back toward or below 20%.
+- Non-renewal of core PRC 15% HNTE tax certificates lifts ETR toward 22%–25%, while management continues hoarding cash in the VIE with zero shareholder return — cementing a permanent deep-value-trap multiple.
 
 #### 4.4.2 Key assumptions
 
 - Revenue / volume:
-    - Consolidated revenue CAGR ~4–5%.
-    - Pinduoduo flat to low single-digit; Temu choppy with limited net contribution.
+    - Consolidated revenue flat to slightly negative over the next 2–3 years before stabilizing at low-single-digit nominal growth.
 - Margin structure:
-    - Operating margin compresses well below historical mid-20s, to teens or lower.
+    - Operating margin compresses to the high teens; elevated ETR and repeat regulatory/compliance costs erode net earnings.
 - Capital allocation:
-    - Cash pile used to fund losses and subsidies; little or no capital returned to shareholders.
-- Optionality realized:
-    - Temu never becomes a meaningful profit engine; other options do not materially contribute.
+    - Zero buybacks or dividends; rising capex and cash trapped onshore earn declining yields with no attribution to ADR holders.
 
 #### 4.4.3 Why these numbers are reasonable
 
-- EPS CAGR rationale (3%):
-    - Slow revenue growth, structural margin compression, and limited buybacks lead to flat/low EPS growth.
-- Exit PE rationale (10×):
-    - Consistent with how the market prices mature or structurally challenged Chinese internet names under sustained headwinds.
+- EPS CAGR rationale (-2%):
+    - Captures genuine downside from stagnant top-line, margin reversion, and an ETR step-up rather than assuming positive earnings compounding in a Bear state.
+- Exit PE rationale (7×):
+    - Reflects permanent governance/VIE/cash-black-box pricing for an ex-growth China ADR returning zero cash.
 
 #### 4.4.4 Evidence & supporting material (Bear)
 
 - Company:
-    - Recent profit volatility and guidance about non-sustainable margins.
-    - Slowing growth already visible; big drops in US Temu sales after tariff changes.
-- Industry / macro:
-    - Ongoing intensifying competition in China and persistent geopolitical frictions.
-- My interpretation:
-    - This is a realistic downside path if PDD cannot translate Temu into profits and domestic moat erodes.
+    - Q3 2026 Transaction Services plunged -11.7% YoY; FY2025 Non-PRC pre-tax profit swung to -RMB 6.12B loss; Nov 17 EC DSA Art. 35 preliminary breach notice; Cayman HoldCo held RMB 45.99M cash vs RMB 232.57B in VIE at YE2025.
 - Links / files:
-    - docs/thesis/PDD/PDD-bear-evidence.md
+    - `docs/research/tickers/pdd-2026q3-earnings.md`
+    - `docs/thesis/PDD/PDD-bear-evidence.md`
 
 #### 4.4.5 Tail risks beyond modeled Bear
 
@@ -331,13 +303,7 @@ This section documents how I choose the JSON `scenarios` block and why.
 
 ## 5. Quantitative Summary & Model Check
 
-- Expected annualized return (CAGR): ~14–15% (scenario-weighted over 10 years)
-- Expected exit multiple: ~14× (probability-weighted between 18/15/10×)
-- Fair value range today: roughly 160–190 USD (PV of scenario-weighted outcome at 10–12% discount)
-
-- Kelly outputs:
-    - Full Kelly weight: on the order of ~0.25 (25% of portfolio, theoretical)
-    - Scaled Kelly weight (× kellyScale = 0.5): ~0.12 (12% of portfolio as a practical ceiling)
+Pipeline-owned model outputs (`expectedCagr`, `expectedMultiple`, and Kelly sizing) are computed from `data/analysis/PDD.json` by `sync_configs` and are intentionally **not transcribed into thesis body prose**. See `data/analysis/PDD.json` (`derived` block) and the analysis lab for live outputs, and §8.2 for dated historical snapshots.
 
 ### 5.1 Interpretation vs benchmark and hurdle
 
@@ -345,9 +311,8 @@ This section documents how I choose the JSON `scenarios` block and why.
 - Target (hurdle) CAGR: 12%
 
 - Commentary:
-    - Expected CAGR is clearly above both benchmark and hurdle, but distribution is wide.
-    - Market appears to price something close to the bear-to-low-base blend, leaving upside if Temu/base outcomes materialize.
-    - Risk comes mostly from exogenous policy and intense competition, not from financial leverage.
+    - Under the recalibrated 5-year three-state scenarios (Bull 15% / Base 50% / Bear 35%), expected return sits closer to the benchmark than the 12% hurdle — reflecting that while domestic Pinduoduo cash flows provide a strong floor, the lack of capital return and active US/EU trade and DSA shocks cap upside re-rating.
+    - Risk comes primarily from exogenous trade/regulatory policy, tax-rate renewal, and governance/capital-allocation opacity rather than financial leverage.
 
 ---
 
@@ -357,19 +322,18 @@ This section documents how I choose the JSON `scenarios` block and why.
 
 - Target weight range:
     - Normal target: 5–10% of portfolio.
-    - Max allowed (constraints): 25%.
-    - Model-justified max (scaled Kelly): ~12%.
+    - Max allowed (constraints): 25% (aligned with `data/analysis/PDD.json` `position.constraints.maxWeight`).
+    - Model-justified max (scaled Kelly): pipeline-owned — see `data/analysis/PDD.json` `derived.kelly`.
 - Entry / add rules:
-    - Prefer adding when:
-        - Expected 10-year CAGR ≥ 15% under updated scenarios.
-        - Price dislocation from China macro or short-term Temu worries, but core thesis intact.
-        - Evidence Temu unit economics improving (better margins, lower CAC) or domestic competition easing.
+    - Prefer adding only when:
+        - Expected 5-year CAGR ≥ 15% under updated scenarios.
+        - Price dislocation occurs while core falsifiers remain unbroken (Transaction Services stabilizing, Non-PRC losses narrowing, HNTE renewed, or inaugural capital return announced).
 - Trim / exit rules:
     - Trim when:
-        - Price run-up compresses expected 10-year CAGR toward single digits.
-        - Multiple expands significantly (e.g. forward PE > 20×) without a clear upgrade to bull probability.
+        - Price run-up compresses expected 5-year CAGR below the 6.5% benchmark without a catalyst (capital return or Temu stabilization).
+        - Multiple expands meaningfully without a clear upgrade to Bull probability.
     - Consider major reduction / exit when:
-        - Thesis-kill triggers in section 3.2 occur (Temu failure, structural regulatory shocks, domestic stagnation).
+        - Ranked thesis-kill triggers in section 3.2 occur (two consecutive quarters of negative consolidated revenue growth, repeat large Non-PRC pre-tax losses, severe EU DSA Art. 35 order, or permanent zero capital return alongside domestic erosion).
 
 ### 6.2 Liquidity & execution
 
@@ -431,36 +395,50 @@ Detailed notes can live in separate files under `docs/thesis/PDD/`.
 
 ### 8.2 High-level update entries (reverse chronological)
 
-#### 2025-11-18 – Q3 2025 Earnings (upcoming)
+#### 2026-11-19 – Q3 2026 Earnings & FY2025 20-F Structural Audit
 
+- Research dossier: `docs/research/tickers/pdd-2026q3-earnings.md` (parallel deep-research + independent fresh-context confirm pass).
+- Dated market snapshot: closed `$77.53` (`8.72×` TTM P/E) on 2026-11-18 pre-earnings; opened/traded `$85.16` (`9.58×` TTM P/E on pre-Q3 `$8.89` trailing EPS, `derived.expectedCagr` `7.29%` / `1.422×` 5-year multiple) on 2026-11-19 following the profit beat.
 - What happened:
-    - (Fill after earnings: revenue growth, margin changes, Temu commentary.)
+    - Q3 2026 consolidated revenue stalled at **RMB 108,341M (+0.06% YoY, -3.58% QoQ)**, missing consensus (~RMB 115.2B–116.0B), as **Transaction Services fell -11.66% YoY** (RMB 48,522M) immediately after the EU's July 1 €3/item flat duty and US CBP's June 24 $800 postal de minimis suspension.
+    - **Online Marketing & others grew +12.13% YoY** to RMB 59,819M (beating consensus RMB 56.3B and contrasting sharply with Alibaba's same-day -5% China e-commerce print).
+    - Slashing S&M **-16.58% YoY** lifted GAAP operating profit **+24.53% YoY** to RMB 31,164M (**28.76%** OPM; Non-GAAP **30.13%**), but lower Interest & investment income (-37.1% YoY) and higher taxes (18.21% ETR vs. 11.98%) left GAAP NI nearly flat (+0.73% YoY to RMB 29,541M), Non-GAAP NI down -1.15% YoY (RMB 31,020M; 9M GAAP NI -7.42% YoY), and Q3 OCF RMB 43,019M (-5.78% YoY; 9M OCF RMB 85,134M, +2.80%).
+    - Broad liquid financial assets reached **RMB 571.13B ($85.19B)** with zero debt, yet financing CF was `<RMB 1M` (zero buybacks/dividends) and net PP&E/software jumped **+386.4% YTD** (RMB 1,306M → RMB 6,352M).
+    - FY2025 Form 20-F structural audit uncovered: Non-PRC PBT swung from +RMB 6.38B (FY24) to **-RMB 6.12B loss (FY25)** (with RMB 1.83B valuation allowance charge / RMB 2.55B ending balance); PRC PBT plateaued (-0.5% YoY); both core PRC 15% HNTE certificates expire in 2026 (RMB 9.60B FY25 benefit); Cayman parent held only RMB 45.99M cash at YE25 vs. RMB 232.57B in VIE and RMB 125.92B legally restricted net assets.
+    - EU regulatory pincer intensified: €200M DSA Art. 34 fine (May 28, 2026), €2/item customs handling fee effective Nov 1, 2026, and formal Nov 17 DSA Art. 35 preliminary breach findings (up to 6% global turnover fine).
 - Impact on scenarios:
-    - Bull: …
-    - Base: …
-    - Bear: …
-- Impact on assumptions:
-    - …
+    - Fixed broken `PDD.json` probability sum (`0.95 → 1.00`) and aligned horizon (`5 years`) and `maxWeight` (`0.25`).
+    - Bull cut `0.25 → 0.15`, EPS CAGR `18% → 14%`, exit P/E `18× → 14×`.
+    - Base held at `0.50`, EPS CAGR cut `12% → 7%`, exit P/E cut `15× → 10.5×`.
+    - Bear raised `0.20 (JSON) / 0.25 (doc) → 0.35`, EPS CAGR cut `3% → -2%`, exit P/E cut `10× → 7×` to model a true value-trap downside.
+- Impact on assumptions & predictions:
+    - Lowered `belief_state.probability` `0.45 → 0.35` (`confidence: 0.70`).
+    - Slashed `pdd-temu-profitability-2026` probability from `0.55 → 0.15` (still `resolved: false` ahead of `2026-12-31` target date).
+    - Registered four new falsifier predictions (`pdd-q4-2026-rev-growth-positive`, `pdd-fy2026-nonprc-pbt-loss`, `pdd-capital-return-by-fy26`, `pdd-hnte-renewal-etr-cap`).
 - Action:
-    - …
+    - **HOLD** (0 shares changed; do not add — recalibrated expected CAGR sits below the 12% hurdle). Next scheduled review: `2027-03-31` (post-Q4 2026 earnings) or earlier on a final EC DSA Article 35 order.
 - TODO:
-    - …
+    - Verify Q3 2026 Form 6-K once posted on SEC EDGAR and check verbatim Q3 earnings call transcript once published (quarantined Investing.com / Chinese press items remain `UNVERIFIED`).
+    - Track Q4 2026 Transaction Services (first full quarter with both EU €3 duty + €2 handling fee) and FY2026 20-F Note 15 (Non-PRC PBT + HNTE renewal).
 
-(Repeat a block like this for each new material event.)
+#### 2025-11-18 – Q3 2025 Earnings (superseded)
+
+- Historical placeholder from thesis initiation; superseded by the 2026-11-19 Q3 2026 & FY2025 20-F comprehensive update above.
 
 ---
 
 ## 9. Open Questions / Research To-Do
 
 - Unresolved uncertainties:
-    - Temu breakeven timeline and long-run margin profile.
-    - Durability of Pinduoduo’s domestic dominance as Chinese consumption and competition evolve.
-    - Magnitude and direction of future trade policy changes affecting cross-border e-commerce.
-    - Probability and consequences of extreme geopolitical events affecting ADRs and cross-border data flows.
+    - Whether Q4 2026 Transaction Services contracts >15% YoY once the Nov 1 EU €2 handling fee stacks on top of the July 1 €3 duty.
+    - Whether Q3's -16.6% YoY S&M cut reflects durable domestic operating discipline or temporary Temu ad pullback that reverses during Q4 promotions.
+    - Outcome of 2026 HNTE 15% tax renewals for `Shanghai Xunmeng` and `Walnut Street Shanghai` (risk of ETR stepping up toward 22%–25%).
+    - Final penalty and structural compliance remedies under the European Commission's Nov 17 DSA Article 35 proceeding.
+    - Purpose of the +386% YTD jump in net PP&E and software (RMB 1.31B → RMB 6.35B) and composition of the RMB 9.50B 9M 2026 `Other loss, net`.
+    - What internal cash threshold or governance change, if any, will trigger an inaugural share repurchase or dividend program.
 - Planned research:
-    - Read each new PDD 20-F / quarterly release and earnings call transcript.
-    - Track third-party Temu metrics (downloads, engagement, shipping times) by region.
-    - Follow trade policy news related to de minimis, tariffs, and Chinese apps in the US/EU.
-    - Periodically re-run the three-state model with updated inputs and adjust probabilities based on new evidence.
+    - Confirm Q3 2026 Form 6-K on EDGAR and read the verbatim Q3 2026 earnings call transcript once available.
+    - Re-audit FY2026 Form 20-F (Note 15 Non-PRC PBT, HNTE renewal, Cayman/VIE cash split, and full cash-flow capex line) upon release in spring 2027.
+    - Track EU DSA Article 35 enforcement milestones and Q4 2026 Transaction Services / S&M elasticity against registered falsifier predictions.
 
 {% endraw %}
