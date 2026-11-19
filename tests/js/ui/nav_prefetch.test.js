@@ -523,9 +523,11 @@ describe('nav_prefetch.js', () => {
         handler();
     });
 
-    test('should skip video if connection profile is missing', () => {
+    test('should skip prefetch if connection profile is missing', () => {
+        Object.defineProperty(document, 'readyState', { value: 'complete', configurable: true });
         delete navigator.connection;
         loadScript();
+        expect(window.fetch).not.toHaveBeenCalled();
     });
 
     test('css URL resolution returns undefined if bad', () => {

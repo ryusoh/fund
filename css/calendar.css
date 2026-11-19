@@ -197,13 +197,15 @@ body.body-calendar {
  * that computes physics-based specular highlights on the glyph edges.
  * Light direction: azimuth 315deg, elevation 62deg (matching glass3dPlugin).
  */
-.cal-nav-btn > i {
+.cal-nav-btn > .fa {
     filter: url(#bgl-nav-bevel);
 }
 
 /* Make the circle icon visually bolder to match the chevron visual weight */
-.cal-nav-btn .fa-circle-o {
-    -webkit-text-stroke: 0.8px currentColor;
+.cal-nav-btn .fa-circle-o path {
+    stroke: currentColor;
+    stroke-width: 0.8px;
+    vector-effect: non-scaling-stroke;
 }
 
 .cal-nav-btn:hover:not(:disabled) {

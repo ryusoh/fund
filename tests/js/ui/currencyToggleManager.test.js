@@ -99,20 +99,22 @@ describe('currencyToggleManager', () => {
         expect(document.dispatchEvent.mock.calls[1][0].detail.currency).toBe('USD');
     });
 
-    it('renders Font Awesome icons for all supported currencies', () => {
+    it('renders inline SVG icons for all supported currencies', () => {
         initCurrencyToggle();
         const expectations = {
-            USD: 'fa-dollar-sign',
-            CNY: 'fa-yen-sign',
-            JPY: 'fa-yen-sign',
-            KRW: 'fa-won-sign',
+            USD: 'icon-usd',
+            CNY: 'icon-cny',
+            JPY: 'icon-jpy',
+            KRW: 'icon-krw',
         };
 
-        Object.entries(expectations).forEach(([currency, className]) => {
+        Object.entries(expectations).forEach(([currency, symbolId]) => {
             const button = document.querySelector(`[data-currency="${currency}"]`);
-            const icon = button.querySelector('i.currency-icon');
+            const icon = button.querySelector('svg.currency-icon');
             expect(icon).not.toBeNull();
-            expect(icon.classList.contains(className)).toBe(true);
+            expect(icon.namespaceURI).toBe('http://www.w3.org/2000/svg');
+            expect(icon.getAttribute('focusable')).toBe('false');
+            expect(icon.querySelector('use').getAttribute('href')).toBe(`#${symbolId}`);
             expect(button.getAttribute('aria-label')).toBe(`${currency} currency`);
         });
     });
@@ -187,14 +189,14 @@ describe('currencyToggleManager', () => {
         initCurrencyToggle();
 
         const eurButton = document.querySelector('[data-currency="EUR"]');
-        expect(eurButton.querySelector('i')).toBeNull(); // No icon should be generated
+        expect(eurButton.querySelector('svg')).toBeNull(); // No icon should be generated
     });
 
     it('handles existing icon with correct currency in applyCurrencyIcons', () => {
         renderToggle(`
             <div id="currencyToggleContainer">
                 <button class="currency-toggle" data-currency="USD">
-                    <i class="fa currency-icon fa-dollar-sign" data-icon-currency="USD" aria-hidden="true"></i>
+                    <svg class="fa currency-icon fa-usd" data-icon-currency="USD" aria-hidden="true"><use href="#icon-usd"></use></svg>
                 </button>
             </div>
         `);
@@ -202,7 +204,7 @@ describe('currencyToggleManager', () => {
         initCurrencyToggle();
 
         const usdButton = document.querySelector('[data-currency="USD"]');
-        const icon = usdButton.querySelector('i');
+        const icon = usdButton.querySelector('svg');
         expect(icon).not.toBeNull();
         expect(icon.dataset.iconCurrency).toBe('USD');
     });

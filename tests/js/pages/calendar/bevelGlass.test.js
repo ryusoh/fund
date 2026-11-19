@@ -373,13 +373,13 @@ describe('bevel CSS rules', () => {
 
     describe('nav button bevel', () => {
         it('CSS references the SVG filter for icon bevel', () => {
-            const iconRule = css.match(/\.cal-nav-btn\s*>\s*i\s*\{([^}]+)\}/);
+            const iconRule = css.match(/\.cal-nav-btn\s*>\s*\.fa\s*\{([^}]+)\}/);
             expect(iconRule).not.toBeNull();
             expect(iconRule[1]).toMatch(/filter:\s*url\(#bgl-nav-bevel\)/);
         });
 
         it('does not use gradient text fill or drop-shadow for bevel on icons', () => {
-            const iconRule = css.match(/\.cal-nav-btn\s*>\s*i\s*\{([^}]+)\}/);
+            const iconRule = css.match(/\.cal-nav-btn\s*>\s*\.fa\s*\{([^}]+)\}/);
             expect(iconRule).not.toBeNull();
             expect(iconRule[1]).not.toMatch(/background-clip/);
             expect(iconRule[1]).not.toMatch(/drop-shadow/);

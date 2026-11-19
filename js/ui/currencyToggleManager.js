@@ -1,9 +1,9 @@
 const STORAGE_KEY = 'fund.selectedCurrency';
 const CURRENCY_ICON_MAP = Object.freeze({
-    USD: ['fa-dollar-sign', 'fa-usd'],
-    CNY: ['fa-yen-sign', 'fa-cny', 'fa-jpy'],
-    JPY: ['fa-yen-sign', 'fa-jpy'],
-    KRW: ['fa-won-sign', 'fa-krw'],
+    USD: ['fa-usd'],
+    CNY: ['fa-cny'],
+    JPY: ['fa-jpy'],
+    KRW: ['fa-krw'],
 });
 
 let toggleContainerRef = null;
@@ -66,16 +66,21 @@ function applyCurrencyIcons() {
             return;
         }
 
-        const existingIcon = button.querySelector('i.currency-icon');
+        const existingIcon = button.querySelector('svg.currency-icon');
         if (existingIcon && existingIcon.dataset.iconCurrency === currency) {
             return;
         }
 
-        const iconElement = document.createElement('i');
+        const iconElement = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         const resolvedClasses = Array.isArray(iconClasses) ? iconClasses : [iconClasses];
-        iconElement.className = ['fa', 'currency-icon', ...resolvedClasses].join(' ');
+        iconElement.setAttribute('class', ['fa', 'currency-icon', ...resolvedClasses].join(' '));
         iconElement.setAttribute('aria-hidden', 'true');
+        iconElement.setAttribute('focusable', 'false');
         iconElement.dataset.iconCurrency = currency;
+
+        const useElement = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+        useElement.setAttribute('href', `#icon-${resolvedClasses[0].slice(3)}`);
+        iconElement.appendChild(useElement);
 
         button.textContent = '';
         button.appendChild(iconElement);

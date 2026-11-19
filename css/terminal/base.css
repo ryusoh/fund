@@ -21,6 +21,20 @@
     display: none !important;
 }
 
+.icon-sprite {
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+}
+
+svg.fa {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    fill: currentColor;
+}
+
 @font-face {
     font-family: 'JetBrains Mono';
     src: url('../../assets/fonts/webfonts/JetBrainsMono-Regular.woff2') format('woff2');
