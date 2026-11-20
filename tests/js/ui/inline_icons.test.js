@@ -1,9 +1,10 @@
-/* global DOMParser, __dirname */
+/* global DOMParser, __dirname, Buffer */
 const fs = require('fs');
 const path = require('path');
 
 const ROOT_DIR = path.resolve(__dirname, '../../..');
 const PAGES = ['index.html', 'position/index.html', 'calendar/index.html', 'terminal/index.html'];
+const CSS_FILES = ['css/base.css', 'css/terminal/base.css'];
 const ICON_UNICODE = {
     calendar: 'f073',
     'chevron-left': 'f053',
@@ -18,65 +19,57 @@ const ICON_UNICODE = {
     'pie-chart': 'f200',
     usd: 'f155',
 };
-const normalizePath = (value) => value.replace(/\s+/g, ' ').trim();
-const readFontSvg = () =>
-    fs.readFileSync(path.join(ROOT_DIR, 'assets/vendor/fonts/fontawesome-webfont.svg'), 'utf8');
-const expectOriginalGeometry = (symbol, name, fontSvg) => {
-    expect(symbol).not.toBeNull();
-    const glyphTag = fontSvg.match(
-        new RegExp(`<glyph[^>]*unicode="&#x${ICON_UNICODE[name]};"[^>]*>`)
+
+const readEmbeddedFont = (css) => {
+    const match = css.match(
+        /font-family:\s*'FundIcons';[\s\S]*?url\((['"])data:font\/woff;base64,([^'"]+)\1\)\s*format\((['"])woff\3\)/
     );
-    expect(glyphTag).not.toBeNull();
-    const expectedPath = glyphTag[0].match(/\bd="([^"]+)"/)[1];
-    expect(normalizePath(symbol.querySelector('path').getAttribute('d'))).toBe(
-        normalizePath(expectedPath)
-    );
+    expect(match).not.toBeNull();
+    return Buffer.from(match[2], 'base64');
 };
 
-describe('inline navigation icons', () => {
-    test.each(PAGES)(
-        '%s uses original Font Awesome geometry without icon-font requests',
-        (page) => {
-            const html = fs.readFileSync(path.join(ROOT_DIR, page), 'utf8');
-            const document = new DOMParser().parseFromString(html, 'text/html');
-            expect(document.querySelector('link[href*="font-awesome"]')).toBeNull();
-            expect(document.querySelector('link[href*="fontawesome-webfont"]')).toBeNull();
-            expect(document.querySelector('script[src*="icon_font_ready"]')).toBeNull();
+describe('embedded navigation icons', () => {
+    test.each(CSS_FILES)('%s embeds a small WOFF subset and all used glyphs', (file) => {
+        const css = fs.readFileSync(path.join(ROOT_DIR, file), 'utf8');
+        const font = readEmbeddedFont(css);
 
-            const icons = Array.from(document.querySelectorAll('.fa'));
-            expect(icons.length).toBeGreaterThan(0);
-            const fontSvg = readFontSvg();
+        expect(font.subarray(0, 4).toString('ascii')).toBe('wOFF');
+        expect(font.length).toBeLessThan(4096);
+        expect(css).not.toMatch(/url\(['"]?(?!data:)[^)]*fontawesome/i);
 
-            icons.forEach((icon) => {
-                expect(icon.tagName.toLowerCase()).toBe('svg');
-                const iconName = Array.from(icon.classList).find((name) => name.startsWith('fa-'));
-                const name = iconName.slice(3);
-                expect(icon.getAttribute('aria-hidden')).toBe('true');
-                expect(icon.getAttribute('focusable')).toBe('false');
-                expect(icon.querySelector('use').getAttribute('href')).toBe(`#icon-${name}`);
-                expectOriginalGeometry(document.getElementById(`icon-${name}`), name, fontSvg);
-            });
-        }
-    );
-
-    test.each(PAGES)(
-        '%s defines original glyphs for dynamic currency icons when it has a currency toggle',
-        (page) => {
-            const html = fs.readFileSync(path.join(ROOT_DIR, page), 'utf8');
-            const document = new DOMParser().parseFromString(html, 'text/html');
-            const toggleContainer = document.getElementById('currencyToggleContainer');
-            if (!toggleContainer) {
-                return;
-            }
-            const fontSvg = readFontSvg();
-            const buttons = Array.from(
-                toggleContainer.querySelectorAll('.currency-toggle[data-currency]')
+        Object.entries(ICON_UNICODE).forEach(([name, unicode]) => {
+            const rule = new RegExp(
+                `\\.fa-${name}::before\\s*\\{\\s*content:\\s*['"]\\\\${unicode}['"];`
             );
-            expect(buttons.length).toBeGreaterThan(0);
-            buttons.forEach((button) => {
-                const name = button.dataset.currency.toLowerCase();
-                expectOriginalGeometry(document.getElementById(`icon-${name}`), name, fontSvg);
-            });
-        }
-    );
+            expect(css).toMatch(rule);
+        });
+    });
+
+    test('both stylesheets embed the identical subset', () => {
+        const fonts = CSS_FILES.map((file) =>
+            readEmbeddedFont(fs.readFileSync(path.join(ROOT_DIR, file), 'utf8'))
+        );
+        expect(fonts[0].equals(fonts[1])).toBe(true);
+    });
+
+    test.each(PAGES)('%s uses smoothed font glyphs without icon-font requests', (page) => {
+        const html = fs.readFileSync(path.join(ROOT_DIR, page), 'utf8');
+        const document = new DOMParser().parseFromString(html, 'text/html');
+        expect(document.querySelector('link[href*="font-awesome"]')).toBeNull();
+        expect(document.querySelector('link[href*="fontawesome-webfont"]')).toBeNull();
+        expect(document.querySelector('script[src*="icon_font_ready"]')).toBeNull();
+        expect(document.querySelector('.icon-sprite')).toBeNull();
+
+        const icons = Array.from(document.querySelectorAll('.fa'));
+        expect(icons.length).toBeGreaterThan(0);
+        icons.forEach((icon) => {
+            expect(icon.tagName.toLowerCase()).toBe('i');
+            expect(icon.getAttribute('aria-hidden')).toBe('true');
+            expect(
+                Array.from(icon.classList).some((name) =>
+                    Object.prototype.hasOwnProperty.call(ICON_UNICODE, name.slice(3))
+                )
+            ).toBe(true);
+        });
+    });
 });
