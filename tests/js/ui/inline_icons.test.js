@@ -59,13 +59,22 @@ describe('inline navigation icons', () => {
         }
     );
 
-    test.each(['calendar/index.html', 'terminal/index.html'])(
-        '%s defines original glyphs for dynamic currency icons',
+    test.each(PAGES)(
+        '%s defines original glyphs for dynamic currency icons when it has a currency toggle',
         (page) => {
             const html = fs.readFileSync(path.join(ROOT_DIR, page), 'utf8');
             const document = new DOMParser().parseFromString(html, 'text/html');
+            const toggleContainer = document.getElementById('currencyToggleContainer');
+            if (!toggleContainer) {
+                return;
+            }
             const fontSvg = readFontSvg();
-            ['usd', 'cny', 'jpy', 'krw'].forEach((name) => {
+            const buttons = Array.from(
+                toggleContainer.querySelectorAll('.currency-toggle[data-currency]')
+            );
+            expect(buttons.length).toBeGreaterThan(0);
+            buttons.forEach((button) => {
+                const name = button.dataset.currency.toLowerCase();
                 expectOriginalGeometry(document.getElementById(`icon-${name}`), name, fontSvg);
             });
         }
