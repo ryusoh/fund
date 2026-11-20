@@ -280,6 +280,45 @@ function setupGlobalTouch(fundChartInstance) {
     }
 }
 
+function syncCanvasDprTransform(chart) {
+    const ctx = chart?.ctx;
+    if (!ctx || typeof ctx.setTransform !== 'function') {
+        return;
+    }
+    const dpr =
+        chart.currentDevicePixelRatio ||
+        (typeof window !== 'undefined' && window.devicePixelRatio) ||
+        1;
+    const canvas = chart.canvas;
+    if (canvas && chart.width > 0 && chart.height > 0) {
+        const expectedWidth = Math.floor(chart.width * dpr);
+        const expectedHeight = Math.floor(chart.height * dpr);
+        if (canvas.width !== expectedWidth || canvas.height !== expectedHeight) {
+            canvas.width = expectedWidth;
+            canvas.height = expectedHeight;
+        }
+    }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+const dprTransformGuardPlugin = {
+    id: 'dprTransformGuard',
+    beforeDraw(chart) {
+        syncCanvasDprTransform(chart);
+    },
+};
+
+function setupCanvasContextRecovery(chart) {
+    if (!chart.canvas || chart._contextRecoveryBound) {
+        return;
+    }
+    chart._contextRecoveryBound = true;
+    chart.canvas.addEventListener('contextrestored', () => {
+        syncCanvasDprTransform(chart);
+        chart.draw();
+    });
+}
+
 function buildChartConfig(data, baseRotation) {
     return {
         type: 'doughnut',
@@ -346,6 +385,7 @@ function buildChartConfig(data, baseRotation) {
             onHover: handleChartHover,
         },
         plugins: [
+            dprTransformGuardPlugin,
             imagePlugin,
             customArcBordersPlugin,
             waveAnimationPlugin,
@@ -372,6 +412,7 @@ export function updatePieChart(data) {
     } else {
         fundChartInstance = new Chart(ctx, buildChartConfig(data, baseRotation));
         fundChartInstance.glassPointerTarget = { x: 0, y: 0 };
+        setupCanvasContextRecovery(fundChartInstance);
         setupTouchEvents(fundChartInstance);
         setupGlobalTouch(fundChartInstance);
     }

@@ -546,4 +546,41 @@ describe('waveAnimationPlugin', () => {
         // Should use fallback values of 0 for centerX and centerY
         expect(mockChart.ctx.save).toHaveBeenCalled();
     });
+
+    it('skips drawing while document is hidden and avoids duplicate draw when glass3d loop is active', () => {
+        mockChart.waveAnimation = {
+            waves: [],
+            lastSpawnTime: 0,
+            animationFrameId: null,
+            config: {
+                BASE_COLOR_RGB_TRIPLET: '255, 0, 0',
+                SPAWN_INTERVAL: 0,
+                MAX_WAVES: 2,
+                SPEED: 1,
+                EXPANSION_DISTANCE: 50,
+                SPAWN_OPACITY: 0.5,
+                TARGET_OPACITY_FADE: 0.01,
+            },
+        };
+
+        const hiddenDescriptor = Object.getOwnPropertyDescriptor(document, 'hidden');
+        try {
+            waveAnimationPlugin.forceStartAnimation(mockChart);
+            Object.defineProperty(document, 'hidden', { configurable: true, value: true });
+            animateCallback();
+            expect(mockChart.draw).not.toHaveBeenCalled();
+
+            Object.defineProperty(document, 'hidden', { configurable: true, value: false });
+            mockChart.$glass3d = { animationFrame: 42 };
+            animateCallback();
+            expect(mockChart.draw).not.toHaveBeenCalled();
+            expect(mockChart.waveAnimation.waves.length).toBeGreaterThan(0);
+        } finally {
+            if (hiddenDescriptor) {
+                Object.defineProperty(document, 'hidden', hiddenDescriptor);
+            } else {
+                delete document.hidden;
+            }
+        }
+    });
 });

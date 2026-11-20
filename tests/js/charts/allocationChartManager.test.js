@@ -1129,6 +1129,59 @@ describe('chartManager', () => {
             });
         });
     });
+
+    describe('dprTransformGuard and contextrestored recovery', () => {
+        it('restores DPR transform and backing store dimensions before every draw', () => {
+            chartManager.updatePieChart(data);
+
+            const guardPlugin = chartOptions.pluginInstances.find(
+                (plugin) => plugin.id === 'dprTransformGuard'
+            );
+            expect(guardPlugin).toBeDefined();
+
+            const setTransform = jest.fn();
+            const canvas = mockChartInstance.canvas;
+            canvas.width = 300;
+            canvas.height = 150;
+
+            guardPlugin.beforeDraw({
+                ctx: { setTransform },
+                canvas,
+                width: 400,
+                height: 400,
+                currentDevicePixelRatio: 2,
+            });
+
+            expect(canvas.width).toBe(800);
+            expect(canvas.height).toBe(800);
+            expect(setTransform).toHaveBeenCalledWith(2, 0, 0, 2, 0, 0);
+        });
+
+        it('no-ops gracefully when ctx.setTransform is unavailable', () => {
+            chartManager.updatePieChart(data);
+            const guardPlugin = chartOptions.pluginInstances.find(
+                (plugin) => plugin.id === 'dprTransformGuard'
+            );
+            expect(() => guardPlugin.beforeDraw({ ctx: {}, canvas: null })).not.toThrow();
+        });
+
+        it('restores transform and redraws when canvas fires contextrestored', () => {
+            const setTransform = jest.fn();
+            chartManager.updatePieChart(data);
+            mockChartInstance.ctx = { setTransform };
+            mockChartInstance.width = 312;
+            mockChartInstance.height = 312;
+            mockChartInstance.currentDevicePixelRatio = 3;
+            mockChartInstance.canvas.width = 936;
+            mockChartInstance.canvas.height = 936;
+            mockChartInstance.draw.mockClear();
+
+            mockChartInstance.canvas.dispatchEvent(new Event('contextrestored'));
+
+            expect(setTransform).toHaveBeenCalledWith(3, 0, 0, 3, 0, 0);
+            expect(mockChartInstance.draw).toHaveBeenCalledTimes(1);
+        });
+    });
 });
 
 // Test chart instances tracking for proper cleanup

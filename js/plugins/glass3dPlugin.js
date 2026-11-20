@@ -179,7 +179,11 @@ function ensureState(chart, options) {
                 if (!state) {
                     return;
                 }
-                chart.draw();
+                if (typeof document !== 'undefined' && document.hidden) {
+                    state.lastTime = null;
+                } else {
+                    chart.draw();
+                }
                 state.animationFrame = window.requestAnimationFrame(tick);
             };
             chart.$glass3d.animationFrame = window.requestAnimationFrame(tick);
@@ -214,7 +218,7 @@ function updatePhase(state, options, chart) {
         state.lastTime = now;
         return 0;
     }
-    const delta = (now - state.lastTime) / 1000;
+    const delta = Math.min(Math.max((now - state.lastTime) / 1000, 0), 0.1);
     state.lastTime = now;
     const speed = options.reflection?.speed ?? 0;
 
@@ -482,7 +486,7 @@ function drawFresnelHighlight(ctx, meta, options, pointer) {
         const alpha = fresnel * intensity * (0.4 + 0.6 * lightDot);
 
         if (alpha < 0.005) {
-            return;
+            continue;
         }
 
         const bandRadius = (outerRadius + innerRadius) / 2;

@@ -29,9 +29,18 @@ function _startWaveAnimation(chart) {
             return;
         }
 
+        if (typeof document !== 'undefined' && document.hidden) {
+            animState.animationFrameId = requestAnimationFrame(animate);
+            return;
+        }
+
         // Update wave states, pass outerRadius for spawning waves from the outside
         updateWaveState(chart, currentOuterRadiusValue > 0 ? currentOuterRadiusValue : 0);
-        chart.draw(); // Redraw the chart to show updated waves
+        // glass3dPlugin already drives a 60fps chart.draw() loop when active;
+        // avoid a duplicate second full-canvas redraw in the same frame.
+        if (!chart.$glass3d?.animationFrame) {
+            chart.draw();
+        }
 
         // Only continue animation if there are active waves or potential to spawn new ones
         if (

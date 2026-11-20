@@ -647,3 +647,96 @@ describe('afterDestroy hook', () => {
         expect(() => glass3dPlugin.afterDestroy(chart)).not.toThrow();
     });
 });
+
+describe('long-running stability guards', () => {
+    it('keeps ctx.save and ctx.restore balanced when Fresnel alpha drops below threshold', () => {
+        const ctx = createMockCtx();
+        const arcs = [
+            createArc({
+                x: 120,
+                y: 110,
+                innerRadius: 50,
+                outerRadius: 95,
+                startAngle: 0,
+                endAngle: Math.PI / 2,
+            }),
+        ];
+        const chart = {
+            ctx,
+            glassPointerTarget: { x: 0, y: 0 },
+            getDatasetMeta: jest.fn(() => ({ data: arcs })),
+            draw: jest.fn(),
+        };
+        const options = { fresnel: { intensity: 0.01, baseReflectance: 0.01 } };
+
+        glass3dPlugin.beforeDatasetsDraw(chart, { meta: {} }, options);
+        ctx.save.mockClear();
+        ctx.restore.mockClear();
+
+        glass3dPlugin.afterDatasetsDraw(chart, { meta: {} }, options);
+
+        expect(ctx.save.mock.calls.length).toBe(ctx.restore.mock.calls.length);
+        glass3dPlugin.afterDestroy(chart);
+    });
+
+    it('skips draw and resets lastTime while document is hidden and clamps wake delta', () => {
+        const rafCallbacks = [];
+        const origRaf = window.requestAnimationFrame;
+        const origCancel = window.cancelAnimationFrame;
+        window.requestAnimationFrame = jest.fn((cb) => {
+            rafCallbacks.push(cb);
+            return rafCallbacks.length;
+        });
+        window.cancelAnimationFrame = jest.fn();
+
+        let nowMs = 1000;
+        const perfSpy = jest.spyOn(globalThis.performance, 'now').mockImplementation(() => nowMs);
+
+        const ctx = createMockCtx();
+        const arcs = [
+            createArc({
+                x: 120,
+                y: 110,
+                innerRadius: 50,
+                outerRadius: 95,
+                startAngle: 0,
+                endAngle: Math.PI / 2,
+            }),
+        ];
+        const chart = {
+            ctx,
+            glassPointerTarget: { x: 0, y: 0 },
+            getDatasetMeta: jest.fn(() => ({ data: arcs })),
+            draw: jest.fn(),
+        };
+
+        const hiddenDescriptor = Object.getOwnPropertyDescriptor(document, 'hidden');
+        try {
+            glass3dPlugin.beforeDatasetsDraw(chart, { meta: {} }, { reflection: { speed: 1 } });
+            expect(chart.$glass3d.lastTime).toBe(1000);
+
+            Object.defineProperty(document, 'hidden', { configurable: true, value: true });
+            rafCallbacks.shift()();
+            expect(chart.draw).not.toHaveBeenCalled();
+            expect(chart.$glass3d.lastTime).toBeNull();
+
+            // Waking after a long pause clamps delta to <= 0.1s
+            Object.defineProperty(document, 'hidden', { configurable: true, value: false });
+            nowMs = 2000;
+            glass3dPlugin.beforeDatasetsDraw(chart, { meta: {} }, { reflection: { speed: 1 } });
+            nowMs = 602000; // +600s sleep
+            glass3dPlugin.beforeDatasetsDraw(chart, { meta: {} }, { reflection: { speed: 1 } });
+            expect(chart.$glass3d.continuousPhase).toBeCloseTo(0.1, 5);
+        } finally {
+            glass3dPlugin.afterDestroy(chart);
+            perfSpy.mockRestore();
+            if (hiddenDescriptor) {
+                Object.defineProperty(document, 'hidden', hiddenDescriptor);
+            } else {
+                delete document.hidden;
+            }
+            window.requestAnimationFrame = origRaf;
+            window.cancelAnimationFrame = origCancel;
+        }
+    });
+});
