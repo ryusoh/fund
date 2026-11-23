@@ -4,15 +4,30 @@
 import bisect
 import json
 from pathlib import Path
+from typing import cast
 
 import pandas as pd
+
+
+def _read_parquet(path: Path) -> pd.DataFrame:
+    """Read Parquet via native PyArrow OSFile with single-threaded I/O.
+
+    Avoids pandas' Python-file wrapper and Arrow's C++ background threadpool,
+    which intermittently SIGABRTs at interpreter shutdown in short-lived scripts.
+    """
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    pa.set_cpu_count(1)
+    pa.set_io_thread_count(1)
+    return cast(pd.DataFrame, pq.read_table(str(path), use_threads=False).to_pandas())
 
 
 def load_data():
     """Load holdings, price, and metadata data."""
     # Load holdings data
     holdings_path = Path('data/checkpoints/holdings_daily.parquet')
-    holdings_df = pd.read_parquet(holdings_path)
+    holdings_df = _read_parquet(holdings_path)
 
     # Load price data
     with open('data/historical_prices.json', 'r') as f:
