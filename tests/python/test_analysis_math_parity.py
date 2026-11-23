@@ -6,6 +6,7 @@ import copy
 import json
 import subprocess
 from pathlib import Path
+from typing import Any, cast
 
 from scripts.analysis import sync_configs
 
@@ -36,7 +37,7 @@ def _run_js_metrics(configs: list[dict]) -> list[dict]:
         capture_output=True,
         text=True,
     )
-    return json.loads(proc.stdout)
+    return cast(list[dict[str, Any]], json.loads(proc.stdout))
 
 
 def _assert_parity(py_val: float | None, js_val: float | None, label: str) -> None:

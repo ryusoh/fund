@@ -15,7 +15,7 @@ import { getSelectedCurrency } from '../../transactions/state.js';
 
 export const CHART_FONT_SIZE = 10;
 export const CHART_FONT_FAMILY = `${CHART_FONT_SIZE}px "JetBrains Mono", monospace`;
-export const DEFAULT_CHART_PADDING = { top: 16, right: 156, bottom: 22, left: 54 };
+export const DEFAULT_CHART_PADDING = { top: 16, right: 168, bottom: 22, left: 54 };
 export const UNIT_BREAK_LABEL = 'PRICE → TOTAL-RETURN VALUE';
 
 const LATEST_FX_DATE = '9999-12-31';
@@ -393,11 +393,22 @@ function shortScenarioName(name) {
     return head || 'Case';
 }
 
+function formatEdgePrice(usdValue) {
+    if (!Number.isFinite(usdValue)) {
+        return 'n/a';
+    }
+    const converted = convertValueToCurrency(usdValue, LATEST_FX_DATE, getSelectedCurrency());
+    if (Math.abs(converted) >= 100) {
+        return formatCompactInSelectedCurrency(Math.round(converted));
+    }
+    return formatInSelectedCurrency(converted);
+}
+
 function packRightEdgeLabels(scenarioRays, yScale, plotTop, plotBottom) {
     const items = scenarioRays
         .map((ray) => {
             const targetY = yScale(ray.endValue);
-            const label = `${shortScenarioName(ray.name)} ${Math.round(ray.prob * 100)}% ${formatPriceValue(ray.endValue)} →TV ${formatCompactPriceValue(ray.terminalTotalValue)}`;
+            const label = `${shortScenarioName(ray.name)} ${Math.round(ray.prob * 100)}% ${formatEdgePrice(ray.endValue)} →TV ${formatCompactPriceValue(ray.terminalTotalValue)}`;
             return {
                 id: ray.id,
                 targetY,

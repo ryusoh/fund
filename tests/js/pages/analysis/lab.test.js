@@ -122,7 +122,6 @@ describe('analysis lab 2-view controller (WO5)', () => {
 
         const footerText = root.querySelector('#boardBudgetFooter').textContent;
         expect(footerText).toContain('Residual Target Cash');
-        expect(footerText).toContain('not actual cash');
         expect(footerText).toContain('THESIS PROB UNMIGRATED');
         expect(footerText).toContain('FLAGS STALE');
     });

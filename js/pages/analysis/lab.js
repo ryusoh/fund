@@ -574,16 +574,28 @@ function renderDecisionBoard() {
 
     boardBudgetFooterEl.replaceChildren();
     const summaryText =
-        `Normalized Holdings Σw_curr ${formatPlainPercent(board.totalCurrentWeight)} · ` +
-        `Kelly Target Σw_rec ${formatPlainPercent(board.totalRecommendedWeight)} · ` +
-        `Residual Target Cash ${formatPlainPercent(board.residualTargetCash)} ` +
-        '(not actual cash; incl. watchlist)';
-    boardBudgetFooterEl.appendChild(makeEl('span', 'budget-summary', summaryText));
+        `Σw_curr ${formatPlainPercent(board.totalCurrentWeight)} · ` +
+        `Σw_rec ${formatPlainPercent(board.totalRecommendedWeight)} · ` +
+        `Residual Target Cash ${formatPlainPercent(board.residualTargetCash)}`;
+    const summaryEl = makeEl('span', 'budget-summary', summaryText);
+    summaryEl.title =
+        'Residual target cash is 100% - Σw_rec (not actual cash; includes watchlist).';
+    boardBudgetFooterEl.appendChild(summaryEl);
     board.warnings.forEach((warning) => {
         boardBudgetFooterEl.appendChild(makeEl('span', 'flag-pill', `⚑ ${warning}`));
     });
 
     return board;
+}
+
+function formatStripPrice(value) {
+    if (!Number.isFinite(value)) {
+        return 'n/a';
+    }
+    if (Math.abs(value) >= 100) {
+        return formatCompactCurrency(Math.round(value));
+    }
+    return formatCurrency(value);
 }
 
 function renderVerdictStrip(config, decision, metrics) {
@@ -599,9 +611,9 @@ function renderVerdictStrip(config, decision, metrics) {
     );
     const meanText = `Mean ${formatPlainPercent(metrics?.expectedCagr)}`;
     const trigText = decision.nextTrigger
-        ? `${decision.nextTrigger.label} ${formatCurrency(decision.nextTrigger.price)} (${formatSignedPercent(decision.nextTrigger.distancePct)})`
+        ? `${decision.nextTrigger.label} ${formatStripPrice(decision.nextTrigger.price)} (${formatSignedPercent(decision.nextTrigger.distancePct)})`
         : 'Trigger n/a';
-    const probsText = `${decision.scenarioSplit}${decision.confidencePct !== null ? ` · c${decision.confidencePct}%` : ''}`;
+    const probsText = `${decision.scenarioSplit}${decision.confidencePct !== null ? ` c${decision.confidencePct}%` : ''}`;
 
     verdictStripEl.append(
         identity,
@@ -700,7 +712,7 @@ function renderRiskFooter(config, decision, metrics) {
     const high52 = toFiniteNumber(config.market?.fiftyTwoWeekHigh);
     const rangeStr =
         low52 !== null && high52 !== null
-            ? `${formatCurrency(low52)}–${formatCurrency(high52)}`
+            ? `${formatStripPrice(low52)}–${formatStripPrice(high52)}`
             : 'n/a';
 
     const predictions = Array.isArray(config.predictions) ? config.predictions : [];
@@ -711,7 +723,7 @@ function renderRiskFooter(config, decision, metrics) {
     const revStr = decision.reviewDate || 'TBD';
 
     const digest = `Bear ${bearStr} · Geo ${geoStr} · 52w ${rangeStr} · Pred ${predStr} · Rev ${revStr}`;
-    const hint = `an ${config.symbol} full | an | an close`;
+    const hint = 'full | an | close';
 
     riskFooterEl.append(
         makeEl('span', 'risk-label', 'RISK'),

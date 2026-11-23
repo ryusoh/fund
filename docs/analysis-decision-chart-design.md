@@ -1465,6 +1465,12 @@ flagsGeneratedAt: eventFlags?.generatedAt, nowMs }`.
 ### WO7 `[visual]` — Style the 2-view Decision pane, update layout gate, and visually verify over liquid glass
 
 - **File:** `css/terminal/analysis.css` and `scripts/check_analysis_pane_layout.mjs`
+- **Status (2026-11-23):** **Complete** in local commit on `main` (**visual —
+  human review required**). Styled the 2-view Decision pane under
+  `.analysis-pane`, updated `check_analysis_pane_layout.mjs` (`248/248px`,
+  `overflow 0` across `board` and all 6 ticker views including `goog full`),
+  inspected live Chromium screenshots (`board` and `GOOG` over liquid glass),
+  and ran `stylelint` + `make precommit-fix`. WO8 is next.
 - **Find (1, `css/terminal/analysis.css:1-7`):**
 
     ```css
