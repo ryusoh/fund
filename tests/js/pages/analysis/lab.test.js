@@ -246,13 +246,4 @@ describe('analysis lab 2-view controller (WO5)', () => {
         Object.defineProperty(stage, 'scrollHeight', { configurable: true, value: 340 });
         expect(checkPaneViewportFit()).toEqual({ section: 'board', overflow: 40 });
     });
-
-    it('supports temporary WO6 compatibility shims', async () => {
-        await setupLab();
-        expect(lab.setActiveAnalysisSymbol('ANET')).toBe(true);
-        expect(lab.buildAnalysisSnapshot()).toContain('ANET:');
-        lab.showAnalysisSection('overview');
-        expect(lab.getActiveAnalysisConfig()).toBeNull();
-        expect(lab.buildAnalysisSnapshot()).toContain('Board —');
-    });
 });

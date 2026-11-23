@@ -1366,6 +1366,11 @@ flagsGeneratedAt: eventFlags?.generatedAt, nowMs }`.
   `tests/js/transactions/terminal/handlers/analysis.test.js` +
   `tests/js/transactions/terminal/autocomplete.test.js` +
   `tests/js/transactions/terminal/handlers/help.test.js`
+- **Status (2026-11-23):** **Complete** in local commit on `main`. Simplified
+  terminal command grammar to `analysis`, `an <TICKER> [full]`, and `an close`,
+  updated `help.js` and ticker/`full` autocomplete, deleted temporary WO5 shims
+  from `lab.js`, and verified real-import export contract (7 Jest suites / 55
+  tests and `eslint --max-warnings=0` passed). WO7 is next.
 - **Find (1, `constants.js:80-93`):**
 
     ```javascript

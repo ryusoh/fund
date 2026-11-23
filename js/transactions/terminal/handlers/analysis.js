@@ -1,7 +1,4 @@
-// Analysis lab handler — opens the analysis pane (Section D of
-// docs/terminal-analysis-merge.md) and drives its per-section function views.
-// The lab module is lazy-loaded on first use (chart-renderer precedent,
-// js/transactions/chart.js:39-48).
+import { setAnalysisAutocompleteSymbols } from '../autocomplete.js';
 
 let labModulePromise = null;
 let paneInitialized = false;
@@ -13,20 +10,7 @@ function loadLabModule() {
     return labModulePromise;
 }
 
-// Function subcommands mapped to their pane section — each function code
-// gets its own screen (Bloomberg model), nothing jammed into one view.
-const SECTION_BY_SUBCOMMAND = {
-    scenarios: 'scenarios',
-    value: 'value',
-    kelly: 'kelly',
-    belief: 'belief',
-    evidence: 'evidence',
-    predictions: 'predictions',
-    journal: 'journal',
-};
-
-const USAGE_LINE =
-    'Usage: analysis [scenarios|value|kelly|belief|evidence|predictions|journal|mc [paths]|bull|bear|reset|close] or analysis <TICKER>';
+const USAGE_LINE = 'Usage: analysis | analysis <TICKER> [full] | analysis close';
 
 async function openAnalysisPane(lab) {
     const section = document.getElementById('analysisSection');
@@ -37,7 +21,7 @@ async function openAnalysisPane(lab) {
         paneInitialized = true;
         await lab.initAnalysisPane(section);
     }
-    // Pane-exclusion pattern (inverse of viewUtils.ensureTransactionTableVisible)
+    setAnalysisAutocompleteSymbols(lab.getAnalysisSymbols());
     const table = document.querySelector('.table-responsive-container');
     if (table) {
         table.classList.add('is-hidden');
@@ -50,15 +34,7 @@ async function openAnalysisPane(lab) {
     return section;
 }
 
-async function handleMonteCarlo(_lab, _args, appendMessage) {
-    appendMessage('Monte Carlo view retired; use "analysis" or "analysis <TICKER>".');
-}
-
-function handleSandbox(_lab, _action, appendMessage) {
-    appendMessage('Belief sandbox retired; use "analysis" or "analysis <TICKER>".');
-}
-
-function _handleCloseCommand(appendMessage) {
+function handleCloseCommand(appendMessage) {
     const section = document.getElementById('analysisSection');
     if (section) {
         section.classList.add('is-hidden');
@@ -66,34 +42,29 @@ function _handleCloseCommand(appendMessage) {
     appendMessage('Analysis pane closed.');
 }
 
-function _handleOverviewCommand(lab, appendMessage) {
-    lab.showAnalysisSection('overview');
-    const symbols = lab.getAnalysisSymbols().join(', ');
-    appendMessage(`Analysis lab — securities: ${symbols}.\n${USAGE_LINE}`);
-}
-
-function _handleTickerCommand(lab, sub, appendMessage) {
-    const symbol = sub.toUpperCase();
-    if (lab.setActiveAnalysisSymbol(symbol)) {
-        const active = lab.getActiveAnalysisConfig();
-        const name = active && active.name ? active.name : symbol;
-        const weight =
-            active && Number.isFinite(active.weight)
-                ? `${(active.weight * 100).toFixed(1)}%`
-                : 'n/a';
-        appendMessage(`Analysis context: ${symbol} (${name} · ${weight}).`);
-        return;
+function formatBoardMessage(board) {
+    if (!board || !Array.isArray(board.rows) || board.rows.length === 0) {
+        return `Portfolio Decision Board — no tickers loaded.\n${USAGE_LINE}`;
     }
-    appendMessage(
-        `Unknown analysis symbol or subcommand: ${sub}\nAvailable symbols: ${lab
-            .getAnalysisSymbols()
-            .join(', ')}\n${USAGE_LINE}`
+    const summaryRows = board.rows
+        .map(
+            (row) => `${row.symbol}: ${row.decision?.verdictDisplay || row.decision?.verdictLabel}`
+        )
+        .join(' | ');
+    const wCurrPct = (board.totalCurrentWeight * 100).toFixed(1);
+    const wRecPct = (board.totalRecommendedWeight * 100).toFixed(1);
+    const cashPct = (board.residualTargetCash * 100).toFixed(1);
+    return (
+        `PORT Decision Board — ${summaryRows}\n` +
+        `Σw_curr ${wCurrPct}% · Σw_rec ${wRecPct}% · Residual Target Cash ${cashPct}%\n` +
+        USAGE_LINE
     );
 }
 
 export async function handleAnalysisCommand(args, { appendMessage }) {
-    if (args[0] === 'close') {
-        _handleCloseCommand(appendMessage);
+    const first = args[0] ? String(args[0]).trim() : '';
+    if (first.toLowerCase() === 'close') {
+        handleCloseCommand(appendMessage);
         return;
     }
 
@@ -104,25 +75,28 @@ export async function handleAnalysisCommand(args, { appendMessage }) {
         return;
     }
 
-    if (args.length === 0) {
-        _handleOverviewCommand(lab, appendMessage);
+    if (!first) {
+        const board = lab.showDecisionBoard();
+        appendMessage(formatBoardMessage(board));
         return;
     }
 
-    const sub = args[0];
-    if (SECTION_BY_SUBCOMMAND[sub]) {
-        lab.showAnalysisSection(SECTION_BY_SUBCOMMAND[sub]);
-        appendMessage(lab.buildAnalysisSnapshot(sub));
-        return;
-    }
-    if (sub === 'mc') {
-        await handleMonteCarlo(lab, args, appendMessage);
-        return;
-    }
-    if (sub === 'bull' || sub === 'bear' || sub === 'reset') {
-        handleSandbox(lab, sub, appendMessage);
+    const flag = args[1] ? String(args[1]).trim().toLowerCase() : '';
+    if (flag && flag !== 'full') {
+        appendMessage(`Unknown analysis option: ${args[1]}\n${USAGE_LINE}`);
         return;
     }
 
-    _handleTickerCommand(lab, sub, appendMessage);
+    const horizonMode = flag === 'full' ? 'full' : '2y';
+    const symbol = first.toUpperCase();
+    const snapshot = lab.showTickerDecision(symbol, { horizonMode });
+    if (snapshot) {
+        appendMessage(snapshot.text);
+        return;
+    }
+
+    const available = lab.getAnalysisSymbols().join(', ');
+    appendMessage(
+        `Unknown analysis symbol or subcommand: ${first}\nAvailable symbols: ${available}\n${USAGE_LINE}`
+    );
 }

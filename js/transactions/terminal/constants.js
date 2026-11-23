@@ -77,17 +77,6 @@ export const PLOT_SUBCOMMANDS = [
 
 export const HELP_SUBCOMMANDS = ['filter'];
 
-export const ANALYSIS_SUBCOMMANDS = [
-    'scenarios',
-    'value',
-    'kelly',
-    'belief',
-    'evidence',
-    'predictions',
-    'journal',
-    'mc',
-    'bull',
-    'bear',
-    'reset',
-    'close',
-];
+export const ANALYSIS_SUBCOMMANDS = ['close'];
+
+export const ANALYSIS_HORIZON_FLAGS = ['full'];

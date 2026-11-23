@@ -834,41 +834,6 @@ export function getActiveAnalysisConfig() {
     return state.configs.find((cfg) => cfg.symbol === state.activeSymbol) || null;
 }
 
-// Temporary WO6 compatibility shims — removed in WO6.
-export function showAnalysisSection(name) {
-    if (name === 'overview' || name === 'board') {
-        showDecisionBoard();
-        return;
-    }
-    if (state.activeSymbol && state.activeSymbol !== 'PORT') {
-        showTickerDecision(state.activeSymbol, { horizonMode: state.horizonMode });
-        return;
-    }
-    showDecisionBoard();
-}
-
-export function setActiveAnalysisSymbol(symbol) {
-    if (String(symbol || '').toUpperCase() === 'PORT') {
-        showDecisionBoard();
-        return true;
-    }
-    return Boolean(showTickerDecision(symbol, { horizonMode: state.horizonMode }));
-}
-
-export function buildAnalysisSnapshot() {
-    if (state.activeSection === 'ticker') {
-        const cfg = getActiveAnalysisConfig();
-        return cfg
-            ? buildDecisionSnapshot(cfg, cfg.decision, cfg.metrics).text
-            : 'Analysis board active.';
-    }
-    const board = buildBoardSnapshot(
-        state.configs.map((cfg) => ({ symbol: cfg.symbol, config: cfg, decision: cfg.decision })),
-        { flagsGeneratedAt: state.eventFlags?.generatedAt || null, nowMs: state.lastNowMs }
-    );
-    return `Board — ${board.rows.map((r) => `${r.symbol}:${r.decision.verdictLabel}`).join(', ')}`;
-}
-
 export async function initAnalysisPane(rootEl, { autoLoad = true } = {}) {
     if (detachChartInteractions) {
         detachChartInteractions();

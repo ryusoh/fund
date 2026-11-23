@@ -4,6 +4,7 @@ import {
     PLOT_SUBCOMMANDS,
     HELP_SUBCOMMANDS,
     ANALYSIS_SUBCOMMANDS,
+    ANALYSIS_HORIZON_FLAGS,
 } from './constants.js';
 
 export const autocompleteState = {
@@ -11,6 +12,50 @@ export const autocompleteState = {
     matches: [],
     index: -1,
 };
+
+let analysisTickerSymbols = [];
+let analysisSymbolsFetchPromise = null;
+
+export function setAnalysisAutocompleteSymbols(symbols = []) {
+    if (!Array.isArray(symbols)) {
+        analysisTickerSymbols = [];
+        return;
+    }
+    const unique = new Set();
+    symbols.forEach((sym) => {
+        const clean = String(sym || '')
+            .trim()
+            .toUpperCase();
+        if (clean && clean !== 'PORT') {
+            unique.add(clean);
+        }
+    });
+    analysisTickerSymbols = Array.from(unique).sort();
+}
+
+export function getAnalysisAutocompleteSymbols() {
+    return [...analysisTickerSymbols];
+}
+
+export function ensureAnalysisAutocompleteSymbols() {
+    if (
+        analysisTickerSymbols.length > 0 ||
+        analysisSymbolsFetchPromise ||
+        typeof fetch !== 'function'
+    ) {
+        return analysisSymbolsFetchPromise;
+    }
+    analysisSymbolsFetchPromise = fetch('../data/analysis/index.json', { cache: 'no-store' })
+        .then((res) => (res && res.ok ? res.json() : null))
+        .then((payload) => {
+            const list = Array.isArray(payload?.tickers) ? payload.tickers : [];
+            if (list.length > 0) {
+                setAnalysisAutocompleteSymbols(list.map((entry) => entry?.symbol));
+            }
+        })
+        .catch(() => null);
+    return analysisSymbolsFetchPromise;
+}
 
 export function resetAutocompleteState() {
     autocompleteState.prefix = '';
@@ -41,10 +86,21 @@ function getHelpMatches(parts) {
 }
 
 function getAnalysisMatches(parts) {
+    ensureAnalysisAutocompleteSymbols();
     const subPrefix = parts[1] ? parts[1].toLowerCase() : '';
+    if (parts.length >= 3) {
+        if (subPrefix === 'close') {
+            return [];
+        }
+        const flagPrefix = parts[2] ? parts[2].toLowerCase() : '';
+        return flagPrefix
+            ? ANALYSIS_HORIZON_FLAGS.filter((flag) => flag.startsWith(flagPrefix))
+            : ANALYSIS_HORIZON_FLAGS;
+    }
+    const candidates = [...analysisTickerSymbols, ...ANALYSIS_SUBCOMMANDS];
     return subPrefix
-        ? ANALYSIS_SUBCOMMANDS.filter((cmd) => cmd.startsWith(subPrefix))
-        : ANALYSIS_SUBCOMMANDS;
+        ? candidates.filter((item) => item.toLowerCase().startsWith(subPrefix))
+        : candidates;
 }
 
 function getSubcommandMatches(parts) {
@@ -75,10 +131,13 @@ function getCommandMatches(searchPrefix) {
 }
 
 function updateAutocompleteState(currentPrefixKey, matches, trimmedValue) {
+    const lowerTrimmed = trimmedValue.toLowerCase();
+    const prevMatch = autocompleteState.matches[autocompleteState.index];
     if (
         autocompleteState.prefix === currentPrefixKey &&
         autocompleteState.matches.length > 0 &&
-        trimmedValue.endsWith(autocompleteState.matches[autocompleteState.index])
+        prevMatch &&
+        lowerTrimmed.endsWith(prevMatch.toLowerCase())
     ) {
         autocompleteState.index = (autocompleteState.index + 1) % autocompleteState.matches.length;
     } else {
@@ -88,11 +147,23 @@ function updateAutocompleteState(currentPrefixKey, matches, trimmedValue) {
     }
 }
 
+function resolveCanonicalTicker(token) {
+    const lower = String(token || '').toLowerCase();
+    const found = analysisTickerSymbols.find((s) => s.toLowerCase() === lower);
+    return found || String(token || '').toUpperCase();
+}
+
 function applyAutocomplete(input, matches, hasSpace, parts) {
     const completed = autocompleteState.matches[autocompleteState.index];
     const suffix = matches.length === 1 ? ' ' : '';
+    const isAnalysisCmd = parts[0] === 'analysis' || parts[0] === 'an';
 
-    if (hasSpace && ['stats', 's', 'plot', 'p', 'help', 'h', 'analysis', 'an'].includes(parts[0])) {
+    if (hasSpace && isAnalysisCmd && parts.length >= 3) {
+        input.value = `${parts[0]} ${resolveCanonicalTicker(parts[1])} ${completed}${suffix}`;
+    } else if (
+        hasSpace &&
+        ['stats', 's', 'plot', 'p', 'help', 'h', 'analysis', 'an'].includes(parts[0])
+    ) {
         input.value = `${parts[0]} ${completed}${suffix}`;
     } else {
         input.value = `${completed}${suffix}`;

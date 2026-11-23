@@ -3,6 +3,7 @@ import {
     autocompleteCommand,
     resetAutocompleteState,
     autocompleteState,
+    setAnalysisAutocompleteSymbols,
 } from '../../../../js/transactions/terminal/autocomplete.js';
 import * as constants from '../../../../js/transactions/terminal/constants.js';
 
@@ -161,6 +162,27 @@ describe('autocomplete.js', () => {
             input.value = 'help  a';
             autocompleteCommand(input);
             expect(autocompleteState.matches).toEqual(constants.HELP_SUBCOMMANDS);
+        });
+
+        test('should autocomplete analysis tickers, close, and full horizon flag', () => {
+            setAnalysisAutocompleteSymbols(['AEHR', 'ANET', 'CBRS', 'GOOG', 'PDD', 'VT']);
+
+            input.value = 'an go';
+            autocompleteCommand(input);
+            expect(input.value).toBe('an GOOG ');
+
+            input.value = 'an c';
+            autocompleteCommand(input);
+            expect(autocompleteState.matches).toEqual(['CBRS', 'close']);
+            expect(input.value).toBe('an CBRS');
+
+            input.value = 'an ANET f';
+            autocompleteCommand(input);
+            expect(input.value).toBe('an ANET full ');
+
+            input.value = 'an close f';
+            autocompleteCommand(input);
+            expect(autocompleteState.matches).toEqual([]);
         });
     });
 });

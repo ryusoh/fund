@@ -1,15 +1,23 @@
 jest.mock('../../../../../js/pages/analysis/lab.js', () => ({
     initAnalysisPane: jest.fn(async () => {}),
-    showAnalysisSection: jest.fn(),
-    setActiveAnalysisSymbol: jest.fn(),
-    getAnalysisSymbols: jest.fn(() => ['PORT', 'ANET']),
+    showDecisionBoard: jest.fn(() => ({
+        rows: [
+            { symbol: 'CBRS', decision: { verdictDisplay: 'AVOID · THESIS BROKEN' } },
+            { symbol: 'GOOG', decision: { verdictDisplay: 'ADD (+5.3% to cap)' } },
+        ],
+        totalCurrentWeight: 1.0,
+        totalRecommendedWeight: 0.689,
+        residualTargetCash: 0.311,
+    })),
+    showTickerDecision: jest.fn(),
+    getAnalysisSymbols: jest.fn(() => ['AEHR', 'ANET', 'CBRS', 'GOOG', 'PDD', 'VT']),
     getActiveAnalysisConfig: jest.fn(() => null),
-    buildAnalysisSnapshot: jest.fn(),
 }));
 
 const labModule = require('../../../../../js/pages/analysis/lab.js');
 
 const HANDLER_PATH = '../../../../../js/transactions/terminal/handlers/analysis.js';
+const AUTOCOMPLETE_PATH = '../../../../../js/transactions/terminal/autocomplete.js';
 
 function paneHtml() {
     return (
@@ -23,18 +31,20 @@ function paneHtml() {
 
 describe('handleAnalysisCommand', () => {
     let handleAnalysisCommand;
+    let getAnalysisAutocompleteSymbols;
     let appendMessage;
 
     beforeEach(() => {
         jest.isolateModules(() => {
             ({ handleAnalysisCommand } = require(HANDLER_PATH));
+            ({ getAnalysisAutocompleteSymbols } = require(AUTOCOMPLETE_PATH));
         });
         document.body.innerHTML = paneHtml();
         appendMessage = jest.fn();
         jest.clearAllMocks();
     });
 
-    it('opens the pane on overview with no args and hides other panes', async () => {
+    it('opens the Decision Board with no args, hides other panes, and seeds ticker autocomplete', async () => {
         await handleAnalysisCommand([], { appendMessage });
         const section = document.getElementById('analysisSection');
         expect(section.classList.contains('is-hidden')).toBe(false);
@@ -45,96 +55,84 @@ describe('handleAnalysisCommand', () => {
             document.getElementById('runningAmountSection').classList.contains('is-hidden')
         ).toBe(true);
         expect(labModule.initAnalysisPane).toHaveBeenCalledWith(section);
-        expect(labModule.showAnalysisSection).toHaveBeenCalledWith('overview');
-        expect(appendMessage).toHaveBeenCalledWith(expect.stringContaining('PORT, ANET'));
-        expect(appendMessage).toHaveBeenCalledWith(expect.stringContaining('Usage: analysis'));
+        expect(labModule.showDecisionBoard).toHaveBeenCalledTimes(1);
+        expect(getAnalysisAutocompleteSymbols()).toEqual([
+            'AEHR',
+            'ANET',
+            'CBRS',
+            'GOOG',
+            'PDD',
+            'VT',
+        ]);
+        expect(appendMessage).toHaveBeenCalledWith(expect.stringContaining('PORT Decision Board'));
+        expect(appendMessage).toHaveBeenCalledWith(
+            expect.stringContaining('Residual Target Cash 31.1%')
+        );
+        expect(appendMessage).toHaveBeenCalledWith(
+            expect.stringContaining('Usage: analysis | analysis <TICKER> [full] | analysis close')
+        );
     });
 
     it('initializes the pane only once across invocations', async () => {
+        labModule.showTickerDecision.mockReturnValue({ text: 'GOOG: ADD · Mean 13.7%' });
         await handleAnalysisCommand([], { appendMessage });
-        await handleAnalysisCommand(['kelly'], { appendMessage });
+        await handleAnalysisCommand(['goog'], { appendMessage });
         expect(labModule.initAnalysisPane).toHaveBeenCalledTimes(1);
     });
 
-    it('switches to the kelly section and prints the function-specific snapshot', async () => {
-        labModule.buildAnalysisSnapshot.mockReturnValue(
-            'Kelly (ANET) — full +22.10%, scaled ½K +11.00%, current weight +34.20%.'
-        );
-        await handleAnalysisCommand(['kelly'], { appendMessage });
-        expect(labModule.showAnalysisSection).toHaveBeenCalledWith('kelly');
-        expect(labModule.buildAnalysisSnapshot).toHaveBeenCalledWith('kelly');
-        expect(appendMessage).toHaveBeenCalledWith(
-            'Kelly (ANET) — full +22.10%, scaled ½K +11.00%, current weight +34.20%.'
-        );
-    });
-
-    it('maps scenarios and value to their own sections', async () => {
-        labModule.buildAnalysisSnapshot.mockImplementation((func) => `Showing analysis '${func}'.`);
-        await handleAnalysisCommand(['scenarios'], { appendMessage });
-        expect(labModule.showAnalysisSection).toHaveBeenCalledWith('scenarios');
-        expect(appendMessage).toHaveBeenCalledWith("Showing analysis 'scenarios'.");
-
-        await handleAnalysisCommand(['value'], { appendMessage });
-        expect(labModule.showAnalysisSection).toHaveBeenCalledWith('value');
-        expect(appendMessage).toHaveBeenCalledWith("Showing analysis 'value'.");
-    });
-
-    it('shows other function sections without metric details', async () => {
-        labModule.buildAnalysisSnapshot.mockImplementation((func) => `Showing analysis '${func}'.`);
-        for (const sub of ['belief', 'evidence', 'predictions', 'journal']) {
-            await handleAnalysisCommand([sub], { appendMessage });
-            expect(labModule.showAnalysisSection).toHaveBeenCalledWith(sub);
-        }
-        expect(appendMessage).toHaveBeenCalledWith("Showing analysis 'journal'.");
-    });
-
-    it('reports retired Monte Carlo and sandbox subcommands cleanly', async () => {
-        await handleAnalysisCommand(['mc'], { appendMessage });
-        expect(appendMessage).toHaveBeenCalledWith(
-            'Monte Carlo view retired; use "analysis" or "analysis <TICKER>".'
-        );
-        await handleAnalysisCommand(['bull'], { appendMessage });
-        expect(appendMessage).toHaveBeenCalledWith(
-            'Belief sandbox retired; use "analysis" or "analysis <TICKER>".'
-        );
-    });
-
-    it('selects a security context from a lowercase ticker token', async () => {
-        labModule.setActiveAnalysisSymbol.mockReturnValue(true);
-        labModule.getActiveAnalysisConfig.mockReturnValue({
-            symbol: 'ANET',
-            name: 'Arista Networks',
-            weight: 0.342,
+    it('opens a single ticker in default 2y mode and full horizon mode', async () => {
+        labModule.showTickerDecision.mockReturnValue({
+            text: 'GOOG: ADD (+5.3% to cap) · Mean 13.7% · Fair > $306.2 (+11.4%)',
         });
-        await handleAnalysisCommand(['anet'], { appendMessage });
-        expect(labModule.setActiveAnalysisSymbol).toHaveBeenCalledWith('ANET');
+
+        await handleAnalysisCommand(['goog'], { appendMessage });
+        expect(labModule.showTickerDecision).toHaveBeenCalledWith('GOOG', { horizonMode: '2y' });
         expect(appendMessage).toHaveBeenCalledWith(
-            'Analysis context: ANET (Arista Networks · 34.2%).'
+            'GOOG: ADD (+5.3% to cap) · Mean 13.7% · Fair > $306.2 (+11.4%)'
         );
+
+        await handleAnalysisCommand(['goog', 'FULL'], { appendMessage });
+        expect(labModule.showTickerDecision).toHaveBeenCalledWith('GOOG', { horizonMode: 'full' });
     });
 
-    it('reports unknown symbols and subcommands', async () => {
-        labModule.setActiveAnalysisSymbol.mockReturnValue(false);
+    it('closes the pane with close without loading lab module', async () => {
+        const section = document.getElementById('analysisSection');
+        section.classList.remove('is-hidden');
+        await handleAnalysisCommand(['close'], { appendMessage });
+        expect(section.classList.contains('is-hidden')).toBe(true);
+        expect(labModule.initAnalysisPane).not.toHaveBeenCalled();
+        expect(appendMessage).toHaveBeenCalledWith('Analysis pane closed.');
+    });
+
+    it('rejects unknown symbols and invalid horizon flags', async () => {
+        labModule.showTickerDecision.mockReturnValue(null);
         await handleAnalysisCommand(['zzzz'], { appendMessage });
         expect(appendMessage).toHaveBeenCalledWith(
             expect.stringContaining('Unknown analysis symbol or subcommand: zzzz')
         );
         expect(appendMessage).toHaveBeenCalledWith(expect.stringContaining('Available symbols'));
-    });
 
-    it('closes the pane without initializing the lab module', async () => {
-        document.getElementById('analysisSection').classList.remove('is-hidden');
-        await handleAnalysisCommand(['close'], { appendMessage });
-        expect(document.getElementById('analysisSection').classList.contains('is-hidden')).toBe(
-            true
+        await handleAnalysisCommand(['goog', 'kelly'], { appendMessage });
+        expect(appendMessage).toHaveBeenCalledWith(
+            expect.stringContaining('Unknown analysis option: kelly')
         );
-        expect(labModule.initAnalysisPane).not.toHaveBeenCalled();
-        expect(appendMessage).toHaveBeenCalledWith('Analysis pane closed.');
     });
 
-    it('reports when the pane element is missing', async () => {
+    it('handles missing #analysisSection cleanly', async () => {
         document.body.innerHTML = '';
         await handleAnalysisCommand([], { appendMessage });
         expect(appendMessage).toHaveBeenCalledWith('Analysis pane is not available on this page.');
+    });
+
+    it('verifies real export contract on @pages/analysis/lab.js', () => {
+        const realLab = jest.requireActual('@pages/analysis/lab.js');
+        expect(typeof realLab.initAnalysisPane).toBe('function');
+        expect(typeof realLab.showDecisionBoard).toBe('function');
+        expect(typeof realLab.showTickerDecision).toBe('function');
+        expect(typeof realLab.getAnalysisSymbols).toBe('function');
+        expect(typeof realLab.getActiveAnalysisConfig).toBe('function');
+        expect(realLab.showAnalysisSection).toBeUndefined();
+        expect(realLab.setActiveAnalysisSymbol).toBeUndefined();
+        expect(realLab.buildAnalysisSnapshot).toBeUndefined();
     });
 });
