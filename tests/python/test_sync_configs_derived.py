@@ -166,6 +166,18 @@ def test_stale_values_are_corrected_and_judgment_fields_preserved():
     assert config["belief_state"] == belief_state
 
 
+@pytest.mark.parametrize("intact_prob", [None, 0.0, 0.85])
+def test_ensure_structure_preserves_optional_thesis_intact_probability(intact_prob):
+    config = _config()
+    if intact_prob is not None:
+        config["belief_state"]["thesis_intact_probability"] = intact_prob
+    normalized = sync_configs.ensure_structure("TEST", config)
+    if intact_prob is None:
+        assert "thesis_intact_probability" not in normalized["belief_state"]
+    else:
+        assert normalized["belief_state"]["thesis_intact_probability"] == pytest.approx(intact_prob)
+
+
 def test_etf_eps_is_derived_when_fresh_metadata_omits_it():
     market = {"price": 144.96, "pe": 18.0755, "eps": 6.22}
     assert sync_configs.derive_market_eps(market, {}) is True

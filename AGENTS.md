@@ -227,3 +227,16 @@ doc before touching the area.
   scrubbing across URL encodings, fail-closed financial RNG, repo-wide
   reference search before deleting).
 - **Portfolio math** → `docs/fermat-pascal-kelly-system.md`.
+- **Analysis Decision Chart pane** → `docs/analysis-decision-chart-design.md`.
+  The terminal `analysis` command has a 2-view grammar (`analysis` → Decision
+  Board; `analysis <ticker> [full]` → Decision Chart; `analysis close` → hide).
+  JS (`js/pages/analysis/decision.js`) and Python (`scripts/analysis/sync_configs.py`)
+  must maintain GH-7 quadrature parity for Kelly sizing and Total Return
+  compounding; scenario `terminalPrice` stays price-only while
+  `terminalTotalValue`, CAGR, and Kelly compound dividends (`dividendYield`).
+  `PORT` sizing uses USD-normalized weights from `realTimeData.tickerWeights`
+  divided by `balance` (never raw `composition.percent` percentages without
+  normalization). Directional triggers (`BUY`/`ADD`/`TRIM`/`EXIT`) fire only in
+  their direction (overvalued names never trigger `BUY`). Market data uses two
+  staleness scopes: per-ticker `market.marketDataUpdatedAt` vs. global
+  `event_flags.generatedAt`.

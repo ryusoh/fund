@@ -3,7 +3,7 @@
     "name": "Vanguard Total World Index Fund",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-11-23T13:11:59.847360+00:00",
+        "asOf": "2026-11-23T14:36:13.939907+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -28,13 +28,13 @@
         }
     },
     "market": {
-        "pe": 17.7164,
+        "pe": 18.3816,
         "dividendYield": 1.56,
         "currency": "USD",
         "fiftyTwoWeekHigh": 162.71,
         "fiftyTwoWeekLow": 133.65,
-        "marketDataUpdatedAt": "2026-11-23T13:11:57.527252+00:00",
-        "price": 142.08,
+        "marketDataUpdatedAt": "2026-11-23T14:36:13.093590+00:00",
+        "price": 147.415,
         "eps": 8.0197,
         "fiftyDayAverage": 156.7838,
         "twoHundredDayAverage": 153.4039,
@@ -42,7 +42,7 @@
         "averageDailyVolume10Day": 3287680.0
     },
     "risk": {
-        "volatility": 0.1535,
+        "volatility": 0.1576,
         "estimateSource": "historical",
         "correlations": null
     },
@@ -105,8 +105,8 @@
         }
     ],
     "derived": {
-        "expectedCagr": 0.0964,
-        "expectedMultiple": 1.5841,
+        "expectedCagr": 0.0883,
+        "expectedMultiple": 1.5268,
         "fairValueRange": null,
         "kelly": {
             "fullKelly": 1.0,
@@ -127,7 +127,8 @@
         "open_questions": [
             "Will ex-US developed and emerging equities begin outperforming US large-cap equities?"
         ],
-        "as_of": "2026-09-30T10:00:00Z"
+        "as_of": "2026-09-30T10:00:00Z",
+        "thesis_intact_probability": 0.95
     },
     "predictions": [
         {
@@ -149,6 +150,19 @@
             "situation": "VT held as core portfolio risk anchor and beta baseline.",
             "alternatives_rejected": [
                 "Reallocate to single-stock ideas (rejected: baseline index allocation protects against idiosyncratic failures)."
+            ],
+            "expected_outcomes": {
+                "long-term global compound growth ~6-8%": 0.85
+            },
+            "review_date": "2026-12-31"
+        },
+        {
+            "date": "2026-11-23",
+            "action": "HOLD",
+            "shares_changed": 0,
+            "situation": "WO8 explicit thesis-intact probability review: set belief_state.thesis_intact_probability = 0.95 (legacy probability preserved separately). Global FTSE All Cap index replication (~9,800 stocks, 0.06%-0.07% fee) remains structurally intact; 5% residual hazard reflects only extreme multi-decade deglobalization or cross-border capital-control shocks.",
+            "alternatives_rejected": [
+                "Reuse legacy probability (0.5) as thesis_intact_probability (rejected: 0.5 reflects US-vs-ex-US macro uncertainty, not the structural viability of global equity indexation)."
             ],
             "expected_outcomes": {
                 "long-term global compound growth ~6-8%": 0.85

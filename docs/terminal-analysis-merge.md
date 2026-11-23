@@ -1,5 +1,11 @@
 # Merging `analysis/` into `terminal/` as a submodule — design
 
+> **Superseded (command grammar & view layer):** The standalone `/analysis/`
+> removal and `#analysisSection` glass/zoom integration described below remain in
+> effect, while the 9-section function-code architecture (`kelly`, `mc`,
+> `belief`, …) has been superseded by the 2-view Decision pane spec in
+> [docs/analysis-decision-chart-design.md](analysis-decision-chart-design.md).
+
 Findings doc for the question: _how to merge `analysis/index.html` into
 `terminal/index.html` as a submodule, with a CLI system and
 visualization/presentation system coherent with the existing terminal and

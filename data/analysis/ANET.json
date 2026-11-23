@@ -3,7 +3,7 @@
     "name": "Arista Networks",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-11-23T13:11:47.204088+00:00",
+        "asOf": "2026-11-23T14:35:16.915630+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -29,19 +29,19 @@
     },
     "market": {
         "forwardEps": 6.037,
-        "pe": 44.9383,
-        "forwardPe": 27.7654,
+        "pe": 49.3673,
+        "forwardPe": 30.5019,
         "beta": 1.637,
-        "marketCap": 211771506688.0,
+        "marketCap": 232642904064.0,
         "enterpriseValue": 197412503552.0,
         "ebitda": 5304200192.0,
         "currency": "USD",
         "fiftyTwoWeekHigh": 217.41,
         "fiftyTwoWeekLow": 115.42,
-        "marketDataUpdatedAt": "2026-11-23T13:11:46.626998+00:00",
+        "marketDataUpdatedAt": "2026-11-23T14:35:15.129216+00:00",
         "evToEbitda": 37.2181,
         "eps": 3.73,
-        "price": 167.62,
+        "price": 184.14,
         "fiftyDayAverage": 192.013,
         "twoHundredDayAverage": 168.5772,
         "averageVolume": 6446718.0,
@@ -50,7 +50,7 @@
         "dividendYield": 0.0
     },
     "risk": {
-        "volatility": 0.5849,
+        "volatility": 0.5917,
         "estimateSource": "historical",
         "correlations": null
     },
@@ -183,15 +183,15 @@
         }
     ],
     "derived": {
-        "expectedCagr": 0.1282,
-        "expectedMultiple": 1.8277,
+        "expectedCagr": 0.1072,
+        "expectedMultiple": 1.6638,
         "fairValueRange": [
             100.0,
             130.0
         ],
         "kelly": {
-            "fullKelly": 0.1644,
-            "scaledKelly": 0.0822
+            "fullKelly": 0.1098,
+            "scaledKelly": 0.0549
         }
     },
     "industry_thesis": "docs/thesis/industry/ai-networking.md",
@@ -224,7 +224,8 @@
             "What do third-party share data (Dell'Oro/Crehan/IDC) show for Spectrum-X vs EtherLink ports in 2026 AI back-end builds?",
             "Does the FY2026 10-K disclose a third >=10% customer (prediction anet-third-10pct-customer-fy26)?"
         ],
-        "as_of": "2026-11-17T00:00:00Z"
+        "as_of": "2026-11-17T00:00:00Z",
+        "thesis_intact_probability": 0.8
     },
     "reviewed_filings": [
         {
@@ -409,6 +410,21 @@
                 "Raise bull probability or base epsCagr after one exceptional print (rejected: FY2027 figures are guidance, customer concentration and independent share remain unresolved, and the driver CAGR uses a different time base from the engine).",
                 "Lower bear probability because the near-term miss branch failed (rejected: inventory and binding supply commitments rose while deferred revenue stalled; Q3 10-Q churn and inventory detail are still pending).",
                 "Change position size from stale pre-print expected-return fields (rejected: the scoped sync still carried pre-Q3 EPS $3.17 and the pre-release close, producing expectedCagr 8.91%; wait for the pipeline to ingest Q3 actuals and a post-print price before reassessing the documented override)."
+            ],
+            "expected_outcomes": {
+                "FY2026 ~$13.3B guide delivered and FY2027 ~$18.5B outlook remains credible; revised driver build stays conservative": 0.65,
+                "Demand remains intact but inventory/commitments create margin and cash-conversion volatility": 0.25,
+                "Acceptance or order slowdown triggers the bullwhip branch; bear weight rises toward 0.25 and sizing is reassessed": 0.1
+            },
+            "review_date": "2027-02-15"
+        },
+        {
+            "date": "2026-11-23",
+            "action": "HOLD",
+            "shares_changed": 0,
+            "situation": "WO8 explicit thesis-intact probability review: set belief_state.thesis_intact_probability = 0.80 (legacy probability preserved separately). Q3 2026 SEC filings ($3,657.6M +58.5% YoY, 63.6%/64.0% GM, $8.6B RPO, $13.3B FY26 guide) confirm EOS + hyperscale demand execution; ~20% thesis-break hazard reflects NVIDIA Spectrum-X Ethernet bundling, top-2 custom-silicon/SONiC substitution risk (42%), and $11.4B purchase-commitment / $874.3M evaluation-inventory bullwhip exposure.",
+            "alternatives_rejected": [
+                "Copy legacy probability (0.35) or Bull/Base scenario weights into thesis_intact_probability (rejected: legacy value reflects scenario/mixed semantics, whereas Gate 1 measures structural thesis integrity)."
             ],
             "expected_outcomes": {
                 "FY2026 ~$13.3B guide delivered and FY2027 ~$18.5B outlook remains credible; revised driver build stays conservative": 0.65,

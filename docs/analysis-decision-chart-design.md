@@ -1533,6 +1533,15 @@ min-height: 160px`, `#sizingBullet` `22px`, `#riskFooter` `20px`, and
 
 ### WO8 `[design]` — Migrate thesis-intact probability explicitly and update repo documentation
 
+- **Status (2026-11-23):** **Complete** in local commit on `main`. Added the
+  Decision Chart pane landmine to `AGENTS.md`, marked superseded legacy pane/merge
+  docs, updated `.agents/skills/thesis-update/SKILL.md` (plus synced
+  `.claude/commands/thesis-update.md`), updated `sync_configs.py`
+  `ensure_structure` to preserve `belief_state.thesis_intact_probability`,
+  migrated all six tickers (`AEHR`, `ANET`, `CBRS`, `GOOG`, `PDD`, `VT`) via the
+  acknowledged thesis-update workflow, and verified `decision.test.js`,
+  `lab.test.js`, `test_skills.py`, `test_doc_tool_references.py`, `make sync-check`,
+  and `make precommit-fix`.
 - **File:** `AGENTS.md`, `docs/analysis-pane-visual-design.md`,
   `docs/terminal-analysis-merge.md`, `.agents/skills/thesis-update/SKILL.md`,
   all six `docs/thesis/<SYM>.md` / `data/analysis/<SYM>.json` judgment sections

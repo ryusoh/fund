@@ -272,6 +272,14 @@ Append-only log. Machine-readable records: `data/analysis/AEHR.evidence.jsonl`. 
 
 ### 8.2 High-level update entries (reverse chronological)
 
+#### 2026-11-23 – Explicit thesis-intact probability review (WO8 migration)
+
+- What happened:
+    - Conducted explicit thesis-intact review for the Decision Gate 1 migration (`belief_state.thesis_intact_probability = 0.60`; legacy `belief_state.probability` preserved unchanged as an ambiguous legacy field).
+    - Rationale: Q1 FY2027 cleared the `$25M` revenue checkpoint (`$33.0M`), raised FY2027 revenue guidance to `$150M`, and won a second AI supplier `FOX-XP` evaluation cell, keeping the watchlist mechanism plausible; ~40% break hazard reflects `72.6%` two-customer Q1 10-Q concentration, negative Q1 OCF (`-$3.05M`), serial ATM dilution, and unverified long-term burn-in intensity durability.
+- Action:
+    - **WATCH / 0 shares.** Scheduled review remains `2027-01-31`.
+
 #### 2026-11-17 – Q1 FY2027 10-Q: concentration and inventory reviewed
 
 - What happened:

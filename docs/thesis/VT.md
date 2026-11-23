@@ -380,6 +380,14 @@ Fund-specific valuation notes (durable):
 
 ### 8.2 High-level update entries (reverse chronological)
 
+#### 2026-11-23 – Explicit thesis-intact probability review (WO8 migration)
+
+- What happened:
+    - Conducted explicit thesis-intact review for the Decision Gate 1 migration (`belief_state.thesis_intact_probability = 0.95`; legacy `belief_state.probability` preserved unchanged as an ambiguous legacy field).
+    - Rationale: Global FTSE All Cap index replication (`~9,800` stocks, `0.06%–0.07%` fee) remains structurally intact; 5% residual hazard captures only extreme multi-decade deglobalization or cross-border capital-control shocks.
+- Action:
+    - **HOLD.** Scheduled review remains `2026-12-31`.
+
 #### 2025-11-15 – Initial VT Global Thesis
 
 - What happened:

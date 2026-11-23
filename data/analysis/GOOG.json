@@ -3,7 +3,7 @@
     "name": "Alphabet",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-11-23T13:11:51.869009+00:00",
+        "asOf": "2026-11-23T14:35:45.579132+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -29,20 +29,20 @@
     },
     "market": {
         "forwardEps": 15.2974,
-        "pe": 13.7859,
-        "forwardPe": 17.2579,
+        "pe": 14.4501,
+        "forwardPe": 18.0894,
         "beta": 1.226,
-        "marketCap": 3245615874048.0,
+        "marketCap": 3401995517952.0,
         "enterpriseValue": 3148871892992.0,
         "ebitda": 185515999232.0,
         "dividendYield": 0.33,
         "currency": "USD",
         "fiftyTwoWeekHigh": 404.47,
         "fiftyTwoWeekLow": 262.27,
-        "marketDataUpdatedAt": "2026-11-23T13:11:50.577285+00:00",
+        "marketDataUpdatedAt": "2026-11-23T14:35:44.666508+00:00",
         "evToEbitda": 16.9736,
         "eps": 19.15,
-        "price": 264.0,
+        "price": 276.72,
         "fiftyDayAverage": 319.274,
         "twoHundredDayAverage": 334.8329,
         "averageVolume": 20551606.0,
@@ -50,7 +50,7 @@
         "pegRatio": 0.93
     },
     "risk": {
-        "volatility": 0.33,
+        "volatility": 0.3273,
         "estimateSource": "historical",
         "correlations": null
     },
@@ -113,12 +113,12 @@
         }
     ],
     "derived": {
-        "expectedCagr": 0.1368,
-        "expectedMultiple": 3.606,
+        "expectedCagr": 0.1315,
+        "expectedMultiple": 3.4402,
         "fairValueRange": null,
         "kelly": {
-            "fullKelly": 0.7007,
-            "scaledKelly": 0.3503
+            "fullKelly": 0.6685,
+            "scaledKelly": 0.3342
         }
     },
     "industry_thesis": "docs/thesis/industry/cloud-ai-ecosystem.md",
@@ -142,7 +142,8 @@
             "Can TTM FCF recover while capex remains high, and will fully diluted shares resume declining?",
             "What normalized operating EPS excludes securities marks, preferred dividends, and potential conversion dilution?"
         ],
-        "as_of": "2026-10-29T00:00:00Z"
+        "as_of": "2026-10-29T00:00:00Z",
+        "thesis_intact_probability": 0.85
     },
     "reviewed_filings": [
         {
@@ -203,6 +204,20 @@
                 "regulatory remedy disruption": 0.35
             },
             "review_date": "2026-12-15"
+        },
+        {
+            "date": "2026-11-23",
+            "action": "HOLD",
+            "shares_changed": 0,
+            "situation": "WO8 explicit thesis-intact probability review: set belief_state.thesis_intact_probability = 0.85 (legacy probability preserved separately). Q3 2026 Search (+12% YoY to $63.35B) and Cloud (+103% to $30.71B, 36.2% OPM; FY25 Cloud OPM resolved 23.69% in 10-K) confirm core monetization remains strong despite negative capex-driven FCF and zero YTD buybacks; ~15% hazard reflects DOJ/EU behavioral/structural antitrust remedies and multi-year generative-AI search displacement risk.",
+            "alternatives_rejected": [
+                "Reuse legacy probability (0.5) as thesis_intact_probability (rejected: legacy value was an ambiguous placeholder, whereas Q3 filings show the core Search+Cloud engine intact)."
+            ],
+            "expected_outcomes": {
+                "operating resilience offsets capital intensity": 0.55,
+                "prolonged cash deficit and dilution lower per-share returns": 0.45
+            },
+            "review_date": "2026-11-30"
         }
     ]
 }

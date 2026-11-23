@@ -395,6 +395,14 @@ Detailed notes can live in separate files under `docs/thesis/PDD/`.
 
 ### 8.2 High-level update entries (reverse chronological)
 
+#### 2026-11-23 – Explicit thesis-intact probability review (WO8 migration)
+
+- What happened:
+    - Conducted explicit thesis-intact review for the Decision Gate 1 migration (`belief_state.thesis_intact_probability = 0.55`; legacy `belief_state.probability` preserved unchanged as an ambiguous legacy field).
+    - Rationale: Domestic Pinduoduo ad monetization (`+12.1% YoY` Online Marketing, `28.8%` GAAP OPM, `RMB 85.13B` 9M OCF) sustains the core cash engine above Gate 1's `0.15` kill threshold, but Non-PRC losses (`-RMB 6.12B` FY25 20-F Note 15), US/EU de minimis abolition (`Transaction Services -11.7% YoY`), Nov 17 EC DSA Art. 35 preliminary breach findings, `RMB 45.99M` Cayman cash with zero capital return, and 2026 HNTE expirations create elevated impairment hazard.
+- Action:
+    - **HOLD.** Scheduled review remains `2027-03-31` (or earlier on final EC DSA Art. 35 order).
+
 #### 2026-11-19 – Q3 2026 Earnings & FY2025 20-F Structural Audit
 
 - Research dossier: `docs/research/tickers/pdd-2026q3-earnings.md` (parallel deep-research + independent fresh-context confirm pass).

@@ -15,10 +15,18 @@ context: `docs/ai_update_flow.md`, `docs/research/compounding-research-engine.md
 
 - **LLM authors reasoning; code owns volatile data & gates:**
   `sync_configs` owns `market`, `position.shares`, and `derived`
-  (`expectedCagr` / `expectedMultiple`, computed via the `lab.js` formula).
+  (`expectedCagr` = Mean-wealth CAGR, `expectedMultiple`, and GH-7
+  `derived.kelly`, computed identically to `js/pages/analysis/decision.js`).
   Keep live prices, multiples, and engine outputs out of `belief_state`,
   scenario notes, evidence arrays, and thesis body prose — dated valuations
   belong strictly in historical logs (`decision_journal` and thesis §8.2).
+- **Explicit thesis-intact probability (`belief_state.thesis_intact_probability`):**
+  Preserve `belief_state.probability` as an ambiguous legacy field (never copy or
+  infer `thesis_intact_probability` from `belief_state.probability`,
+  Bull/Base/Bear scenario probabilities, or `confidence`). Set or update the
+  optional `belief_state.thesis_intact_probability` (`[0, 1]`) only from an
+  explicit primary-source thesis review; it is the sole probability eligible for
+  Decision Gate 1's `< 0.15` kill test.
 - **Guided non-GAAP EPS:** when intentionally modeling guided non-GAAP EPS
   (especially with negative trailing GAAP EPS), set
   `model.preferences.overrides.eps` from a sourced calculation rather than
@@ -47,13 +55,15 @@ Present:
 1. **Classification:** Bull / Base / Bear / Neutral.
 2. **Key insight:** 3–5 concise bullets on moat, unit economics, or tail risks.
 3. **Scenario impact:** proposed edits to `prob` (summing to 1.0), `epsCagr`,
-   exit P/E, `belief_state` (`confidence`, `evidence_for`, `evidence_against`,
-   `open_questions`), dated `predictions`, and `decision_journal`. If a
-   scenario has a `drivers` block, reconcile modeled vs. actual revenue per
-   driver, update inputs with sources, register each named falsification
-   driver as a dated `predictions` entry for `prediction_sweeper.py`, and
-   align start/end periods before comparing fixed-fiscal-year driver CAGR
-   against the engine's rolling five-year `epsCagr`.
+   exit P/E, `belief_state` (`thesis_intact_probability`, `confidence`,
+   `evidence_for`, `evidence_against`, `open_questions`; never overwrite or infer
+   `thesis_intact_probability` from legacy `probability`, scenario `prob`s, or
+   `confidence`), dated `predictions`, and `decision_journal`. If a scenario has
+   a `drivers` block, reconcile modeled vs. actual revenue per driver, update
+   inputs with sources, register each named falsification driver as a dated
+   `predictions` entry for `prediction_sweeper.py`, and align start/end periods
+   before comparing fixed-fiscal-year driver CAGR against the engine's rolling
+   five-year `epsCagr`.
 
 ### 3. Apply surgical patches
 

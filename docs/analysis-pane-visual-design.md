@@ -1,5 +1,12 @@
 # Analysis pane visual design (terminal page)
 
+> **Superseded:** The 9-section analysis pane layout and subcommand
+> presentation described in this document have been superseded by
+> [docs/analysis-decision-chart-design.md](analysis-decision-chart-design.md)
+> (2-view Decision Board + Decision Chart pane, `analysis [ticker] [full]` /
+> `analysis close`). Shell chrome, `.chart-card` glass integration, and
+> `1280×580` layout gating background remain useful historical context.
+
 Findings doc for the visual/UX layer of the analysis subsystem inside the
 terminal's third pane. Merge mechanics (pane model, command grammar, lazy
 loading, CSS scoping) are settled in `docs/terminal-analysis-merge.md` and

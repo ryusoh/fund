@@ -3,7 +3,7 @@
     "name": "Pinduoduo",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-11-23T13:11:55.274848+00:00",
+        "asOf": "2026-11-23T14:35:56.873874+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -28,20 +28,20 @@
         }
     },
     "market": {
-        "forwardEps": 12.5704,
-        "pe": 9.226,
-        "forwardPe": 6.6569,
+        "forwardEps": 12.5748,
+        "pe": 9.2613,
+        "forwardPe": 6.68,
         "beta": -0.079,
-        "marketCap": 119109820416.0,
-        "enterpriseValue": 51626442846.96,
+        "marketCap": 119565303808.0,
+        "enterpriseValue": 52081926238.96,
         "ebitda": 15756927746.96,
         "currency": "USD",
         "fiftyTwoWeekHigh": 125.36,
         "fiftyTwoWeekLow": 71.94,
-        "marketDataUpdatedAt": "2026-11-23T13:11:53.494880+00:00",
-        "evToEbitda": 3.2764,
+        "marketDataUpdatedAt": "2026-11-23T14:35:56.247226+00:00",
+        "evToEbitda": 3.3053,
         "eps": 9.07,
-        "price": 83.68,
+        "price": 84.0,
         "fiftyDayAverage": 79.5254,
         "twoHundredDayAverage": 89.267,
         "averageVolume": 6603014.0,
@@ -113,12 +113,12 @@
         }
     ],
     "derived": {
-        "expectedCagr": 0.081,
-        "expectedMultiple": 1.4764,
+        "expectedCagr": 0.0802,
+        "expectedMultiple": 1.4708,
         "fairValueRange": null,
         "kelly": {
-            "fullKelly": 0.136,
-            "scaledKelly": 0.068
+            "fullKelly": 0.1303,
+            "scaledKelly": 0.0652
         }
     },
     "belief_state": {
@@ -144,7 +144,8 @@
             "What drove the +386% YTD jump in net PP&E and software (RMB 1.31B to RMB 6.35B) and the RMB 9.50B 9M 2026 Other loss?",
             "What threshold of balance-sheet cash will trigger an inaugural buyback or dividend policy?"
         ],
-        "as_of": "2026-11-19T14:35:00Z"
+        "as_of": "2026-11-19T14:35:00Z",
+        "thesis_intact_probability": 0.55
     },
     "predictions": [
         {
@@ -222,6 +223,21 @@
             "alternatives_rejected": [
                 "Add to position (rejected: recalibrated 5-year expected CAGR falls below 12% hurdle; Q4 EU €2 handling fee, DSA Art. 35 fine risk, and 2026 HNTE renewal create near-term downside without capital-return support).",
                 "Exit or trim immediately (rejected: domestic Pinduoduo ad growth +12.1% YoY vs Alibaba -5%, 28.8% GAAP OPM, RMB 85.1B 9M OCF, and zero debt provide strong fundamental downside floor at single-digit P/E)."
+            ],
+            "expected_outcomes": {
+                "domestic cash cow resilience offsets flat/breakeven Temu": 0.5,
+                "regulatory/tariff & cash-black-box value trap": 0.35,
+                "capital return + Temu stabilization re-rating": 0.15
+            },
+            "review_date": "2027-03-31"
+        },
+        {
+            "date": "2026-11-23",
+            "action": "HOLD",
+            "shares_changed": 0,
+            "situation": "WO8 explicit thesis-intact probability review: set belief_state.thesis_intact_probability = 0.55 (legacy probability preserved separately). Domestic Pinduoduo monetization (+12.1% YoY Online Marketing, 28.8% GAAP OPM, RMB 85.13B 9M OCF) sustains the core cash engine above Gate 1's 0.15 kill threshold, but Non-PRC losses (-RMB 6.12B FY25), US/EU de minimis abolition (Transaction Services -11.7%), Nov 17 EC DSA Art. 35 breach findings, RMB 45.99M Cayman cash with zero capital return, and 2026 HNTE expirations create substantial impairment hazard.",
+            "alternatives_rejected": [
+                "Copy legacy probability (0.35) or drop below 0.15 pre-emptively before Q4/FY2026 triggers resolve (rejected: domestic cash generation remains resilient and Q3 consolidated revenue stayed non-negative)."
             ],
             "expected_outcomes": {
                 "domestic cash cow resilience offsets flat/breakeven Temu": 0.5,

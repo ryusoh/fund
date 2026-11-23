@@ -251,6 +251,14 @@ Append-only log. Machine-readable records: `data/analysis/CBRS.evidence.jsonl`. 
 
 ### 8.2 High-level update entries (reverse chronological)
 
+#### 2026-11-23 – Explicit thesis-intact probability review (WO8 migration)
+
+- What happened:
+    - Conducted explicit thesis-intact review for the Decision Gate 1 migration (`belief_state.thesis_intact_probability = 0.05`; legacy `belief_state.probability` preserved unchanged as an ambiguous legacy field).
+    - Rationale: **Trips Gate 1 (`< 0.15`).** The Q3 2026 10-Q OpenAI delivery shortfall below MRA quantities—alongside delay credits, 90-day tranche-termination elections, `$(1.435)B` 9M simple FCF, and `~$8.5B` uncommenced leases—already fired §3.2's explicit kill trigger and closed the prior long thesis (`RETIRED` scenarios). Only a small residual reflects the remote possibility of retroactive excused-delay cure preserving the original thesis rather than requiring a fresh underwrite.
+- Action:
+    - **CLOSE_LONG / 0 shares.** Scheduled review remains `2027-03-31`.
+
 #### 2026-11-13 – Q3 revenue beat, but OpenAI delivery miss closes the long thesis
 
 - What happened:

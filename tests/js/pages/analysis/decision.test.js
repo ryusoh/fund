@@ -167,9 +167,10 @@ describe('decision engine (WO3)', () => {
             'review-date',
         ]);
 
-        // CBRS: AVOID · THESIS BROKEN, nextTrigger null
+        // CBRS: AVOID · THESIS BROKEN (both non-positive EPS and thesis_intact_probability < 0.15), nextTrigger null
         expect(decisions.CBRS.decision.verdictLabel).toBe('AVOID · THESIS BROKEN');
         expect(decisions.CBRS.decision.gate1Broken).toBe(true);
+        expect(decisions.CBRS.decision.gate1Reasons).toContain('thesis-intact-low');
         expect(decisions.CBRS.decision.nextTrigger).toBeNull();
         expect(decisions.CBRS.decision.bands).toBeNull();
 
@@ -187,9 +188,9 @@ describe('decision engine (WO3)', () => {
             nowMs: SNAPSHOT_NOW_MS,
         });
         expect(board.flagsStale).toBe(true);
-        expect(board.thesisProbUnmigrated).toBe(true);
+        expect(board.thesisProbUnmigrated).toBe(false);
         expect(board.warnings).toContain('FLAGS STALE');
-        expect(board.warnings).toContain('THESIS PROB UNMIGRATED');
+        expect(board.warnings).not.toContain('THESIS PROB UNMIGRATED');
         expect(board.residualTargetCashLabel).toBe('Residual Target Cash');
         expect(board.totalCurrentWeight).toBeCloseTo(1.0, 3);
         expect(board.residualTargetCash).toBeCloseTo(1 - board.totalRecommendedWeight, 6);
@@ -323,31 +324,42 @@ describe('decision engine (WO3)', () => {
         expect(decision.tickerWarnings).toContain('1 PRED OVERDUE');
     });
 
-    it('sorts decision_journal ascending by ISO date to resolve GOOG review_date 2026-11-30', () => {
+    it('sorts decision_journal ascending by ISO date to resolve latest entry and GOOG review_date 2026-11-30', () => {
         const goog = loadLiveConfig('GOOG');
         const latest = getLatestJournalEntry(goog.decision_journal);
-        expect(latest.date).toBe('2026-10-29');
+        expect(latest.date).toBe('2026-11-23');
         expect(latest.review_date).toBe('2026-11-30');
+
+        const outOfOrder = [
+            { date: '2026-10-29', review_date: '2026-11-30' },
+            { date: '2026-09-29', review_date: '2026-12-15' },
+        ];
+        expect(getLatestJournalEntry(outOfOrder).date).toBe('2026-10-29');
     });
 
-    it('keeps Gate 1 probability test disabled for legacy probability=0.01 and trips only on reviewed thesis_intact_probability < 0.15', () => {
-        const base = buildSnapshotConfig('GOOG', {
+    it('keeps Gate 1 probability test disabled and flags unmigrated board when thesis_intact_probability is omitted even if legacy probability=0.01', () => {
+        const legacyOnlyCfg = buildSnapshotConfig('GOOG', {
             market: { price: 274.99, eps: 19.15 },
             belief_state: { probability: 0.01, confidence: 0.8 },
         });
-        const metrics = computeMetrics(base);
+        delete legacyOnlyCfg.belief_state.thesis_intact_probability;
+        const metrics = computeMetrics(legacyOnlyCfg);
 
-        const legacyOnly = evaluateTickerDecision(base, metrics, {
+        const legacyOnly = evaluateTickerDecision(legacyOnlyCfg, metrics, {
             currentWeight: 0.2,
             nowMs: SNAPSHOT_NOW_MS,
         });
         expect(legacyOnly.gate1Broken).toBe(false);
         expect(legacyOnly.hasThesisIntactProbability).toBe(false);
 
+        const unmigratedBoard = buildBoardSnapshot([{ symbol: 'GOOG', decision: legacyOnly }]);
+        expect(unmigratedBoard.thesisProbUnmigrated).toBe(true);
+        expect(unmigratedBoard.warnings).toContain('THESIS PROB UNMIGRATED');
+
         const migratedBroken = evaluateTickerDecision(
             {
-                ...base,
-                belief_state: { ...base.belief_state, thesis_intact_probability: 0.14 },
+                ...legacyOnlyCfg,
+                belief_state: { ...legacyOnlyCfg.belief_state, thesis_intact_probability: 0.14 },
             },
             metrics,
             { currentWeight: 0.2, nowMs: SNAPSHOT_NOW_MS }
@@ -356,8 +368,8 @@ describe('decision engine (WO3)', () => {
         expect(migratedBroken.gate1Reasons).toContain('thesis-intact-low');
         expect(migratedBroken.verdictLabel).toBe('EXIT · THESIS BROKEN');
 
-        const board = buildBoardSnapshot([{ symbol: 'GOOG', decision: migratedBroken }]);
-        expect(board.thesisProbUnmigrated).toBe(false);
+        const migratedBoard = buildBoardSnapshot([{ symbol: 'GOOG', decision: migratedBroken }]);
+        expect(migratedBoard.thesisProbUnmigrated).toBe(false);
     });
 
     it('ignores derived.fairValueRange when effective eps is non-positive', () => {

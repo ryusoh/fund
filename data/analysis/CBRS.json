@@ -3,7 +3,7 @@
     "name": "Cerebras Systems",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-11-23T13:11:49.012652+00:00",
+        "asOf": "2026-11-23T14:35:29.296389+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -28,15 +28,15 @@
         }
     },
     "market": {
-        "price": 82.67,
+        "price": 95.3,
         "eps": -5.17,
         "forwardEps": 1.8584,
         "pe": null,
-        "forwardPe": 44.4852,
+        "forwardPe": 51.2815,
         "beta": null,
-        "marketCap": 20089088000.0,
+        "marketCap": 23158220800.0,
         "currency": "USD",
-        "marketDataUpdatedAt": "2026-11-23T13:11:48.335382+00:00",
+        "marketDataUpdatedAt": "2026-11-23T14:35:28.513536+00:00",
         "pegRatio": null,
         "enterpriseValue": 14178531328.0,
         "ebitda": -661307008.0,
@@ -50,7 +50,7 @@
         "evToEbitda": -21.4402
     },
     "risk": {
-        "volatility": 1.1334,
+        "volatility": 1.1505,
         "estimateSource": "historical",
         "correlations": null
     },
@@ -164,7 +164,8 @@
             "Can official Q3 supplemental materials/captions substantiate transcript-only claims about land/power/shell causation, 2H27 recovery, RPO credit deductions and cancellations?",
             "When will disclosure-control material weaknesses be remediated and tested effectively, and what independent evidence supports fleet reliability and cash ROIC?"
         ],
-        "as_of": "2026-11-13T00:00:00Z"
+        "as_of": "2026-11-13T00:00:00Z",
+        "thesis_intact_probability": 0.05
     },
     "reviewed_filings": [
         {
@@ -308,6 +309,19 @@
                 "Retain the $50-70 entry zone after the revenue beat (rejected: the range derives from retired scenarios; fairValueRange is now null and price alone cannot revive the thesis).",
                 "Treat the delivery disclosure as tranche termination, full-MRA termination or loan acceleration (rejected: those events were not disclosed; the kill test and contractual consequences are distinct).",
                 "Use third-party transcript explanations to override the filing (rejected: official captions/deck were unavailable, so call-only causation, recovery, credit and cancellation claims remain unverified)."
+            ],
+            "expected_outcomes": {
+                "No position under the invalidated long thesis; future entry requires a new underwrite": 1.0
+            },
+            "review_date": "2027-03-31"
+        },
+        {
+            "date": "2026-11-23",
+            "action": "CLOSE_LONG",
+            "shares_changed": 0,
+            "situation": "WO8 explicit thesis-intact probability review: set belief_state.thesis_intact_probability = 0.05 (legacy probability preserved separately; Gate 1 < 0.15 triggered). The Q3 2026 10-Q OpenAI delivery shortfall below MRA quantities—alongside credits, 90-day tranche-termination elections, $(1.435)B 9M simple FCF, and ~$8.5B uncommenced leases—already fired §3.2's explicit kill trigger and closed the prior long thesis (RETIRED scenarios).",
+            "alternatives_rejected": [
+                "Set thesis_intact_probability >= 0.15 based on Q3 revenue beat ($230.873M core) or Altman partnership statements (rejected: §3.2 kill trigger already fired on the 10-Q delivery miss; any future position requires a fresh underwrite)."
             ],
             "expected_outcomes": {
                 "No position under the invalidated long thesis; future entry requires a new underwrite": 1.0

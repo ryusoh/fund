@@ -497,6 +497,14 @@ Detailed notes live under `docs/thesis/ANET/`.
 
 ### 8.2 High-level update entries (reverse chronological)
 
+#### 2026-11-23 – Explicit thesis-intact probability review (WO8 migration)
+
+- What happened:
+    - Conducted explicit thesis-intact review for the Decision Gate 1 migration (`belief_state.thesis_intact_probability = 0.80`; legacy `belief_state.probability` preserved unchanged as an ambiguous legacy field).
+    - Rationale: Q3 2026 SEC filings (`$3,657.6M`, `+58.5% YoY`, `63.6%/64.0%` GAAP/non-GAAP GM, `$8.6B` RPO, `$13.3B` FY26 guide) confirm strong EOS + hyperscale demand execution; ~20% break hazard captures NVIDIA Spectrum-X Ethernet bundling, top-2 custom-silicon/SONiC substitution risk (`42%`), and `$11.4B` purchase-commitment / `$874.3M` evaluation-inventory bullwhip exposure.
+- Action:
+    - **HOLD.** Scheduled review remains `2027-02-15`.
+
 #### 2026-11-17 – Q3 10-Q: demand visibility and bullwhip exposure confirmed
 
 - What happened:

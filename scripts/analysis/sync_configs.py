@@ -558,7 +558,7 @@ def ensure_structure(symbol: str, config: dict) -> dict:
 
     belief_state = config.get('belief_state')
     if isinstance(belief_state, dict):
-        config['belief_state'] = {
+        normalized_belief: dict[str, Any] = {
             'probability': float(belief_state.get('probability', 0.5) or 0.5),
             'confidence': float(belief_state.get('confidence', 0.5) or 0.5),
             'evidence_for': list(belief_state.get('evidence_for', [])),
@@ -566,6 +566,14 @@ def ensure_structure(symbol: str, config: dict) -> dict:
             'open_questions': list(belief_state.get('open_questions', [])),
             'as_of': str(belief_state.get('as_of', datetime.now(timezone.utc).isoformat())),
         }
+        if (
+            'thesis_intact_probability' in belief_state
+            and belief_state['thesis_intact_probability'] is not None
+        ):
+            normalized_belief['thesis_intact_probability'] = float(
+                belief_state['thesis_intact_probability']
+            )
+        config['belief_state'] = normalized_belief
 
     if 'predictions' in config and isinstance(config['predictions'], list):
         config['predictions'] = config['predictions']

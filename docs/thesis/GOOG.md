@@ -484,6 +484,14 @@ Detailed notes can live in separate files under `docs/thesis/GOOG/`.
 
 ### 8.2 High-level update entries (reverse chronological)
 
+#### 2026-11-23 – Explicit thesis-intact probability review (WO8 migration)
+
+- What happened:
+    - Conducted explicit thesis-intact review for the Decision Gate 1 migration (`belief_state.thesis_intact_probability = 0.85`; legacy `belief_state.probability` preserved unchanged as an ambiguous legacy field).
+    - Rationale: Q3 2026 Search (`+12% YoY` to `$63.35B`) and Cloud (`+103%` to `$30.71B`, `36.2%` OPM; FY2025 Cloud OPM resolved `23.69%` in the 10-K) confirm the core monetization engine remains strong despite capex-driven negative FCF and zero YTD buybacks; ~15% hazard reflects DOJ/EU behavioral/structural antitrust remedies and multi-year gen-AI search displacement risk.
+- Action:
+    - **HOLD.** Next review remains `2026-11-30` (Q3 10-Q follow-up).
+
 #### 2026-11-17 – FY2025 Cloud margin prediction resolved TRUE
 
 - What happened:
