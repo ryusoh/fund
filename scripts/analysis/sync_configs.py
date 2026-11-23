@@ -8,7 +8,7 @@ import math
 import shutil
 import sys
 import tempfile
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, TypeGuard, cast
 
@@ -31,6 +31,8 @@ FUND_FILE = DATA_DIR / "fund_data.json"
 HOLDINGS_FILE = DATA_DIR / "holdings_details.json"
 FX_FILE = DATA_DIR / "fx_data.json"
 WATCHLIST_FILE = ANALYSIS_DIR / "watchlist.json"
+HISTORICAL_PRICES_FILE = DATA_DIR / "historical_prices.json"
+EPS_CACHE_FILE = DATA_DIR / "checkpoints" / "fetched_eps_cache.json"
 
 # Tickers where financial data is reported in local currency but trades in USD
 # These are typically Chinese ADRs incorporated offshore but operating in China
@@ -298,7 +300,7 @@ def fetch_market_metadata(
     ).isoformat()  # Assigned to new variable
     if hasattr(ticker, "history"):
         try:
-            history = ticker.history(period='1y', interval='1d')
+            history = ticker.history(period='1y', interval='1d', auto_adjust=True)
             closes = history['Close'].pct_change().dropna()
             if not closes.empty:
                 result_metadata['volatility'] = float(
@@ -798,6 +800,140 @@ def recompute_derived(config: dict) -> bool:
     return changed
 
 
+def _parse_iso_date(raw: Any) -> date | None:
+    if isinstance(raw, datetime):
+        return raw.date()
+    if isinstance(raw, date):
+        return raw
+    if hasattr(raw, 'strftime'):
+        try:
+            return date.fromisoformat(raw.strftime('%Y-%m-%d'))
+        except (TypeError, ValueError):
+            return None
+    try:
+        return date.fromisoformat(str(raw)[:10])
+    except (TypeError, ValueError):
+        return None
+
+
+def _to_positive_float(value: Any) -> float | None:
+    if isinstance(value, bool) or value is None:
+        return None
+    try:
+        numeric = float(value)
+    except (TypeError, ValueError):
+        return None
+    if not math.isfinite(numeric) or numeric <= 0:
+        return None
+    return numeric
+
+
+def _extract_weekly_prices_from_history(history: Any) -> list[dict[str, Any]]:
+    if history is None:
+        return []
+    try:
+        close_series = history['Close']
+    except (KeyError, TypeError, IndexError):
+        return []
+    if not hasattr(close_series, 'items'):
+        return []
+    by_date: dict[str, float] = {}
+    for idx, raw_close in close_series.items():
+        parsed_date = _parse_iso_date(idx)
+        numeric_close = _to_positive_float(raw_close)
+        if parsed_date is not None and numeric_close is not None:
+            by_date[parsed_date.isoformat()] = maybe_round(numeric_close)
+    return [{"d": day, "c": by_date[day]} for day in sorted(by_date)]
+
+
+def _load_legacy_weekly_prices(symbol: str) -> list[dict[str, Any]]:
+    if not HISTORICAL_PRICES_FILE.exists():
+        return []
+    try:
+        payload = load_json(HISTORICAL_PRICES_FILE)
+    except Exception as e:
+        logging.warning(f"Failed to read legacy historical prices: {e}")
+        return []
+    raw_series = payload.get(symbol) or payload.get(symbol.upper())
+    if not isinstance(raw_series, dict):
+        return []
+    parsed_points: list[tuple[date, float]] = []
+    for raw_day, raw_close in raw_series.items():
+        parsed_date = _parse_iso_date(raw_day)
+        numeric_close = _to_positive_float(raw_close)
+        if parsed_date is not None and numeric_close is not None:
+            parsed_points.append((parsed_date, numeric_close))
+    if not parsed_points:
+        return []
+    parsed_points.sort(key=lambda item: item[0])
+    cutoff = parsed_points[-1][0] - timedelta(days=730)
+    weekly: dict[tuple[int, int], tuple[str, float]] = {}
+    for parsed_date, numeric_close in parsed_points:
+        if parsed_date < cutoff:
+            continue
+        iso = parsed_date.isocalendar()
+        weekly[(iso.year, iso.week)] = (parsed_date.isoformat(), maybe_round(numeric_close))
+    return [{"d": day, "c": close} for day, close in sorted(weekly.values(), key=lambda x: x[0])]
+
+
+def _load_cached_eps(symbol: str) -> list[dict[str, Any]]:
+    if not EPS_CACHE_FILE.exists():
+        return []
+    try:
+        payload = load_json(EPS_CACHE_FILE)
+    except Exception as e:
+        logging.warning(f"Failed to read cached EPS file: {e}")
+        return []
+    entry = payload.get(symbol) or payload.get(symbol.upper())
+    points = entry.get('points') if isinstance(entry, dict) else None
+    if not isinstance(points, dict):
+        return []
+    by_date: dict[str, float] = {}
+    for raw_day, raw_eps in points.items():
+        parsed_date = _parse_iso_date(raw_day)
+        numeric_eps = _to_positive_float(raw_eps)
+        if parsed_date is not None and numeric_eps is not None:
+            by_date[parsed_date.isoformat()] = maybe_round(numeric_eps)
+    return [{"d": day, "v": by_date[day]} for day in sorted(by_date)]
+
+
+def build_ticker_history(symbol: str, ticker: Any = None) -> Dict[str, Any]:
+    """Build compact 2Y weekly close + cached TTM EPS history for a ticker."""
+    symbol_upper = symbol.upper()
+    prices: list[dict[str, Any]] = []
+    price_basis = "legacyClose"
+    price_basis_verified = False
+
+    if ticker is None and yf is not None:
+        try:
+            ticker = yf.Ticker(symbol_upper)
+        except Exception as e:
+            logging.warning(f"Failed to create yfinance Ticker for {symbol_upper}: {e}")
+
+    if ticker is not None and hasattr(ticker, "history"):
+        try:
+            raw_hist = ticker.history(period='2y', interval='1wk', auto_adjust=False)
+            prices = _extract_weekly_prices_from_history(raw_hist)
+            if prices:
+                price_basis = "rawClose"
+                price_basis_verified = True
+        except Exception as e:
+            logging.warning(f"Failed to fetch weekly history for {symbol_upper}: {e}")
+
+    if not prices:
+        prices = _load_legacy_weekly_prices(symbol_upper)
+
+    return {
+        "symbol": symbol_upper,
+        "asOf": datetime.now(timezone.utc).isoformat(),
+        "priceBasis": price_basis,
+        "priceBasisVerified": price_basis_verified,
+        "epsPointInTimeCertified": False,
+        "prices": prices,
+        "eps": _load_cached_eps(symbol_upper),
+    }
+
+
 def main() -> None:
     # parse_known_args (not parse_args): direct main() callers in tests run
     # under pytest's argv, which must not abort the sync.
@@ -829,7 +965,12 @@ def main() -> None:
         raise SystemExit(f"--ticker {scoped} is not in holdings ∪ watchlist {tracked_symbols}")
 
     for path in ANALYSIS_DIR.glob('*.json'):
-        if path.name in ('index.json', 'watchlist.json', 'event_flags.json'):
+        if path.name in ('index.json', 'watchlist.json', 'event_flags.json', 'theme_timeline.json'):
+            continue
+        if path.name.endswith('.history.json'):
+            history_symbol = path.name[: -len('.history.json')]
+            if history_symbol not in tracked_symbols:
+                path.unlink()
             continue
         if path.stem not in tracked_symbols:
             path.unlink()
@@ -945,6 +1086,9 @@ def main() -> None:
             updated += 1
         configs_cache[symbol] = config
 
+        history_payload = build_ticker_history(symbol)
+        save_json(ANALYSIS_DIR / f"{symbol}.history.json", history_payload)
+
     print(f"Updated {updated} analysis config(s)")
 
     index_payload = {
@@ -953,6 +1097,7 @@ def main() -> None:
                 'symbol': symbol,
                 'name': configs_cache.get(symbol, {}).get('name', symbol),
                 'path': f"../data/analysis/{symbol}.json",
+                'historyPath': f"../data/analysis/{symbol}.history.json",
             }
             for symbol in tracked_symbols
         ]

@@ -3,32 +3,38 @@
         {
             "symbol": "AEHR",
             "name": "Aehr Test Systems",
-            "path": "../data/analysis/AEHR.json"
+            "path": "../data/analysis/AEHR.json",
+            "historyPath": "../data/analysis/AEHR.history.json"
         },
         {
             "symbol": "ANET",
             "name": "Arista Networks",
-            "path": "../data/analysis/ANET.json"
+            "path": "../data/analysis/ANET.json",
+            "historyPath": "../data/analysis/ANET.history.json"
         },
         {
             "symbol": "CBRS",
             "name": "Cerebras Systems",
-            "path": "../data/analysis/CBRS.json"
+            "path": "../data/analysis/CBRS.json",
+            "historyPath": "../data/analysis/CBRS.history.json"
         },
         {
             "symbol": "GOOG",
             "name": "Alphabet",
-            "path": "../data/analysis/GOOG.json"
+            "path": "../data/analysis/GOOG.json",
+            "historyPath": "../data/analysis/GOOG.history.json"
         },
         {
             "symbol": "PDD",
             "name": "Pinduoduo",
-            "path": "../data/analysis/PDD.json"
+            "path": "../data/analysis/PDD.json",
+            "historyPath": "../data/analysis/PDD.history.json"
         },
         {
             "symbol": "VT",
             "name": "Vanguard Total World Index Fund",
-            "path": "../data/analysis/VT.json"
+            "path": "../data/analysis/VT.json",
+            "historyPath": "../data/analysis/VT.history.json"
         }
     ]
 }
