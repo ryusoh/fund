@@ -16,9 +16,10 @@ verified work order. Pushing stays with the user.
 
 ## Per work order
 
-1. **Tags.** `[skip]` → record as skipped (routed to a stronger model).
-   `[visual]` → implement, and flag "visual — human review required" in the
-   report.
+1. **Tags.** `[trivial]`, `[low]`, and `[design]` → implement directly from
+   the work order's specification. `[visual]` → implement, and flag "visual —
+   human review required" in the report. `[skip]` → record as skipped (only for
+   genuinely blocked or deferred items).
 2. **Anchor.** Find the exact `Find` string in the named file. If it doesn't
    match exactly, record the mismatch and move to the next item — the doc's
    author fixes work orders, not you.

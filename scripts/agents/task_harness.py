@@ -78,8 +78,8 @@ def parse_work_orders(markdown_content: str, source_doc: str = "") -> TaskState:
         title = match.group(2).strip()
         body = match.group(3).strip()
 
-        # Extract tags: [low], [trivial], [skip], [visual], [docs]
-        tag_match = re.search(r"\[(trivial|low|visual|skip|docs)\]", body, re.IGNORECASE)
+        # Extract tags: [low], [trivial], [design], [skip], [visual], [docs]
+        tag_match = re.search(r"\[(trivial|low|design|visual|skip|docs)\]", body, re.IGNORECASE)
         tag = tag_match.group(1).lower() if tag_match else "standard"
 
         # Extract file: - **File**: `path`, - **Files**: path1, path2, or in `path`
