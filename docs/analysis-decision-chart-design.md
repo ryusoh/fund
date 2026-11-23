@@ -777,6 +777,11 @@ scripts.analysis.sync_configs` (never hand-edit `data/analysis/*.json`).
 
 - **File:** `scripts/analysis/sync_configs.py` and
   `tests/python/test_sync_configs_derived.py`
+- **Status (2026-11-23):** **Complete** in local commit `3f2eee9c` on
+  `fix/analysis-derived-kelly`. Scoped verification passed with 78 tests;
+  `make precommit-fix` passed 864 Python tests and all 191 JS suites / 3,160
+  tests in each configured timezone. Diff coverage is 100% (177/177 changed
+  lines). No `data/` files were changed. WO2 is the next pending work order.
 - **Find (1):**
 
     ```python
