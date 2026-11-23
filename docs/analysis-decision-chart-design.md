@@ -54,14 +54,15 @@ inside the existing `320px–480px` `.chart-card` pane:
       EPS where positive historical EPS exists (`ANET`, `GOOG`, `PDD`,
       explicitly labeled as current-thesis multiple × historical EPS) and
       horizontal current-thesis bands where it does not (`VT`, `AEHR`).
-    - **Right (Next 2Y default, toggleable to full horizon `T`):** Dashed
-      forward iso-CAGR curves ($V(r, t) = E[P_T] / (1 + r)^{T - t}$) overlaid
-      with the shaded **Bear / Base / Bull probability fan** and direct
-      right-edge labels (including terminal $T$-year targets), with full
-      interactive crosshair and an optional "what-if price" hover readout.
-    - **Behavioral debiasing:** Average purchase price / cost basis is
-      **omitted by default** so the eye anchors to forward expected return
-      rather than sunk cost (Odean 1998; Frydman & Rangel 2014).
+    - **Right (Next 2Y default, full horizon `T` via `an <TICKER> full`):**
+      Dashed forward iso-CAGR curves ($V(r, t) = E[P_T] / (1 + r)^{T - t}$)
+      overlaid with the shaded deterministic **Bear / Base / Bull probability
+      fan** and direct right-edge labels (including terminal $T$-year targets),
+      plus a hover crosshair on the chart canvas.
+    - **Behavioral debiasing:** Average purchase price / cost basis and past
+      trade markers are **omitted completely** so the eye anchors to forward
+      expected return rather than sunk cost (Odean 1998; Frydman & Rangel
+      2014).
 3. **Integrated Stephen Few Sizing Bullet + Risk Footer (bottom, ~44px DOM):**
    Replaces the squashed `0–1000%` Kelly growth curve as the primary sizing
    visual with a compact horizontal bullet bar scaled to `[0, max(1.25 * w_max,
@@ -71,12 +72,28 @@ inside the existing `320px–480px` `.chart-card` pane:
    record, and active `event_flags` badge).
 
 To complete Shneiderman's _"Overview first, zoom and filter, then
-details-on-demand"_ mantra (1996), bare `an` (`PORT`) should land on a 6-row
-**Small-Multiples Decision Board** (one verdict pill + mini price-zone spark +
-sizing bullet per ticker), `an <TICKER>` opens that ticker's **Decision Chart**
-immediately, and the existing deep-dive views (`scenarios`, `kelly`, `mc`,
-`belief`, `evidence`, `predictions`, `journal`) stay intact as details-on-demand
-reachable via one-command syntax (`an GOOG evidence`).
+details-on-demand"_ mantra (1996) without UI bloat, bare `an` (`PORT`) lands on
+a 6-row **Small-Multiples Decision Board** (one verdict pill + mini price-zone
+spark + sizing bullet per ticker), `an <TICKER>` opens that ticker's **Decision
+Chart** immediately (with `an <TICKER> full` for the full $T$-year horizon),
+and the 9 legacy subcommand views (`scenarios`, `value`, `kelly`, `mc`,
+`belief`, `evidence`, `predictions`, `journal`, plus the `bull`/`bear`/`reset`
+sandbox) are removed from the terminal pane.
+
+## Locked design decisions
+
+Resolved interactively via `/grill-me` (all downstream specs and work orders
+below reflect these choices):
+
+| Branch                             | Locked Decision                                                                                                                                                                                                                                                                                                                                                                      |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Pane views & command surface**   | **2 views only:** `an` (`PORT` Decision Board) and `an <TICKER> [full]` (Single-Ticker Decision Chart), plus `an close`. Remove all 9 legacy subcommand views from `/terminal/`.                                                                                                                                                                                                     |
+| **Pointer & keyboard interaction** | **Strict keyboard-only navigation** (`an`, `an <TICKER> [full]`, `an close` + ticker autocomplete); **hover crosshair on the chart canvas only** (no clickable board rows or context strip, no vertical "What-If Price" probe).                                                                                                                                                      |
+| **Historical prices & EPS source** | Extend `scripts/analysis/sync_configs.py` to emit compact `data/analysis/<SYM>.history.json` (~3 KB per ticker: 2Y weekly closes + point-in-time quarterly EPS) so both held and watchlist tickers (`AEHR`, `CBRS`) render full charts without loading the 8.9 MB `historical_prices.json` monolith.                                                                                 |
+| **Forward cone & horizon**         | **2Y forward cone by default** (with terminal $T$-year Bear/Base/Bull targets printed inline on the right edge), deterministic Bear/Base/Bull paths (instant render, no Monte Carlo worker), and optional `an <TICKER> full` for the full $T$-year horizon.                                                                                                                          |
+| **Dividends & `VT` model fix**     | Include reinvested `dividendYield` (`dividendYield / 100`, since `yfinance` stores percentage points) in total-return compounding across all tickers per `docs/fermat-pascal-kelly-system.md:39`, AND derive `eps = price / pe` in `sync_configs.py` whenever `trailingEps` is null (fixing `VT`'s stale `6.22` EPS → `~8.02` and lifting modeled `E[CAGR]` from `2.2%` to `~9.2%`). |
+| **Cost basis & trade markers**     | **Omit completely** (no cost-basis line, no buy/sell markers, no `--trades` flag) so the chart stays strictly forward-looking and avoids anchoring bias (Odean 1998; Frydman & Rangel 2014).                                                                                                                                                                                         |
+| **Dead-code cleanup**              | Prune all 9 legacy UI renderers, `js/pages/analysis/monte_carlo.worker.js` (+ its test), and unused `js/pages/analysis/bayes.js` replay/sandbox code (retaining only `computeBrierScore` and core Fermat–Pascal/Kelly math); update `scripts/check_analysis_pane_layout.mjs` and Jest suites.                                                                                        |
 
 ---
 
@@ -395,33 +412,28 @@ subcommand table.
         - _Mode 3 — Thesis-broken / Negative-EPS (`CBRS`):_ Render price history
           only with muted/red styling and a centered `THESIS BROKEN` watermark;
           suppress valuation bands.
-    - **Future (`Today .. Today + min(2Y, T)` default, with `Full T` toggle):**
-      Capping the default forward window at 2 years prevents 10-year `GOOG`
-      (`Bull = $1,775`) from squashing the `$146–$404` historical range while
-      still showing the exact slope and spread of the Bear / Base / Bull cone
-      (`GOOG +2Y`: Bear `$288`, Base `$342`, Bull `$399`), with terminal $T$-year
-      prices printed inline at the right edge (`Bull 20% $399 [10y: $1,775]`).
-      When Monte Carlo has been run, lightly overlay the `P25–P75` and `P5–P95`
-      bands from `annualFan` (with `t = 0` prepended).
+    - **Future (`Today .. Today + min(2Y, T)` default, or full `T` via
+      `an <TICKER> full`):** Capping the default forward window at 2 years
+      prevents 10-year `GOOG` (`Bull = $1,775`) from squashing the `$146–$404`
+      historical range while still showing the exact slope and spread of the
+      Bear / Base / Bull cone (`GOOG +2Y`: Bear `$288`, Base `$342`, Bull
+      `$399`), with terminal $T$-year prices printed inline at the right edge
+      (`Bull 20% $399 [10y: $1,775]`). Paths are strictly deterministic (no
+      Monte Carlo worker latency).
 - **Color & contrast discipline:** Use only existing `css/terminal/base.css`
   semantic tokens (`--green` for Deep Value/Buy at `8–16%` fill alpha,
   transparent/glass for Fair/Hold, `--gold` for Rich at `10%` alpha, `--red`
   for Overvalued at `12%` alpha), paired with inline text zone labels at the
   band edges so no signal is color-only.
-- **Interactive crosshair & What-If Price probe:**
+- **Interactive hover crosshair (canvas only):**
     - Render on a live DPR-scaled canvas matching `js/transactions/chart.js:75-93`
       and wire pointer hover via a lightweight crosshair (reusing the layout
       contract patterns in `docs/chart-crosshair-layout.md`).
     - Hovering the past shows `Date · Price · Historical Implied Zone`.
     - Hovering the future shows `Date · Bear / Base / Bull Price · Iso-CAGR`.
-    - Moving the cursor vertically at the `TODAY` seam (or holding `Shift`)
-      acts as a live **"What-If Entry Price" probe**: showing the exact
-      `E[CAGR]`, `½K`, and `Verdict` at any hypothetical price without typing a
-      single command.
-- **No cost-basis line by default:** Per Odean (1998) and Frydman & Rangel
-  (2014), omit `average_price` and historical buy/sell triangles by default; if
-  desired later, expose them only behind an explicit opt-in flag (e.g.
-  `an GOOG --trades`).
+- **No cost-basis line or trade markers:** Per Odean (1998) and Frydman &
+  Rangel (2014), omit `average_price` and historical buy/sell markers
+  completely (no opt-in flag).
 
 ### 4.4 Layer 3 — Integrated Stephen Few Position-Sizing Bullet + Risk Footer
 
@@ -440,7 +452,7 @@ subcommand table.
 - **Risk & Catalyst Footer (~20px high):**
   Single tabular-nums line carrying the highest-signal secondary metrics:
   `Bear +2.4%/yr · Geo 12.0% · 52w $271–$404 · Pred 1/2 (Brier 0.04) · Rev 2026-10-29`
-  plus any `⚑` event-flag pill and a muted hint (`an GOOG evidence | mc | belief`).
+  plus any `⚑` event-flag pill and a muted hint (`an <SYM> full | an | an close`).
 
 ### 4.5 Companion `PORT` overview (Shneiderman's "Overview First")
 
@@ -452,10 +464,10 @@ with a 6-row **Portfolio Decision Board** (fitting inside `320px` at ~38px/row):
   `E[CAGR]` | mini **Sizing Bullet** (`w_curr` vs `w_rec`) | `BELIEF / FLAGS`.
 - Sorted by action urgency (`THESIS BROKEN / SELL` → `STRONG BUY / ADD` →
   `TRIM / AT CAP` → `HOLD` → `WATCH`).
-- Typing `an <SYM>` (or clicking a row, if pointer selection is enabled) zooms
-  straight into that ticker's **Decision Chart**.
-- Add one-command combo syntax (`an <SYM> <func>`) and ticker autocomplete in
-  `js/transactions/terminal/autocomplete.js` and `handlers/analysis.js`.
+- Strictly keyboard-driven: typing `an <SYM>` opens that ticker's **Decision
+  Chart**, `an <SYM> full` renders the full $T$-year horizon, and `an close`
+  closes the pane. Update `js/transactions/terminal/autocomplete.js` to
+  autocomplete tracked ticker symbols, `full`, and `close`.
 
 ---
 
@@ -510,21 +522,389 @@ beyond the UI renderer itself:
   `1440×900`. Subtle red/green/gold canvas band fills (`8–16%` alpha) must be
   visually checked in Chromium (`make screenshot URL=/terminal/`) to confirm
   zone boundaries and text labels remain readable over the glass backdrop.
-- **Total-return treatment for ETFs (`VT`) and dividend payers:** Adding
-  `dividendYield` to `computeDerivedScenarioOutcome` will change `derived`
-  CAGRs and value bands for `VT` (and slightly for `GOOG`); confirm whether
-  `VT` should remain in the same EPS×PE engine or use a direct yield + NAV
-  growth model.
-- **Click interactivity vs. keyboard-only terminal purity:** `docs/analysis-pane-visual-design.md:240-242`
-  intentionally kept the context strip non-clickable. Making the `PORT` Decision
-  Board rows and context-strip tickers clickable (while keeping full command
-  control via `an <SYM>`) would further increase daily usage, subject to user
-  preference.
 - **Explicit tail-crash scenarios:** Adding a 2–3% catastrophe state per
   `docs/fermat-pascal-kelly-system.md:38` would bring unconstrained `½K` out of
   the `150%–500%` regime and make the Kelly target tick distinguish between
   high-conviction and fragile holdings inside the `0..maxWeight` range; this is
   a thesis-authoring decision outside the chart renderer itself.
+
+---
+
+## Action items
+
+### Preamble for the implementer
+
+- Execute **one work order at a time** in numbered order.
+- Every `Find` string below is a verified unique anchor in the current tree;
+  line numbers may drift across commits. If a `Find` anchor does not match
+  verbatim, stop and report the mismatch rather than improvising.
+- `data/` is pipeline output — regenerate via `venv/bin/python -m
+scripts.analysis.sync_configs` (never hand-edit `data/analysis/*.json`).
+- Format only touched files (`npx prettier --write <files>`,
+  `venv/bin/black <files>`, `venv/bin/ruff check --fix <files>`), run each
+  order's scoped `Verify` command, and run `make precommit-fix` before the
+  final commit.
+- Commit locally after each completed item (Conventional Commits checked via
+  `scripts/agents/check_commit_message.py`) and leave pushing to the user.
+- Items tagged `[skip]` require non-trivial design/canvas/test authoring and
+  should be routed to a stronger model rather than executed mechanically.
+
+---
+
+### WO1 `[low]` — Fix `VT` ETF EPS derivation and include reinvested `dividendYield` in `sync_configs.py`
+
+- **File:** `scripts/analysis/sync_configs.py` (and `tests/python/test_sync_configs.py`)
+- **Find (1):**
+
+    ```python
+            ev = market.get('enterpriseValue')
+            ebitda = market.get('ebitda')
+            if isinstance(ev, (int, float)) and isinstance(ebitda, (int, float)) and abs(ebitda) > 1e-6:
+                ratio = maybe_round(ev / ebitda)
+                if market.get('evToEbitda') != ratio:
+                    market['evToEbitda'] = ratio
+                    changed = True
+    ```
+
+- **Find (2):**
+
+    ```python
+        if valid_inputs:
+            total = 0.0
+            for scenario in scenarios:
+                growth = scenario.get('growth', {})
+                valuation = scenario.get('valuation', {})
+                cagr = growth.get('epsCagr') or 0.0
+                exit_pe = valuation.get('exitPe') or 1.0
+                prob = scenario.get('prob') or 0.0
+                total += prob * eps * (1 + cagr) ** horizon * exit_pe / price
+            expected_multiple = round(total, 4)
+            expected_cagr = round(total ** (1 / horizon) - 1, 4) if total > 0 else 0.0
+    ```
+
+- **Change:**
+    1. Immediately before `ev = market.get('enterpriseValue')`, when
+       `'eps' not in market_metadata` (e.g., ETFs like `VT` where `yfinance`
+       omits `trailingEps`) and both `market.get('price')` and
+       `market.get('pe')` are positive numbers, set
+       `derived_eps = maybe_round(market['price'] / market['pe'])` and update
+       `market['eps']` if changed.
+    2. In `recompute_derived`, read `raw_div = market.get('dividendYield')`,
+       convert percentage points to decimal
+       `div_rate = max(0.0, float(raw_div) / 100.0)` when numeric, and multiply
+       each scenario multiple by `(1 + div_rate) ** horizon`.
+    3. Add unit tests in `tests/python/` covering ETF `price / pe` EPS
+       derivation and percentage-point `dividendYield` compounding (`1.56` →
+       `1.56%`, never `156%`).
+- **Verify:** `venv/bin/pytest tests/python/ -k sync_configs && venv/bin/ruff check scripts/analysis/sync_configs.py && venv/bin/mypy scripts/analysis/sync_configs.py`
+- **Guardrail:** `market.dividendYield` from `yfinance` is stored in **percentage
+  points** (`0.32` for GOOG, `1.56` for VT) — always divide by `100.0` before
+  compounding; cap sanity at `div_rate <= 0.25` to fail safe on upstream quirks.
+
+---
+
+### WO2 `[low]` — Emit compact per-ticker `data/analysis/<SYM>.history.json` in `sync_configs.py`
+
+- **File:** `scripts/analysis/sync_configs.py` (and `tests/python/test_sync_configs.py`)
+- **Find (1):**
+
+    ```python
+        if hasattr(ticker, "history"):
+            try:
+                history = ticker.history(period='1y', interval='1d')
+                closes = history['Close'].pct_change().dropna()
+                if not closes.empty:
+                    result_metadata['volatility'] = float(
+                        closes.std() * (252**0.5)
+                    )  # Assigned to new variable
+            except Exception as e:
+                logging.warning(f"Failed to calculate volatility for {ticker}: {e}")
+    ```
+
+- **Find (2):**
+
+    ```python
+        index_payload = {
+            'tickers': [
+                {
+                    'symbol': symbol,
+                    'name': configs_cache.get(symbol, {}).get('name', symbol),
+                    'path': f"../data/analysis/{symbol}.json",
+                }
+                for symbol in tracked_symbols
+            ]
+        }
+        save_json(INDEX_FILE, index_payload)
+    ```
+
+- **Change:**
+    1. Add a helper `build_ticker_history(symbol, ticker)` that fetches 2Y
+       weekly closing prices (`period='2y', interval='1wk'`, falling back to
+       `data/historical_prices.json` if offline/mocked) and merges positive
+       point-in-time quarterly TTM EPS points from
+       `data/checkpoints/fetched_eps_cache.json` (sorted by date, filtered to
+       `eps > 0`).
+    2. Write `data/analysis/<SYM>.history.json` with schema
+       `{"symbol", "asOf", "prices": [{"d": "YYYY-MM-DD", "c": float}], "eps": [{"d": "YYYY-MM-DD", "v": float}]}`
+       for every symbol in `tracked_symbols` (covering both held tickers and
+       watchlist tickers `AEHR`/`CBRS`), and clean up orphan `.history.json`
+       files alongside orphan `.json` files.
+    3. Add `"historyPath": f"../data/analysis/{symbol}.history.json"` to each
+       entry in `index_payload['tickers']`.
+    4. Run `venv/bin/python -m scripts.analysis.sync_configs` to generate the
+       `data/analysis/*.history.json` files and updated `data/analysis/*.json` /
+       `index.json`.
+- **Verify:** `venv/bin/pytest tests/python/ -k sync_configs && venv/bin/python -m scripts.analysis.sync_configs && ls -lh data/analysis/*.history.json`
+- **Guardrail:** Never invert `pe_ratio.json` `ticker_pe` for `VT` (its P/E is
+  stored flat at `17.72`, which would make fair value circularly track price);
+  leave `eps: []` when `fetched_eps_cache.json` has no positive history for a
+  ticker so the chart cleanly selects horizontal 1Y bands.
+
+---
+
+### WO3 `[low]` — Build the pure-JS 3-Gate Decision Engine and fix valuation edge cases
+
+- **File:** New module `js/pages/analysis/decision.js` (plus `js/pages/analysis/lab.js` math exports and new `tests/js/pages/analysis/decision.test.js`)
+- **Find (in `js/pages/analysis/lab.js`):**
+
+    ```javascript
+    function computeDerivedScenarioOutcome(
+        scenario,
+        base,
+        price,
+        eps,
+        horizon,
+        safeHorizon,
+        entryEps,
+        fallbackEpsCagr
+    ) {
+        const growth = scenario.growth || {};
+        const valuation = scenario.valuation || {};
+        const epsCagr = extractOutcomeNumber(growth.epsCagr ?? scenario.epsCagr, 0);
+        const exitPe = extractOutcomeNumber(valuation.exitPe ?? scenario.exitPe, 1);
+        const terminalEps = eps * (1 + epsCagr) ** horizon;
+        const terminalPrice = terminalEps * exitPe;
+        const multiple = price > 0 ? terminalPrice / price : 0;
+        const priceCagr = multiple > 0 ? multiple ** (1 / safeHorizon) - 1 : 0;
+    ```
+
+- **Change:**
+    1. In `computeDerivedScenarioOutcome`, guard `eps <= 0` (return `multiple:
+0, priceCagr: 0, terminalEps: 0, terminalPrice: 0` instead of negative
+       prices for `CBRS`) and apply reinvested total return
+       `divFactor = (1 + divRate) ** horizon` where
+       `divRate = clamp((dividendYield || 0) / 100, 0, 0.25)`.
+    2. Create `js/pages/analysis/decision.js` exporting pure functions:
+        - `getLatestJournalEntry(journal)` — sorts by ISO `date` ascending and
+          returns the newest entry (fixing `GOOG`'s reverse-sorted array).
+        - `computeIsoCagrBands(expectedTerminalPrice, horizon, { targetCagr,
+benchmark, riskFreeRate })` — returns `strongBuy`, `buy`, `fair`,
+          `sell` prices at any time offset `t` via $V(r, t) = E[P_T] / (1 +
+          r)^{T - t}$ (returning `null` when `expectedTerminalPrice <= 0`).
+        - `evaluateTickerDecision(config, metrics, { currentWeight, eventFlags })`
+          — implements the 3-Gate Decision Engine (§4.2) with Constantinides
+          deadband `0.02`, returning `{ code, label, tone, zone, flags,
+targetWeight, weightDelta, bands, sortPriority }`.
+        - `buildDecisionSnapshot(decision, config, metrics)` and
+          `buildBoardSnapshot(rows)` — one-line terminal scrollback summaries.
+    3. Add unit tests covering all 6 live ticker profiles (`GOOG` ADD, `ANET`
+       HOLD · AT CAP, `PDD` HOLD, `VT` with fixed EPS + dividends, `AEHR`
+       BUY · INITIATE + event flag, `CBRS` AVOID · THESIS BROKEN + negative
+       EPS).
+- **Verify:** `npx jest tests/js/pages/analysis/decision.test.js && npx eslint js/pages/analysis/decision.js`
+- **Guardrail:** Keep `decision.js` 100% DOM-free and side-effect free so it
+  remains deterministic under `TZ=UTC` Jest tests and easy to mutation-test.
+
+---
+
+### WO4 `[skip]` — Build the DPR-scaled Valuation Corridor + Forward Scenario Fan canvas with hover crosshair
+
+- **File:** New module `js/pages/analysis/decisionChart.js` (and `tests/js/pages/analysis/decisionChart.test.js`)
+- **Find:** New file; reuse DPR sizing pattern from `js/transactions/chart.js:75-93`
+  and tick-collision algorithm from `docs/y-axis-tick-algorithm.md`.
+- **Change:** Design and implement the log-scale time-series canvas (past 2Y
+  price + EPS-tracked or horizontal iso-CAGR bands, `TODAY` hairline, 2Y
+  default / `full` $T$ deterministic Bear/Base/Bull cone with direct right-edge
+  labels, Gate 1 suppressed state for broken theses, currency conversion, and
+  pointer hover crosshair with date/price/zone/scenario readout — no cost basis
+  or trade markers).
+- **Verify:** `npx jest tests/js/pages/analysis/decisionChart.test.js && npx eslint js/pages/analysis/decisionChart.js`
+- **Guardrail:** Never draw over a `0×0` backing store (pane starts `.is-hidden`
+  — guard `offsetWidth === 0` and redraw on reveal via `ResizeObserver`).
+
+---
+
+### WO5 `[skip]` — Replace the 9-section `lab.js` UI with the 2-view Decision Board + Decision Chart and prune dead code
+
+- **File:** `js/pages/analysis/lab.js`, `js/pages/analysis/bayes.js`, delete
+  `js/pages/analysis/monte_carlo.worker.js` and
+  `tests/js/pages/analysis/monte_carlo.worker.test.js`, update
+  `tests/js/pages/analysis/*`
+- **Find:** `const ANALYSIS_SECTIONS = [` (`js/pages/analysis/lab.js:95`) and
+  `const PANE_MARKUP = \`` (`js/pages/analysis/lab.js:107`).
+- **Change:** Replace `ANALYSIS_SECTIONS` with `['board', 'ticker']`; render
+  the 6-row `PORT` Decision Board (Layer 1–3 mini-bullets sorted by urgency) on
+  `board` and Layer 1 Verdict Strip + Layer 2 `decisionChart.js` canvas + Layer
+  3 Stephen Few Sizing Bullet + Risk Footer on `ticker`; prefer live weights
+  from `fetchRealTimeData()` (`js/transactions/realtimeData.js:130-214`) with
+  `holdings_details.json` fallback; remove all 9 legacy renderers, the MC
+  worker, and unused `bayes.js` replay/sandbox methods (keeping
+  `computeBrierScore` for the Risk Footer); update all `tests/js/pages/analysis/`
+  suites.
+- **Verify:** `npx jest tests/js/pages/analysis/ && make depcheck`
+- **Guardrail:** Run `rg "monte_carlo|BayesianEngine" js/ tests/` before
+  deleting `monte_carlo.worker.js` or pruning `bayes.js` so no stale import
+  breaks Jest or `dependency-cruiser`.
+
+---
+
+### WO6 `[low]` — Simplify terminal command grammar, help text, and ticker autocomplete
+
+- **File:** `js/transactions/terminal/constants.js`,
+  `js/transactions/terminal/autocomplete.js`,
+  `js/transactions/terminal/handlers/analysis.js`,
+  `js/transactions/terminal/handlers/help.js`, and
+  `tests/js/transactions/terminal/handlers/analysis.test.js` +
+  `tests/js/transactions/terminal/autocomplete.test.js` +
+  `tests/js/transactions/terminal/handlers/help.test.js`
+- **Find (1, `constants.js:80-93`):**
+
+    ```javascript
+    export const ANALYSIS_SUBCOMMANDS = [
+        'scenarios',
+        'value',
+        'kelly',
+        'belief',
+        'evidence',
+        'predictions',
+        'journal',
+        'mc',
+        'bull',
+        'bear',
+        'reset',
+        'close',
+    ];
+    ```
+
+- **Find (2, `autocomplete.js:43-48`):**
+
+    ```javascript
+    function getAnalysisMatches(parts) {
+        const subPrefix = parts[1] ? parts[1].toLowerCase() : '';
+        return subPrefix
+            ? ANALYSIS_SUBCOMMANDS.filter((cmd) => cmd.startsWith(subPrefix))
+            : ANALYSIS_SUBCOMMANDS;
+    }
+    ```
+
+- **Find (3, `handlers/analysis.js:19-32`):**
+
+    ```javascript
+    // Function subcommands mapped to their pane section — each function code
+    // gets its own screen (Bloomberg model), nothing jammed into one view.
+    const SECTION_BY_SUBCOMMAND = {
+        scenarios: 'scenarios',
+        value: 'value',
+        kelly: 'kelly',
+        belief: 'belief',
+        evidence: 'evidence',
+        predictions: 'predictions',
+        journal: 'journal',
+    };
+
+    const USAGE_LINE =
+        'Usage: analysis [scenarios|value|kelly|belief|evidence|predictions|journal|mc [paths]|bull|bear|reset|close] or analysis <TICKER>';
+    ```
+
+- **Find (4, `handlers/help.js:23-27`):**
+
+    ```javascript
+                '  analysis (an)      - Analysis lab: scenarios, Kelly sizing, Monte Carlo, beliefs\n' +
+                '                       Use "analysis" or "an"; optional ticker selects security context\n' +
+                '                       Subcommands: scenarios, value, kelly, belief, evidence,\n' +
+                '                                    predictions, journal, mc, bull, bear, reset, close\n' +
+                '                       Examples: analysis, an ANET, analysis kelly, analysis mc 20000\n' +
+    ```
+
+- **Change:**
+    1. Set `ANALYSIS_SUBCOMMANDS = ['close']` (plus `ANALYSIS_HORIZON_FLAGS =
+['full']`) in `constants.js`.
+    2. Update `getAnalysisMatches(parts)` in `autocomplete.js` to suggest
+       loaded/indexed ticker symbols (lowercase/uppercase prefix match) plus
+       `'close'` for `parts[1]`, and `'full'` for `parts[2]` when `parts[1]` is
+       a ticker.
+    3. Simplify `handleAnalysisCommand` in `handlers/analysis.js` to accept
+       only: `analysis` / `an` (opens `board` + prints board triage snapshot),
+       `an <TICKER>` (opens `ticker` 2Y Decision Chart + prints verdict
+       snapshot), `an <TICKER> full` (opens `ticker` full-$T$ Decision Chart),
+       and `an close` (hides pane). Remove `SECTION_BY_SUBCOMMAND`,
+       `handleMonteCarlo`, and `handleSandbox`.
+    4. Update `USAGE_LINE` and `handlers/help.js` to document the 3 commands:
+       `analysis`, `an <TICKER> [full]`, and `an close`.
+    5. Update matching unit tests.
+- **Verify:** `npx jest tests/js/transactions/terminal/handlers/analysis.test.js tests/js/transactions/terminal/autocomplete.test.js tests/js/transactions/terminal/handlers/help.test.js`
+- **Guardrail:** Keep lazy-loading `import('@pages/analysis/lab.js')` in
+  `handlers/analysis.js`; cache the ticker symbol list on `index.json` load or
+  expose a lightweight getter so `Tab` autocomplete works without eagerly
+  importing `lab.js` on page load.
+
+---
+
+### WO7 `[visual]` — Style the 2-view Decision pane, update layout gate, and visually verify over liquid glass
+
+- **File:** `css/terminal/analysis.css` and `scripts/check_analysis_pane_layout.mjs`
+- **Find (1, `css/terminal/analysis.css:1-7`):**
+
+    ```css
+    /* Analysis lab pane, scoped for embedding in the terminal page.
+       Minimalist by design: flat text on the .chart-card glass, hairline
+       dividers, small-caps muted labels, gold reserved for the active state.
+       One function code per screen — each section is small enough to stay
+       fully inside the pane; the stage scrolls internally as a safety net.
+       All colors and fonts resolve to the terminal tokens
+       (css/terminal/base.css); the pane owns no parallel palette. */
+    ```
+
+- **Find (2, `scripts/check_analysis_pane_layout.mjs:165-180`):**
+
+    ```javascript
+    await visit('overview', 'analysis');
+    await visit('scenarios', 'analysis scenarios');
+    await visit('value', 'analysis value');
+    await visit('kelly', 'analysis kelly');
+    await visit('mc-error-pane', 'analysis mc');
+    await visit('belief', 'analysis belief');
+    await visit('evidence', 'analysis evidence');
+    await visit('predictions', 'analysis predictions');
+    await visit('journal', 'analysis journal');
+
+    // Single-ticker context (full scenario blocks): drive a complete
+    // Monte Carlo run and measure the rendered result, not just the
+    // pending state.
+    await visit('anet-overview', 'analysis anet');
+    await visit('anet-mc', 'analysis mc');
+    await waitForMonteCarlo(page);
+    ```
+
+- **Change:**
+    1. Replace the legacy 9-section styles in `css/terminal/analysis.css` with
+       compact `.analysis-pane`-scoped styles for the Decision Board table
+       (6 rows inside `320px`), Layer 1 Verdict Strip, Layer 2 flex canvas
+       container, and Layer 3 Stephen Few Sizing Bullet + Risk Footer — using
+       only existing `css/terminal/base.css` tokens.
+    2. Update `scripts/check_analysis_pane_layout.mjs` to remove the 9 legacy
+       visits + `waitForMonteCarlo` and instead gate viewport fit (`overflow <=
+1px`) at `1280×580` across `analysis` (`PORT` board), `analysis goog`,
+       `analysis goog full`, `analysis anet`, `analysis aehr`, `analysis cbrs`,
+       and `analysis vt`.
+    3. Run `make analysis-layout-check`, `make screenshot URL=/terminal/`, and
+       inspect rendered PNGs in Chromium (verifying glass contrast over
+       `terminal_background.jpg`) before handoff for human visual review.
+- **Verify:** `npx stylelint css/terminal/analysis.css && make analysis-layout-check && make precommit-fix`
+- **Guardrail:** Keep every rule scoped under `.analysis-pane` so `position/`
+  and `calendar/` remain untouched, and preserve `height: 100%` + `min-height:
+0` on the flex chain so the `check_analysis_pane_layout.mjs` stage-height
+  spread assertion (`spread <= 1px`) continues to hold.
 
 ---
 
