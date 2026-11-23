@@ -372,3 +372,28 @@ def test_deploy_figures_propagates_validator_failure(figure_tree, monkeypatch):
     monkeypatch.setattr("generate_deploy_figures.validate_figure", broken_validate)
     with pytest.raises(ValueError, match="injected failure"):
         generate_deploy_figures(root=figure_tree)
+
+
+def test_load_data_reads_parquet_single_threaded_via_pyarrow(figure_tree, monkeypatch):
+    """load_data reads parquet via single-threaded native PyArrow to avoid shutdown SIGABRT."""
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+    from generate_composition_data import load_data
+
+    pa.set_io_thread_count(2)
+    read_calls = []
+    real_read_table = pq.read_table
+
+    def spy_read_table(source, *args, **kwargs):
+        read_calls.append((source, kwargs))
+        return real_read_table(source, *args, **kwargs)
+
+    monkeypatch.setattr(pq, "read_table", spy_read_table)
+    monkeypatch.chdir(figure_tree)
+
+    holdings_df, _, _, _ = load_data()
+    assert len(read_calls) == 1
+    assert isinstance(read_calls[0][0], str)
+    assert read_calls[0][1].get("use_threads") is False
+    assert pa.io_thread_count() == 1
+    assert list(holdings_df.columns) == ["AAPL", "VT"]
