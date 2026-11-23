@@ -546,8 +546,10 @@ scripts.analysis.sync_configs` (never hand-edit `data/analysis/*.json`).
   final commit.
 - Commit locally after each completed item (Conventional Commits checked via
   `scripts/agents/check_commit_message.py`) and leave pushing to the user.
-- Items tagged `[skip]` require non-trivial design/canvas/test authoring and
-  should be routed to a stronger model rather than executed mechanically.
+- Every work order (`[trivial]`, `[low]`, `[design]`, `[visual]`) is fully
+  specified below and ready for direct implementation; `[visual]` items require
+  a live Chromium screenshot check (`make screenshot URL=/terminal/`) before
+  closing.
 
 ---
 
@@ -717,44 +719,318 @@ targetWeight, weightDelta, bands, sortPriority }`.
 
 ---
 
-### WO4 `[skip]` — Build the DPR-scaled Valuation Corridor + Forward Scenario Fan canvas with hover crosshair
+### WO4 `[design]` — Build the DPR-scaled Valuation Corridor + Forward Scenario Fan canvas with hover crosshair
 
-- **File:** New module `js/pages/analysis/decisionChart.js` (and `tests/js/pages/analysis/decisionChart.test.js`)
-- **Find:** New file; reuse DPR sizing pattern from `js/transactions/chart.js:75-93`
-  and tick-collision algorithm from `docs/y-axis-tick-algorithm.md`.
-- **Change:** Design and implement the log-scale time-series canvas (past 2Y
-  price + EPS-tracked or horizontal iso-CAGR bands, `TODAY` hairline, 2Y
-  default / `full` $T$ deterministic Bear/Base/Bull cone with direct right-edge
-  labels, Gate 1 suppressed state for broken theses, currency conversion, and
-  pointer hover crosshair with date/price/zone/scenario readout — no cost basis
-  or trade markers).
+- **File:** New module `js/pages/analysis/decisionChart.js` and unit test suite
+  `tests/js/pages/analysis/decisionChart.test.js`
+- **Find:** New module; imports `computeIsoCagrBands` from `./decision.js`,
+  currency conversion helpers (`convertValueToCurrency`, `formatCurrency`) from
+  `../../transactions/utils.js`, and `getSelectedCurrency` from
+  `../../transactions/state.js`. Reuse the DPR backing-store guard pattern from
+  `js/transactions/chart.js:75-93` and the greedy collision invariant
+  (`minSpacingPixels = Math.floor(fontSize)`) from
+  `docs/y-axis-tick-algorithm.md`.
+- **Change:** Create `js/pages/analysis/decisionChart.js` split cleanly into
+  **pure geometry / hit-testing** (DOM-free, 100% unit-testable) and **canvas
+  painting / pointer lifecycle**:
+    1. **Export `computeLogTicks(minPrice, maxPrice, plotHeight, yScale, fontSize, anchorPrice)`:**
+        - Generate nice log-spaced candidates across decades
+          `{1, 1.5, 2, 3, 5, 7} * 10^k` spanning `[minPrice, maxPrice]`, plus
+          `anchorPrice` (current `P0`, priority `0`), outer bounds (priority
+          `1`), and grid candidates (priority `2`).
+        - Greedily pack ticks in priority order `0 → 1 → 2` (within priority 2,
+          descending value), rejecting any tick within
+          `Math.floor(fontSize)` px of an already-accepted tick (`y-axis-tick-algorithm.md`).
+    2. **Export `buildDecisionChartGeometry({ config, history, decision, metrics, horizonMode = '2y', width, height, padding })`:**
+        - **Padding:** `{ top: 14, right: 112, bottom: 22, left: 54 }` (the
+          `112px` right margin fits direct endpoint labels such as
+          `Bull 20% $399 [10y]` without clipping the plot).
+        - **Mode selection:**
+            - `'thesis-broken'` when `decision.gate1Broken === true` (suppress
+              valuation bands; draw historical price + muted `THESIS BROKEN`
+              watermark).
+            - `'eps-corridor'` when `history.eps` has `>= 2` positive points
+              overlapping the past window (`ANET`, `GOOG`, `PDD`). Multiply
+              each historical week's step-held point-in-time `eps(d)` by
+              today's model multiples `M(r) = bandToday[r] / effectiveEps`.
+            - `'horizontal-bands'` fallback when positive historical EPS is
+              absent (`VT`, `AEHR`): plot 1Y historical prices (`pastYears = 1`)
+              over horizontal current-thesis bands `[strongBuy, buy, fair, sell]`.
+        - **X-axis split (60% past / 40% future):**
+            - `xToday = padding.left + plotWidth * 0.60`.
+            - Past window: `2` years in `'eps-corridor'`/`'thesis-broken'` mode
+              (or `1` year in `'horizontal-bands'` mode), mapped linearly from
+              `[todayMs - pastSpanMs, todayMs]` → `[padding.left, xToday]`.
+            - Future window: `futureYears = horizonMode === 'full' ? horizon : Math.min(2, horizon)`,
+              mapped linearly from `[0, futureYears]` → `[xToday, padding.left + plotWidth]`.
+        - **Forward curves & scenario rays:**
+            - Sample 25 evenly spaced offsets `t ∈ [0, futureYears]`.
+            - Iso-CAGR curves: `V(r, t) = E[P_T] / (1 + r)^(T - t)` for
+              `r ∈ {strongBuy, buy, fair, sell}` (using `computeIsoCagrBands`).
+            - Scenario rays (Bull / Base / Bear): geometric interpolation from
+              `P0` at `t = 0` along each scenario's annualized total-return
+              CAGR (`P(t) = P0 * (1 + scenario.priceCagr)^t`), storing both
+              `endPrice` at `t = futureYears` and `terminalPrice` at `t = T`
+              for the direct right-edge label.
+        - **Log Y-axis bounds (`yMin`, `yMax`):**
+            - Collect positive prices from historical closes, `todayPrice`,
+              visible future scenario rays, and visible iso-CAGR curves (clamp
+              extreme bands to `[0.35 * minPrice, 3.0 * maxPrice]` so a distant
+              outlier band cannot compress the price line), pad by `±8%` in
+              log space, and return `yScale(v) = padding.top + plotHeight *
+(1 - (Math.log(v) - logMin) / (logMax - logMin))`.
+        - **Direct right-edge label packing:** Pack the 3 scenario endpoint
+          labels (`Bull`, `Base`, `Bear`) with greedy vertical nudging
+          (`minGap = 12px`, clamped inside `[padding.top + 6, padding.top +
+plotHeight - 6]`).
+    3. **Export `resolveCrosshairHit(pointerX, geometry)`:**
+        - Return `null` when `pointerX` lies outside `[plotLeft, plotRight]`.
+        - **Past (`pointerX <= xToday`):** Binary-search nearest weekly point in
+          `geometry.pricePoints`; compute which valuation zone the price sat in
+          on that date (via the point's band values) and return
+          `{ side: 'past', x, y, date, price, zoneLabel }`.
+        - **Future (`pointerX > xToday`):** Compute fractional
+          `yearsAhead = ((pointerX - xToday) / futureWidth) * futureYears`,
+          evaluate Bull / Base / Bear prices and the iso-CAGR band prices at
+          `yearsAhead`, and return
+          `{ side: 'future', x: pointerX, yearsAhead, bull, base, bear, buyBand, fairBand }`.
+    4. **Export `renderDecisionChart(canvas, payload, colors, crosshairHit = null)`:**
+        - DPR guard: read `rect = canvas.getBoundingClientRect()`; bail cleanly
+          if `rect.width === 0 || rect.height === 0`; resize backing store to
+          `Math.round(rect.width * dpr) × Math.round(rect.height * dpr)` with
+          `dpr = Math.min(window.devicePixelRatio || 1, 2)` and call
+          `ctx.setTransform(dpr, 0, 0, dpr, 0, 0)`.
+        - Painter's order:
+            1. Valuation zone fills (`--green` 14% Deep Value, `--green` 8%
+               Buy, transparent Fair, `--gold` 9% Rich, `--red` 12% Overvalued;
+               skipped in `'thesis-broken'` mode) + subtle inline zone text
+               tags near the left edge (`BUY`, `FAIR`, `SELL`) so no zone is
+               color-only.
+            2. Faint log Y-axis gridlines, Y-axis currency labels (converted
+               via `LATEST_FX_DATE = '9999-12-31'`), and X-axis year/offset
+               labels (`2025`, `2026`, `TODAY`, `+1Y`, `+2Y` / `+T`).
+            3. Dashed iso-CAGR boundary lines (`Buy`, `Fair`, `Sell`) + muted
+               source watermark in bottom-left of past half (`Thesis×EPS` in
+               EPS-corridor mode; `Current bands` in horizontal mode).
+            4. Shaded Bear–Bull forward cone (`rgba(gold/blue, 0.08)`) + 3
+               scenario rays (Bull dashed green, Base solid gold, Bear dashed
+               red) + right-edge direct labels (`Bull 20% $399 [10y $1.8k]`).
+            5. Crisp vertical `TODAY` hairline + 2px historical price polyline
+                - highlighted `TODAY` dot.
+            6. If `crosshairHit` is non-null: dashed vertical crosshair line,
+               snapped marker dot(s), and a compact glass-dark floating readout
+               box clamped inside the plot bounds.
+        - Update `canvas.setAttribute('aria-label', ...)` with the ticker's
+          verdict, price, buy band, and `E[CAGR]`.
+    5. **Export `attachDecisionChartInteractions(canvas, getRenderArgs)`:**
+        - Attach `pointermove` (throttled via `requestAnimationFrame` to call
+          `resolveCrosshairHit` + `renderDecisionChart`), `pointerleave`
+          (clears crosshair), and a `ResizeObserver` (redraws on resize/reveal).
+        - Return a `detach()` cleanup function; store on the canvas/controller
+          so re-initialization never duplicates listeners.
+    6. **Tests (`tests/js/pages/analysis/decisionChart.test.js`):**
+        - Verify all 3 corridor modes (`GOOG`/`ANET` `'eps-corridor'`,
+          `VT`/`AEHR` `'horizontal-bands'`, `CBRS` `'thesis-broken'`).
+        - Verify log-scale ratio symmetry (`yScale(200) - yScale(100) ≈
+yScale(400) - yScale(200)`).
+        - Verify 10y `GOOG` `2y` mode keeps `yMax < 800` while `full` mode
+          reaches terminal Bull `$1,775`.
+        - Verify `computeLogTicks` never violates `|y_i - y_j| >= fontSize`.
+        - Verify `resolveCrosshairHit` snaps past dates and interpolates future
+          scenario rays, and verify `renderDecisionChart` executes cleanly
+          against a stub 2D canvas context (including `0×0` bailout).
 - **Verify:** `npx jest tests/js/pages/analysis/decisionChart.test.js && npx eslint js/pages/analysis/decisionChart.js`
 - **Guardrail:** Never draw over a `0×0` backing store (pane starts `.is-hidden`
-  — guard `offsetWidth === 0` and redraw on reveal via `ResizeObserver`).
+  — bail on `rect.width === 0` and redraw via `ResizeObserver` on reveal), and
+  never plot cost basis or trade markers.
 
 ---
 
-### WO5 `[skip]` — Replace the 9-section `lab.js` UI with the 2-view Decision Board + Decision Chart and prune dead code
+### WO5 `[design]` — Replace the 9-section `lab.js` UI with the 2-view Decision Board + Decision Chart and prune dead code
 
 - **File:** `js/pages/analysis/lab.js`, `js/pages/analysis/bayes.js`, delete
   `js/pages/analysis/monte_carlo.worker.js` and
   `tests/js/pages/analysis/monte_carlo.worker.test.js`, update
-  `tests/js/pages/analysis/*`
-- **Find:** `const ANALYSIS_SECTIONS = [` (`js/pages/analysis/lab.js:95`) and
-  `const PANE_MARKUP = \`` (`js/pages/analysis/lab.js:107`).
-- **Change:** Replace `ANALYSIS_SECTIONS` with `['board', 'ticker']`; render
-  the 6-row `PORT` Decision Board (Layer 1–3 mini-bullets sorted by urgency) on
-  `board` and Layer 1 Verdict Strip + Layer 2 `decisionChart.js` canvas + Layer
-  3 Stephen Few Sizing Bullet + Risk Footer on `ticker`; prefer live weights
-  from `fetchRealTimeData()` (`js/transactions/realtimeData.js:130-214`) with
-  `holdings_details.json` fallback; remove all 9 legacy renderers, the MC
-  worker, and unused `bayes.js` replay/sandbox methods (keeping
-  `computeBrierScore` for the Risk Footer); update all `tests/js/pages/analysis/`
-  suites.
-- **Verify:** `npx jest tests/js/pages/analysis/ && make depcheck`
-- **Guardrail:** Run `rg "monte_carlo|BayesianEngine" js/ tests/` before
-  deleting `monte_carlo.worker.js` or pruning `bayes.js` so no stale import
-  breaks Jest or `dependency-cruiser`.
+  `tests/js/pages/analysis/bayes.test.js` and `tests/js/pages/analysis/lab*.test.js`
+- **Find (1, `js/pages/analysis/lab.js:95-190`):**
+
+    ```javascript
+    const ANALYSIS_SECTIONS = [
+        'overview',
+        'scenarios',
+        'value',
+        'kelly',
+        'mc',
+        'belief',
+        'evidence',
+        'predictions',
+        'journal',
+    ];
+    ```
+
+- **Find (2, `js/pages/analysis/lab.js:2756-2769`):**
+
+    ```javascript
+    const validConfigs = configs.filter(Boolean);
+    let totalValue = 0;
+    for (let i = 0; i < validConfigs.length; i++) {
+        totalValue += validConfigs[i].marketValue;
+    }
+    validConfigs.forEach((cfg) => {
+        cfg.weight = totalValue > 0 ? cfg.marketValue / totalValue : 0;
+    });
+
+    const portfolioConfig = buildPortfolioConfig(validConfigs);
+    const ordered = portfolioConfig ? [portfolioConfig, ...validConfigs] : validConfigs;
+    state.configs = ordered;
+    state.activeSymbol = ordered.length ? ordered[0].symbol : null;
+    ```
+
+- **Find (3, `js/pages/analysis/lab.js:2832-2862`):**
+
+    ```javascript
+    export function showAnalysisSection(name) {
+        const target = ANALYSIS_SECTIONS.includes(name) ? name : 'overview';
+        state.activeSection = target;
+        if (!paneRoot) {
+            return;
+        }
+        paneRoot.querySelectorAll('[data-analysis-section]').forEach((section) => {
+            section.classList.toggle('is-hidden', section.dataset.analysisSection !== target);
+        });
+        updateContextMeta();
+        checkPaneViewportFit();
+    }
+
+    export function setActiveAnalysisSymbol(symbol) {
+        const config = state.configs.find((cfg) => cfg.symbol === symbol);
+        if (!config) {
+            return false;
+        }
+        state.activeSymbol = config.symbol;
+        renderContextStrip();
+        renderActiveTicker();
+        return true;
+    }
+    ```
+
+- **Change:**
+    1. **Prune `js/pages/analysis/bayes.js` & delete MC worker:**
+        - Delete `js/pages/analysis/monte_carlo.worker.js` and
+          `tests/js/pages/analysis/monte_carlo.worker.test.js`.
+        - Trim `js/pages/analysis/bayes.js` to export only
+          `computeBrierScore(predictions = [])` (pure function; remove
+          `BayesianEngine` class, `parseJsonl`, `filterValidEvidence`, and
+          `applyParameterPosteriors`), and update
+          `tests/js/pages/analysis/bayes.test.js` to test `computeBrierScore`.
+    2. **Replace `ANALYSIS_SECTIONS` and `PANE_MARKUP` in `lab.js`:**
+        - Set `const ANALYSIS_SECTIONS = ['board', 'ticker'];`.
+        - Replace `PANE_MARKUP` with the minimal 2-section shell:
+
+            ```html
+            <div class="pane-context" id="paneContext"></div>
+            <div class="analysis-stage" tabindex="0">
+                <div class="output-grid">
+                    <section data-analysis-section="board" class="decision-board-section">
+                        <div
+                            class="decision-board"
+                            id="decisionBoard"
+                            role="table"
+                            aria-label="Portfolio decision board"
+                        ></div>
+                    </section>
+                    <section
+                        data-analysis-section="ticker"
+                        class="decision-ticker-section is-hidden"
+                    >
+                        <div class="verdict-strip" id="verdictStrip"></div>
+                        <div class="decision-chart-wrap">
+                            <canvas
+                                id="decisionChartCanvas"
+                                class="pane-canvas"
+                                role="img"
+                                aria-label="Ticker valuation corridor and decision chart"
+                            ></canvas>
+                        </div>
+                        <div class="sizing-bullet" id="sizingBullet"></div>
+                        <div class="risk-footer" id="riskFooter"></div>
+                    </section>
+                </div>
+            </div>
+            ```
+
+    3. **Streamline `buildConfigs()` data loading & live weights:**
+        - Fetch `index.json`, `event_flags.json`, `holdings_details.json`, and
+          `fetchRealTimeData().catch(() => null)` (`js/transactions/realtimeData.js:130`)
+          in parallel; drop `.evidence.jsonl` and thesis-markdown fetches.
+        - Per index entry, fetch `<SYM>.json` and `<SYM>.history.json` (falling
+          back to `{ prices: [], eps: [] }` if `.history.json` fails).
+        - Resolve `cfg.weight` from `realTimeData.tickerWeights[symbol]` (or
+          `composition` percent `/ 100`) when available, falling back to
+          `cfg.marketValue / totalValue`, and store `state.portfolioTotalValue`
+          (from `realTimeData.balance` or `totalValue`) so the sizing bullet
+          can print exact dollar headroom (`+$70k`).
+        - Compute `cfg.metrics = computeMetrics(cfg)` and
+          `cfg.decision = evaluateTickerDecision(cfg, cfg.metrics, { currentWeight: cfg.weight, eventFlags: flagsBySymbol[cfg.symbol] })`.
+        - Remove `buildPortfolioConfig`, `aggregateScenarios`,
+          `CORRELATION_MAP`, `computePortfolioCovarianceVolatility`, and all 9
+          legacy DOM/canvas renderers (`renderSummary`, `renderScenarioCards`,
+          `renderValueBands`, `renderKellyCurve`, `renderBeliefState`,
+          `renderEvidenceTimeline`, `renderPredictions`,
+          `renderDecisionJournal`, `renderBayesOutput`, `renderMonteCarloResults`,
+          `runMonteCarloSimulation`, `applyBayesSandbox`).
+    4. **Implement the 2 view renderers (XSS-safe `createElement`/`textContent`):**
+        - `renderDecisionBoard()`: renders header row + all tickers sorted by
+          `decision.sortPriority` ascending, each row displaying: `symbol` |
+          verdict pill (`.verdict-pill--<tone>`) | 60px inline mini Valuation
+          Position bar (dot position of `P0` across `[strongBuy..sell]`, or
+          `n/a` if Gate 1 broken) | `E[CAGR]` (`tabular-nums`) | 68px inline
+          mini Sizing Bullet (`w_curr` bar + `w_rec` tick) | `Belief %` + any
+          `⚑` flag indicator. Non-clickable (keyboard-only).
+        - `renderTickerDecision(config)`:
+            - **Layer 1 (`#verdictStrip`):** `SYM · Name`, verdict pill
+              (e.g., `ADD +5.3% to cap`), `E[CAGR] 12.8% (+6.3% edge)`,
+              `Belief 50%`, optional `⚑` flag badge.
+            - **Layer 2 (`#decisionChartCanvas`):** calls
+              `renderDecisionChart(canvas, payload, PANE_CHART_COLORS)` and
+              wires `attachDecisionChartInteractions` once at init.
+            - **Layer 3 (`#sizingBullet` + `#riskFooter`):** renders Stephen
+              Few bullet scaled to `max(w_max * 1.25, w_curr * 1.15, 0.10)`
+              with `[0..w_rec]`, `[w_rec..w_max]`, `[w_max..scaleMax]` zones,
+              `w_curr` bar, `w_rec` marker, `w_max` dashed cap, and text
+              `19.7% / 25.0% target (+5.3% · +$70k) · ½K 500%`; renders single
+              risk footer line with `Bear CAGR`, `Geo CAGR`, `52w range`,
+              prediction count + `computeBrierScore` value, latest journal
+              review date (via `getLatestJournalEntry`), and muted command hint
+              (`an <SYM> full | an | an close`).
+        - `renderContextStrip()`: read-only strip showing `PORT` + all tracked
+          symbols with `aria-current="true"` on active symbol and `#contextMeta`
+          displaying `BOARD · <asOf>` or `2Y · <asOf>` / `FULL <T>Y · <asOf>`.
+    5. **Clean public exports of `js/pages/analysis/lab.js`:**
+        - `initAnalysisPane(rootEl, { autoLoad = true } = {})`
+        - `showDecisionBoard()` → activates `board`, sets `activeSymbol = 'PORT'`,
+          renders board + context strip, runs `checkPaneViewportFit()`, returns
+          `buildBoardSnapshot(...)`.
+        - `showTickerDecision(symbol, { horizonMode = '2y' } = {})` → looks up
+          symbol (returns `null` if unknown), sets `activeSymbol`,
+          `horizonMode`, activates `ticker`, renders Layers 1–3 + context strip,
+          runs `checkPaneViewportFit()`, returns `buildDecisionSnapshot(...)`.
+        - `getAnalysisSymbols()`, `getActiveAnalysisConfig()`,
+          `checkPaneViewportFit()`, `fetchJson()`, and slimmed
+          `__analysisLabTesting`.
+        - Update `currencyChangedGlobal` listener to re-render the active view
+          (`board` or `ticker`) after `whenTransactionDataReady()`.
+    6. **Tests:** Consolidate and update `tests/js/pages/analysis/` to cover
+       core Fermat–Pascal/Kelly math (including reinvested `dividendYield` and
+       `eps <= 0` guard), `board` sorting and DOM rendering, `ticker` 3-layer
+       DOM rendering + `2y`/`full` horizon switching, `fetchRealTimeData()`
+       fallback to `holdings_details.json`, currency re-render, and
+       `checkPaneViewportFit()`.
+- **Verify:** `npx jest tests/js/pages/analysis/ && make depcheck && rg -n "monte_carlo|BayesianEngine|applyBayesSandbox" js/ tests/ || true`
+- **Guardrail:** Verify `rg` returns zero remaining references to
+  `monte_carlo.worker` or `BayesianEngine` across `js/` and `tests/` before
+  committing, and preserve `currencyChangedGlobal` gating on
+  `whenTransactionDataReady()` (`docs/terminal-data-readiness.md`).
 
 ---
 
