@@ -3,7 +3,7 @@
     "name": "Alphabet",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-11-23T14:35:45.579132+00:00",
+        "asOf": "2026-11-23T19:29:50.557025+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -29,20 +29,20 @@
     },
     "market": {
         "forwardEps": 15.2974,
-        "pe": 14.4501,
-        "forwardPe": 18.0894,
+        "pe": 14.6909,
+        "forwardPe": 18.3907,
         "beta": 1.226,
-        "marketCap": 3401995517952.0,
+        "marketCap": 3458670788608.0,
         "enterpriseValue": 3148871892992.0,
         "ebitda": 185515999232.0,
         "dividendYield": 0.33,
         "currency": "USD",
         "fiftyTwoWeekHigh": 404.47,
         "fiftyTwoWeekLow": 262.27,
-        "marketDataUpdatedAt": "2026-11-23T14:35:44.666508+00:00",
+        "marketDataUpdatedAt": "2026-11-23T19:29:50.451467+00:00",
         "evToEbitda": 16.9736,
         "eps": 19.15,
-        "price": 276.72,
+        "price": 281.33,
         "fiftyDayAverage": 319.274,
         "twoHundredDayAverage": 334.8329,
         "averageVolume": 20551606.0,
@@ -50,7 +50,7 @@
         "pegRatio": 0.93
     },
     "risk": {
-        "volatility": 0.3273,
+        "volatility": 0.3306,
         "estimateSource": "historical",
         "correlations": null
     },
@@ -113,12 +113,12 @@
         }
     ],
     "derived": {
-        "expectedCagr": 0.1315,
-        "expectedMultiple": 3.4402,
+        "expectedCagr": 0.1296,
+        "expectedMultiple": 3.3838,
         "fairValueRange": null,
         "kelly": {
-            "fullKelly": 0.6685,
-            "scaledKelly": 0.3342
+            "fullKelly": 0.6403,
+            "scaledKelly": 0.3202
         }
     },
     "industry_thesis": "docs/thesis/industry/cloud-ai-ecosystem.md",

@@ -3,7 +3,7 @@
     "name": "Cerebras Systems",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-11-23T14:35:29.296389+00:00",
+        "asOf": "2026-11-23T19:29:50.282894+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -28,15 +28,15 @@
         }
     },
     "market": {
-        "price": 95.3,
+        "price": 97.51,
         "eps": -5.17,
         "forwardEps": 1.8584,
         "pe": null,
-        "forwardPe": 51.2815,
+        "forwardPe": 52.4707,
         "beta": null,
-        "marketCap": 23158220800.0,
+        "marketCap": 23695257600.0,
         "currency": "USD",
-        "marketDataUpdatedAt": "2026-11-23T14:35:28.513536+00:00",
+        "marketDataUpdatedAt": "2026-11-23T19:29:50.192021+00:00",
         "pegRatio": null,
         "enterpriseValue": 14178531328.0,
         "ebitda": -661307008.0,
@@ -50,7 +50,7 @@
         "evToEbitda": -21.4402
     },
     "risk": {
-        "volatility": 1.1505,
+        "volatility": 1.1581,
         "estimateSource": "historical",
         "correlations": null
     },
