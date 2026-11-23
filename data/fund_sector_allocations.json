@@ -1,16 +1,16 @@
 {
     "VT": {
-        "Technology": 33.34,
-        "Financials": 15.94,
-        "Industrials": 10.43,
-        "Healthcare": 8.8,
-        "Consumer Cyclical": 8.36,
-        "Communication Services": 7.63,
-        "Consumer Defensive": 4.26,
-        "Energy": 3.99,
-        "Basic Materials": 3.48,
-        "Utilities": 2.07,
-        "Real Estate": 1.72
+        "Technology": 31.3,
+        "Financials": 16.47,
+        "Industrials": 10.29,
+        "Healthcare": 9.67,
+        "Consumer Cyclical": 8.7,
+        "Communication Services": 6.76,
+        "Consumer Defensive": 4.73,
+        "Energy": 4.64,
+        "Basic Materials": 3.26,
+        "Utilities": 2.29,
+        "Real Estate": 1.88
     },
     "VOO": {
         "Technology": 33.59,
