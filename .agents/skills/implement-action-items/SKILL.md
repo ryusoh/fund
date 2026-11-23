@@ -33,7 +33,10 @@ verified work order. Pushing stays with the user.
    vacuously. On failure, apply the item's fallback once if it has one;
    otherwise undo your edit (confirm with `git diff <file>` that every hunk is
    yours), record the failure, and move on.
-5. **Commit that item alone.** `git add <the files you changed>`; a
+5. **Update doc status & commit that item alone.** Record a concise
+   `- **Status (<YYYY-MM-DD>):** **Complete** ...` (or **Skipped** / **Failed**)
+   line under that work order in the action-items doc, then
+   `git add <the files you changed and the action-items doc>`; use a
    Conventional Commits subject (`type(scope): summary`) with the work-order
    number in the body. Each item gets its own new commit — leave earlier
    commits and the remote as they are.

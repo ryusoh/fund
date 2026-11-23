@@ -863,6 +863,10 @@ round(full_k * kelly_scale, 4)}` using
 
 - **File:** `scripts/analysis/sync_configs.py` and new
   `tests/python/test_sync_configs_history.py`
+- **Status (2026-11-23):** **Complete** in local commit `e7a885b7` on `main`.
+  Scoped verification (`pytest -k sync_configs`: 82 passed, `ruff`, `black`,
+  `mypy`) passed and regenerated `data/analysis/*.history.json` +
+  `index.json`. WO3 is next.
 - **Find (1):**
 
     ```python
@@ -956,6 +960,10 @@ round(full_k * kelly_scale, 4)}` using
   `js/pages/analysis/lab.js`, new `tests/js/pages/analysis/decision.test.js`,
   and cross-language parity test `tests/python/test_analysis_math_parity.py` (or
   shared fixture checked by both Jest and pytest)
+- **Status (2026-11-23):** **Complete** in local commit `77c93c43` on `main`.
+  `eslint --max-warnings=0`, `jest decision.test.js` (10 passed), `ruff`, and
+  `pytest` (`test_sync_configs_derived.py` + `test_analysis_math_parity.py`, 52
+  passed) all passed. WO4 is next.
 - **Find (1, `js/pages/analysis/lab.js`):**
 
     ```javascript
@@ -1055,6 +1063,9 @@ eventFlags = [], flagsGeneratedAt = null, nowMs })` with required
 
 - **File:** New module `js/pages/analysis/decisionChart.js` and unit test suite
   `tests/js/pages/analysis/decisionChart.test.js`
+- **Status (2026-11-23):** **Complete** in local commit `c9d1df21` on `main`.
+  `prettier`, `eslint --max-warnings=0`, and `jest decisionChart.test.js` (5
+  passed) all passed. WO5 is next.
 - **Find:** New module; imports `computeIsoCagrBands` from `./decision.js`,
   currency conversion helpers (`convertValueToCurrency`, `formatCurrency`) from
   `../../transactions/utils.js`, and `getSelectedCurrency` from
