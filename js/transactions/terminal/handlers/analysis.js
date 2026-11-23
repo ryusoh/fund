@@ -3,9 +3,6 @@
 // The lab module is lazy-loaded on first use (chart-renderer precedent,
 // js/transactions/chart.js:39-48).
 
-import { convertValueToCurrency, formatCurrency as formatInSelectedCurrency } from '../../utils.js';
-import { getSelectedCurrency } from '../../state.js';
-
 let labModulePromise = null;
 let paneInitialized = false;
 
@@ -31,21 +28,6 @@ const SECTION_BY_SUBCOMMAND = {
 const USAGE_LINE =
     'Usage: analysis [scenarios|value|kelly|belief|evidence|predictions|journal|mc [paths]|bull|bear|reset|close] or analysis <TICKER>';
 
-// Analysis prices are current USD snapshots, not dated series — convert with
-// the latest FX rate, never a historical one (WO14 guardrail,
-// docs/terminal-analysis-merge.md). A far-future date resolves to the newest
-// available rate in findFxRate's closest-date search.
-const LATEST_FX_DATE = '9999-12-31';
-
-function formatUsd(value) {
-    if (!Number.isFinite(value)) {
-        return 'n/a';
-    }
-    return formatInSelectedCurrency(
-        convertValueToCurrency(value, LATEST_FX_DATE, getSelectedCurrency())
-    );
-}
-
 async function openAnalysisPane(lab) {
     const section = document.getElementById('analysisSection');
     if (!section) {
@@ -68,33 +50,12 @@ async function openAnalysisPane(lab) {
     return section;
 }
 
-async function handleMonteCarlo(lab, args, appendMessage) {
-    const parsed = args[1] ? parseInt(args[1], 10) : NaN;
-    const paths = Number.isFinite(parsed) && parsed > 0 ? parsed : 10000;
-    lab.showAnalysisSection('mc');
-    const result = await lab.runMonteCarloSimulation(paths);
-    if (!result) {
-        appendMessage('Monte Carlo simulation failed; see the analysis pane for details.');
-        return;
-    }
-    const active = lab.getActiveAnalysisConfig();
-    const symbol = active ? active.symbol : '';
-    const symbolBit = symbol ? `, ${symbol}` : '';
-    const medianBit = Number.isFinite(result.median) ? `median ${formatUsd(result.median)}, ` : '';
-    appendMessage(
-        `MC (${paths.toLocaleString('en-US')} paths${symbolBit}) — ${medianBit}` +
-            `VaR(95%) ${formatUsd(result.VaR_95)}, CVaR(95%) ${formatUsd(result.CVaR_95)}.`
-    );
+async function handleMonteCarlo(_lab, _args, appendMessage) {
+    appendMessage('Monte Carlo view retired; use "analysis" or "analysis <TICKER>".');
 }
 
-function handleSandbox(lab, action, appendMessage) {
-    const priors = lab.applyBayesSandbox(action);
-    if (!priors) {
-        appendMessage('Belief sandbox unavailable — no active scenario config.');
-        return;
-    }
-    const text = priors.map((p) => `${p.name}: ${(p.prob * 100).toFixed(1)}%`).join(', ');
-    appendMessage(`Belief sandbox (${action}) — ${text}.`);
+function handleSandbox(_lab, _action, appendMessage) {
+    appendMessage('Belief sandbox retired; use "analysis" or "analysis <TICKER>".');
 }
 
 function _handleCloseCommand(appendMessage) {

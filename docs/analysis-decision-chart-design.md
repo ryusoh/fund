@@ -1161,6 +1161,12 @@ buyEntryValue, fairEntryValue, hasScaleBreak, hasDividends, unit:
   `js/pages/analysis/monte_carlo.worker.js` and
   `tests/js/pages/analysis/monte_carlo.worker.test.js`, update
   `tests/js/pages/analysis/bayes.test.js` and `tests/js/pages/analysis/lab*.test.js`
+- **Status (2026-11-23):** **Complete** in local commit on `main`. Replaced the
+  9-section lab UI with the 2-view Decision Board + Decision Chart, wired
+  `fetchRealTimeData()` normalized weights and live prices, deleted
+  `monte_carlo.worker.js` (+ test), trimmed `bayes.js` to
+  `computeBrierScore`, and consolidated tests (5 Jest suites / 35 tests,
+  `make depcheck`, and zero-reference guardrail all passed). WO6 is next.
 - **Find (1, `js/pages/analysis/lab.js:95-106`):**
 
     ```javascript

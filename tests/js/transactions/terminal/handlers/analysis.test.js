@@ -4,8 +4,6 @@ jest.mock('../../../../../js/pages/analysis/lab.js', () => ({
     setActiveAnalysisSymbol: jest.fn(),
     getAnalysisSymbols: jest.fn(() => ['PORT', 'ANET']),
     getActiveAnalysisConfig: jest.fn(() => null),
-    applyBayesSandbox: jest.fn(),
-    runMonteCarloSimulation: jest.fn(),
     buildAnalysisSnapshot: jest.fn(),
 }));
 
@@ -90,79 +88,14 @@ describe('handleAnalysisCommand', () => {
         expect(appendMessage).toHaveBeenCalledWith("Showing analysis 'journal'.");
     });
 
-    it('includes the symbol and median in the Monte Carlo snapshot', async () => {
-        labModule.getActiveAnalysisConfig.mockReturnValue({ symbol: 'ANET' });
-        labModule.runMonteCarloSimulation.mockResolvedValue({
-            median: 145.5,
-            VaR_95: 61.02,
-            CVaR_95: 48.11,
-        });
+    it('reports retired Monte Carlo and sandbox subcommands cleanly', async () => {
         await handleAnalysisCommand(['mc'], { appendMessage });
         expect(appendMessage).toHaveBeenCalledWith(
-            'MC (10,000 paths, ANET) — median $145.50, VaR(95%) $61.02, CVaR(95%) $48.11.'
+            'Monte Carlo view retired; use "analysis" or "analysis <TICKER>".'
         );
-    });
-
-    it('runs Monte Carlo with the default path count', async () => {
-        labModule.getActiveAnalysisConfig.mockReturnValue({ symbol: 'ANET' });
-        labModule.runMonteCarloSimulation.mockResolvedValue({
-            median: 145.5,
-            VaR_95: 61.02,
-            CVaR_95: 48.11,
-        });
-        await handleAnalysisCommand(['mc'], { appendMessage });
-        expect(labModule.showAnalysisSection).toHaveBeenCalledWith('mc');
-        expect(labModule.runMonteCarloSimulation).toHaveBeenCalledWith(10000);
-        expect(appendMessage).toHaveBeenCalledWith(
-            'MC (10,000 paths, ANET) — median $145.50, VaR(95%) $61.02, CVaR(95%) $48.11.'
-        );
-    });
-
-    it('runs Monte Carlo with a custom path count', async () => {
-        labModule.getActiveAnalysisConfig.mockReturnValue({ symbol: 'ANET' });
-        labModule.runMonteCarloSimulation.mockResolvedValue({
-            VaR_95: 61.02,
-            CVaR_95: 48.11,
-        });
-        await handleAnalysisCommand(['mc', '500'], { appendMessage });
-        expect(labModule.runMonteCarloSimulation).toHaveBeenCalledWith(500);
-        expect(appendMessage).toHaveBeenCalledWith(expect.stringContaining('MC (500 paths, ANET)'));
-    });
-
-    it('falls back to the default path count on invalid input', async () => {
-        labModule.runMonteCarloSimulation.mockResolvedValue({
-            VaR_95: 61.02,
-            CVaR_95: 48.11,
-        });
-        await handleAnalysisCommand(['mc', 'abc'], { appendMessage });
-        expect(labModule.runMonteCarloSimulation).toHaveBeenCalledWith(10000);
-    });
-
-    it('reports Monte Carlo failure when the result is null', async () => {
-        labModule.runMonteCarloSimulation.mockResolvedValue(null);
-        await handleAnalysisCommand(['mc'], { appendMessage });
-        expect(appendMessage).toHaveBeenCalledWith(
-            'Monte Carlo simulation failed; see the analysis pane for details.'
-        );
-    });
-
-    it('prints posteriors after a sandbox action', async () => {
-        labModule.applyBayesSandbox.mockReturnValue([
-            { name: 'base', prob: 0.72 },
-            { name: 'bull', prob: 0.28 },
-        ]);
         await handleAnalysisCommand(['bull'], { appendMessage });
-        expect(labModule.applyBayesSandbox).toHaveBeenCalledWith('bull');
         expect(appendMessage).toHaveBeenCalledWith(
-            'Belief sandbox (bull) — base: 72.0%, bull: 28.0%.'
-        );
-    });
-
-    it('handles sandbox actions with no active engine', async () => {
-        labModule.applyBayesSandbox.mockReturnValue(null);
-        await handleAnalysisCommand(['reset'], { appendMessage });
-        expect(appendMessage).toHaveBeenCalledWith(
-            'Belief sandbox unavailable — no active scenario config.'
+            'Belief sandbox retired; use "analysis" or "analysis <TICKER>".'
         );
     });
 

@@ -1,12 +1,17 @@
-/* global Worker, getComputedStyle */
-import { BayesianEngine, applyParameterPosteriors } from './bayes.js';
+/* global getComputedStyle */
+import { computeBrierScore } from './bayes.js';
 import {
-    DEFAULT_RISK_FREE_RATE as DECISION_RISK_FREE_RATE,
-    KELLY_FRACTION_CAP as DECISION_KELLY_CAP,
-    computeMetrics as computeDecisionMetrics,
-    getEffectiveVolatility as getDecisionEffectiveVolatility,
-    solveGh7Kelly,
+    DEFAULT_RISK_FREE_RATE,
+    buildBoardSnapshot,
+    buildDecisionSnapshot,
+    computeMetrics,
+    evaluateTickerDecision,
+    getEffectivePrice,
+    getEffectiveVolatility,
 } from './decision.js';
+import { attachDecisionChartInteractions, renderDecisionChart } from './decisionChart.js';
+import { fetchRealTimeData } from '../../transactions/realtimeData.js';
+import { isLocalhost } from '../../utils/host.js';
 import { logger } from '../../utils/logger.js';
 import {
     convertValueToCurrency,
@@ -15,55 +20,74 @@ import {
 } from '../../transactions/utils.js';
 import { getSelectedCurrency, whenTransactionDataReady } from '../../transactions/state.js';
 
-// Element references are resolved by initAnalysisPane() — importing this
-// module must be side-effect free so the terminal can lazy-load it.
 let paneRoot = null;
 let contextEl = null;
-let summaryStatsEl = null;
-let scenarioResultsEl = null;
-let valueBandsEl = null;
-let bayesOutput = null;
-let monteCarloCanvas = null;
-let monteCarloFanCanvas = null;
-let riskMetricsEl = null;
-let kellyCurveCanvas = null;
-let kellyMetricsEl = null;
-let beliefStateCardEl = null;
-let evidenceTimelineEl = null;
-let predictionsCardEl = null;
-let decisionJournalCardEl = null;
-let overviewScenariosEl = null;
-let overviewValueBandsEl = null;
+let decisionBoardEl = null;
+let boardBudgetFooterEl = null;
+let verdictStripEl = null;
+let decisionChartCanvas = null;
+let sizingBulletEl = null;
+let riskFooterEl = null;
+let detachChartInteractions = null;
 
 const state = {
     configs: [],
-    activeSymbol: null,
-    activeSection: 'overview',
-    bayesEngine: null,
-    evidenceCache: new Map(),
-    // Event flags from data/analysis/event_flags.json (WO-5c). Null when the
-    // file is absent (no sweep has run with --json-out yet) or fetch failed.
+    activeSymbol: 'PORT',
+    activeSection: 'board',
+    horizonMode: '2y',
     eventFlags: null,
-    // Created lazily on the first Monte Carlo run — spawning the module
-    // worker at import time would run it even when the pane never opens.
-    monteCarloWorker: null,
+    portfolioTotalValue: 0,
+    lastNowMs: null,
 };
+
 const DATA_CACHE_BUST = Date.now().toString();
-const thesisTitleCache = new Map();
+const LATEST_FX_DATE = '9999-12-31';
 
-const WORKER_URL = '../js/pages/analysis/monte_carlo.worker.js';
+const ANALYSIS_SECTIONS = ['board', 'ticker'];
 
-// Canvas palette mirrors the terminal design tokens (css/terminal/base.css)
-// so the pane stays coherent with the rest of the terminal page. These
-// values are fallbacks only — syncPaneChartColors() overwrites them from
-// the pane root's computed custom properties at init.
+const PANE_MARKUP = `
+    <div class="pane-context" id="paneContext"></div>
+    <div class="analysis-stage" tabindex="0">
+        <div class="output-grid">
+            <section data-analysis-section="board" class="decision-board-section">
+                <div
+                    class="decision-board"
+                    id="decisionBoard"
+                    role="table"
+                    aria-label="Portfolio decision board"
+                ></div>
+                <div class="board-budget-footer" id="boardBudgetFooter"></div>
+            </section>
+            <section
+                data-analysis-section="ticker"
+                class="decision-ticker-section is-hidden"
+            >
+                <div class="verdict-strip" id="verdictStrip"></div>
+                <div class="decision-chart-wrap">
+                    <canvas
+                        id="decisionChartCanvas"
+                        class="pane-canvas"
+                        role="img"
+                        aria-label="Ticker valuation corridor and decision chart"
+                    ></canvas>
+                </div>
+                <div class="sizing-bullet" id="sizingBullet"></div>
+                <div class="risk-footer" id="riskFooter"></div>
+            </section>
+        </div>
+    </div>
+`;
+
 const PANE_CHART_COLORS = {
     grid: 'rgba(109, 121, 155, 0.35)',
     line: '#c9d1d9',
     muted: '#8b949e',
     gold: '#f0b90b',
     green: '#34a853',
-    greenFill: 'rgba(52, 168, 83, 0.15)',
+    greenFill: 'rgba(52, 168, 83, 0.08)',
+    greenDeepFill: 'rgba(52, 168, 83, 0.14)',
+    goldFill: 'rgba(240, 185, 11, 0.09)',
+    redFill: 'rgba(234, 67, 53, 0.12)',
     red: '#ea4335',
     blue: '#64b5f6',
 };
@@ -77,8 +101,6 @@ const TOKEN_PROPERTIES = {
     blue: '--blue-color',
 };
 
-// Derive the canvas palette from the terminal tokens once at init instead
-// of maintaining a hardcoded mirror that drifts (WO10).
 function syncPaneChartColors() {
     if (!paneRoot || typeof getComputedStyle !== 'function') {
         return;
@@ -95,112 +117,9 @@ function syncPaneChartColors() {
         const r = parseInt(hexMatch[1].slice(0, 2), 16);
         const g = parseInt(hexMatch[1].slice(2, 4), 16);
         const b = parseInt(hexMatch[1].slice(4, 6), 16);
-        PANE_CHART_COLORS.greenFill = `rgba(${r}, ${g}, ${b}, 0.15)`;
+        PANE_CHART_COLORS.greenFill = `rgba(${r}, ${g}, ${b}, 0.08)`;
+        PANE_CHART_COLORS.greenDeepFill = `rgba(${r}, ${g}, ${b}, 0.14)`;
     }
-}
-
-const ANALYSIS_SECTIONS = [
-    'overview',
-    'scenarios',
-    'value',
-    'kelly',
-    'mc',
-    'belief',
-    'evidence',
-    'predictions',
-    'journal',
-];
-
-const PANE_MARKUP = `
-    <div class="pane-context" id="paneContext"></div>
-    <div class="analysis-stage" tabindex="0">
-        <div class="output-grid">
-            <section data-analysis-section="overview">
-                <div class="summary-stats" id="summaryStats"></div>
-                <div class="overview-lists">
-                    <div class="block-header"><h3>Scenarios</h3></div>
-                    <div id="overviewScenarios"></div>
-                    <div class="block-header"><h3>Value Bands</h3></div>
-                    <dl id="overviewValueBands"></dl>
-                </div>
-            </section>
-            <section data-analysis-section="scenarios">
-                <div class="scenario-block">
-                    <div class="block-header"><h3>Scenario Analysis</h3></div>
-                    <div id="scenarioResults" class="card-row"></div>
-                </div>
-            </section>
-            <section data-analysis-section="value">
-                <div class="value-card">
-                    <h3>Valuation</h3>
-                    <dl id="valueBands"></dl>
-                </div>
-            </section>
-            <section data-analysis-section="kelly">
-                <div class="kelly-card">
-                    <div class="block-header"><h3>Kelly Criterion Position Sizing</h3></div>
-                    <canvas
-                        id="kellyCurveCanvas"
-                        class="pane-canvas"
-                        width="1200"
-                        height="400"
-                        role="img"
-                        aria-label="Kelly curve"
-                    ></canvas>
-                    <div id="kellyMetrics" class="badge-row"></div>
-                </div>
-            </section>
-            <section data-analysis-section="mc">
-                <div class="risk-sim">
-                    <div class="block-header"><h3>Monte Carlo Risk Simulation</h3></div>
-                    <div id="riskMetrics" class="card-row"></div>
-                    <canvas
-                        id="monteCarloCanvas"
-                        class="pane-canvas"
-                        width="1200"
-                        height="240"
-                        role="img"
-                        aria-label="Monte Carlo results"
-                    ></canvas>
-                    <canvas
-                        id="monteCarloFanCanvas"
-                        class="pane-canvas"
-                        width="1200"
-                        height="240"
-                        role="img"
-                        aria-label="Monte Carlo fan envelope"
-                    ></canvas>
-                </div>
-            </section>
-            <section data-analysis-section="belief">
-                <div class="block-header"><h3>Belief State</h3></div>
-                <div class="belief-card" id="beliefStateCard"></div>
-                <div class="sandbox-card">
-                    <span class="sandbox-tag">What-If Sandbox — analysis bull|bear|reset</span>
-                    <div id="bayesOutput"></div>
-                </div>
-            </section>
-            <section data-analysis-section="evidence">
-                <div class="block-header" id="evidenceTimelineHeader">
-                    <h3>Verified Evidence Log (.jsonl)</h3>
-                </div>
-                <div id="evidenceTimeline" class="timeline-container" tabindex="0"></div>
-            </section>
-            <section data-analysis-section="predictions">
-                <div class="prediction-box" id="predictionsCard"></div>
-            </section>
-            <section data-analysis-section="journal">
-                <div class="decision-box" id="decisionJournalCard"></div>
-            </section>
-        </div>
-    </div>
-`;
-
-function getMonteCarloWorker() {
-    if (!state.monteCarloWorker) {
-        state.monteCarloWorker = new Worker(WORKER_URL, { type: 'module' });
-    }
-    return state.monteCarloWorker;
 }
 
 export async function fetchJson(path) {
@@ -212,31 +131,6 @@ export async function fetchJson(path) {
     }
     return response.json();
 }
-
-export async function fetchText(path) {
-    const url = new URL(path, window.location.href);
-    url.searchParams.set('v', DATA_CACHE_BUST);
-    const response = await fetch(url.toString(), { cache: 'no-store' });
-    if (!response.ok) {
-        throw new Error(`Failed to load ${path}`);
-    }
-    return response.text();
-}
-
-function formatPercent(value) {
-    if (!Number.isFinite(value)) {
-        return 'n/a';
-    }
-    const pct = value * 100;
-    const sign = pct >= 0 ? '+' : '';
-    return `${sign}${pct.toFixed(2)}%`;
-}
-
-// Analysis prices are current USD snapshots, not dated series — convert with
-// the latest FX rate, never a historical one (WO14 guardrail,
-// docs/terminal-analysis-merge.md). A far-future date resolves to the newest
-// available rate in findFxRate's closest-date search.
-const LATEST_FX_DATE = '9999-12-31';
 
 function formatCurrency(value) {
     if (!Number.isFinite(value)) {
@@ -256,2466 +150,254 @@ function formatCompactCurrency(value) {
     );
 }
 
-function resolveNumeric(manualValue, marketValue, fallback = 0, treatZeroAsMissing = false) {
-    const manualNum = Number(manualValue);
-    if (Number.isFinite(manualNum) && (!treatZeroAsMissing || manualNum !== 0)) {
-        return manualNum;
-    }
-    const marketNum = Number(marketValue);
-    if (Number.isFinite(marketNum)) {
-        return marketNum;
-    }
-    return fallback;
-}
-
-function getPreferences(config) {
-    if (!config || typeof config !== 'object') {
-        return {};
-    }
-    const model = config.model;
-    if (!model || typeof model !== 'object') {
-        return {};
-    }
-    return model.preferences && typeof model.preferences === 'object' ? model.preferences : {};
-}
-
-function getOverrides(config) {
-    const preferences = getPreferences(config);
-    if (preferences.overrides && typeof preferences.overrides === 'object') {
-        return preferences.overrides;
-    }
-    return {};
-}
-
-function stripWrappingQuotes(value) {
-    if (typeof value !== 'string') {
-        return value;
-    }
-    const trimmed = value.trim();
-    if (trimmed.length < 2) {
-        return trimmed;
-    }
-    const start = trimmed[0];
-    const end = trimmed[trimmed.length - 1];
-    const quotePairs = [
-        ['"', '"'],
-        ["'", "'"],
-        ['“', '”'],
-        ['‘', '’'],
-    ];
-    const hasPair = quotePairs.some(([open, close]) => start === open && end === close);
-    return hasPair ? trimmed.slice(1, -1).trim() : trimmed;
-}
-
-function extractScenarioTitles(markdown) {
-    if (typeof markdown !== 'string' || !markdown.length) {
-        return null;
-    }
-    const regex = /^###\s+(.+)$/gim;
-    const titles = {};
-    let match = regex.exec(markdown);
-    while (match) {
-        const heading = match[1]?.trim() || '';
-        const scenarioMatch = heading.match(/\b(Bull|Base|Bear)\b(?:\s+Case)?\s*(?:[-–]\s*(.+))?/i);
-        if (scenarioMatch) {
-            const key = scenarioMatch[1].toLowerCase();
-            const descriptor = stripWrappingQuotes(scenarioMatch[2] || '');
-            if (descriptor) {
-                titles[key] = descriptor;
-            }
-        }
-        match = regex.exec(markdown);
-    }
-    return Object.keys(titles).length ? titles : null;
-}
-
-async function fetchThesisScenarioTitles(symbol) {
-    if (!symbol) {
-        return null;
-    }
-    if (thesisTitleCache.has(symbol)) {
-        return thesisTitleCache.get(symbol);
-    }
-    try {
-        const markdown = await fetchText(`../docs/thesis/${symbol}.md`);
-        const titles = extractScenarioTitles(markdown);
-        thesisTitleCache.set(symbol, titles);
-        return titles;
-    } catch (error) {
-        logger.warn('Analysis lab operations failed:', error);
-        thesisTitleCache.set(symbol, null);
-        return null;
-    }
-}
-
-function applyThesisScenarioTitles(config, titles) {
-    if (!titles || !config?.scenarios?.length) {
-        return;
-    }
-    config.scenarios = config.scenarios.map((scenario) => {
-        const key = (scenario.id || scenario.name || '').toLowerCase();
-        const descriptor = titles[key];
-        if (!descriptor) {
-            return scenario;
-        }
-        const label = key.charAt(0).toUpperCase() + key.slice(1);
-        return {
-            ...scenario,
-            name: `${label} – ${descriptor}`,
-        };
-    });
-}
-
-function getBenchmarkDescriptor(preferences) {
-    const benchmark = preferences?.benchmark;
-    if (benchmark && typeof benchmark === 'object') {
-        return {
-            type: benchmark.type || 'annualReturn',
-            name: benchmark.name || 'Benchmark',
-            value: Number(benchmark.value ?? 0) || 0,
-        };
-    }
-    const value = Number(benchmark ?? 0) || 0;
-    return { type: 'annualReturn', name: 'Benchmark', value };
-}
-
-function getEffectivePrice(config) {
-    const overrides = getOverrides(config);
-    const market = config.market || {};
-    return resolveNumeric(overrides.price, market.price, 0, true);
-}
-
-function getEffectiveVolatility(config) {
-    return getDecisionEffectiveVolatility(config);
-}
-
-function extractDirectShares(market) {
-    return Number(
-        market.sharesOutstanding ?? market.shares ?? market.basicShares ?? market.floatShares
-    );
-}
-
-function deriveSharesFromMarketCap(market) {
-    const price = Number(market.price);
-    const marketCap = Number(market.marketCap);
-    if (Number.isFinite(price) && price > 0 && Number.isFinite(marketCap) && marketCap > 0) {
-        const derived = marketCap / price;
-        if (Number.isFinite(derived) && derived > 0) {
-            return derived;
-        }
-    }
-    return null;
-}
-
-function getSharesOutstanding(config) {
-    const market = config.market || {};
-    const direct = extractDirectShares(market);
-    if (Number.isFinite(direct) && direct > 0) {
-        return direct;
-    }
-    return deriveSharesFromMarketCap(market);
-}
-
-function getAsOfYear(config) {
-    const asOf = config?.meta?.asOf;
-    if (typeof asOf === 'string') {
-        const parsed = new Date(asOf);
-        if (!Number.isNaN(parsed.getTime())) {
-            return parsed.getUTCFullYear();
-        }
-    }
-    return new Date().getUTCFullYear();
-}
-
-function computeExitYear(config, horizon) {
-    const baseYear = getAsOfYear(config);
-    const numericHorizon = Number(horizon);
-    if (!Number.isFinite(numericHorizon)) {
-        return baseYear;
-    }
-    const roundedHorizon = Math.max(0, Math.round(numericHorizon));
-    return baseYear + roundedHorizon;
-}
-
-function extractGrowthParams(scenario) {
-    const growth = scenario.growth || {};
-    const epsCagrRaw = Number(growth.epsCagr ?? scenario.epsCagr ?? 0);
-    const epsCagr = Number.isFinite(epsCagrRaw) ? epsCagrRaw : 0;
-    const epsSigmaRaw = Number(growth.epsCagrSigma ?? scenario.epsCagrSigma);
-    const epsSigma = Number.isFinite(epsSigmaRaw) ? epsSigmaRaw : null;
-    return { epsCagr, epsSigma };
-}
-
-function extractValuationParams(scenario) {
-    const valuation = scenario.valuation || {};
-    const exitPeRaw = Number(valuation.exitPe ?? scenario.exitPe ?? 1);
-    const exitPe = Number.isFinite(exitPeRaw) ? exitPeRaw : 1;
-    const exitSigmaRaw = Number(valuation.exitPeSigma ?? scenario.exitPeSigma);
-    const exitSigma = Number.isFinite(exitSigmaRaw) ? exitSigmaRaw : null;
-    return { exitPe, exitSigma };
-}
-
-function extractPrecomputedParams(scenario) {
-    const precomputedMultipleRaw = Number(scenario.precomputedMultiple ?? scenario.multiple);
-    const precomputedMultiple = Number.isFinite(precomputedMultipleRaw)
-        ? precomputedMultipleRaw
-        : null;
-    const precomputedCagrRaw = Number(scenario.precomputedCagr ?? scenario.scenarioCagr);
-    const precomputedCagr = Number.isFinite(precomputedCagrRaw) ? precomputedCagrRaw : null;
-    const precomputedEarningsCagrRaw = Number(scenario.precomputedEarningsCagr);
-    const precomputedEarningsCagr = Number.isFinite(precomputedEarningsCagrRaw)
-        ? precomputedEarningsCagrRaw
-        : null;
-    return { precomputedMultiple, precomputedCagr, precomputedEarningsCagr };
-}
-
-function normalizeScenario(scenario) {
-    const name = scenario.name || scenario.id || 'Scenario';
-    const { epsCagr, epsSigma } = extractGrowthParams(scenario);
-    const { exitPe, exitSigma } = extractValuationParams(scenario);
-    const probRaw = Number(scenario.prob ?? 0);
-    const { precomputedMultiple, precomputedCagr, precomputedEarningsCagr } =
-        extractPrecomputedParams(scenario);
-    return {
-        id: scenario.id || name.toLowerCase(),
-        name,
-        prob: Number.isFinite(probRaw) ? probRaw : 0,
-        growth: {
-            epsCagr,
-            epsCagrSigma: epsSigma,
-        },
-        valuation: {
-            exitPe,
-            exitPeSigma: exitSigma,
-        },
-        notes: scenario.notes ?? null,
-        macroState: scenario.macroState ?? null,
-        precomputedMultiple,
-        precomputedCagr,
-        precomputedEarningsCagr,
-    };
-}
-
-function extractOutcomeNumber(value, fallback) {
-    const num = Number(value);
-    return Number.isFinite(num) ? num : fallback;
-}
-
-function computeBaseScenarioOutcome(scenario) {
-    const prob = extractOutcomeNumber(scenario.prob, 0);
-    return {
-        id: scenario.id || scenario.name || 'scenario',
-        name: scenario.name || scenario.id || 'Scenario',
-        prob: prob,
-        macroState: scenario.macroState ?? null,
-    };
-}
-
-function deriveEarningsCagrHelper(terminalValue, entryEps, safeHorizon, fallbackEpsCagr) {
-    if (entryEps === null || !Number.isFinite(terminalValue) || terminalValue <= 0) {
-        return fallbackEpsCagr;
-    }
-    const ratio = terminalValue / entryEps;
-    if (ratio <= 0) {
-        return fallbackEpsCagr;
-    }
-    const derived = ratio ** (1 / safeHorizon) - 1;
-    return Number.isFinite(derived) ? derived : fallbackEpsCagr;
-}
-
-function resolveFallbackEpsCagr(scenario) {
-    if (Number.isFinite(scenario?.growth?.epsCagr) && scenario.growth.epsCagr !== null) {
-        return scenario.growth.epsCagr;
-    }
-    if (Number.isFinite(scenario?.epsCagr)) {
-        return scenario.epsCagr;
-    }
-    return null;
-}
-
-function resolvePrecomputedEarningsCagr(
-    scenario,
-    terminalEps,
-    entryEps,
-    safeHorizon,
-    fallbackEpsCagr
-) {
-    const precomputedEarningsCagr = extractOutcomeNumber(scenario.precomputedEarningsCagr, null);
-    if (precomputedEarningsCagr !== null) {
-        return precomputedEarningsCagr;
-    }
-    return deriveEarningsCagrHelper(terminalEps, entryEps, safeHorizon, fallbackEpsCagr);
-}
-
-function resolvePrecomputedPriceCagr(scenario, precomputedMultiple, safeHorizon) {
-    const precomputedCagr = extractOutcomeNumber(
-        scenario.precomputedCagr ?? scenario.scenarioCagr,
-        null
-    );
-    if (precomputedCagr !== null) {
-        return precomputedCagr;
-    }
-    return precomputedMultiple ** (1 / safeHorizon) - 1;
-}
-
-function computePrecomputedScenarioOutcome(
-    scenario,
-    base,
-    precomputedMultiple,
-    entryEps,
-    safeHorizon,
-    fallbackEpsCagr,
-    price = 0
-) {
-    const totalReturnCagr = resolvePrecomputedPriceCagr(scenario, precomputedMultiple, safeHorizon);
-    const terminalEps = extractOutcomeNumber(
-        scenario.precomputedTerminalEps ?? scenario.terminalEps,
-        null
-    );
-    const earningsCagr = resolvePrecomputedEarningsCagr(
-        scenario,
-        terminalEps,
-        entryEps,
-        safeHorizon,
-        fallbackEpsCagr
-    );
-    return {
-        ...base,
-        multiple: precomputedMultiple,
-        totalReturnCagr,
-        earningsCagr,
-        terminalEps,
-        terminalPrice: null,
-        terminalTotalValue: price > 0 ? precomputedMultiple * price : null,
-    };
-}
-
-function computeDerivedScenarioOutcome(
-    scenario,
-    base,
-    price,
-    eps,
-    horizon,
-    safeHorizon,
-    entryEps,
-    fallbackEpsCagr,
-    divRate = 0
-) {
-    const growth = scenario.growth || {};
-    const valuation = scenario.valuation || {};
-    const epsCagr = extractOutcomeNumber(growth.epsCagr ?? scenario.epsCagr, 0);
-    const exitPe = extractOutcomeNumber(valuation.exitPe ?? scenario.exitPe, 1);
-    if (!Number.isFinite(eps) || eps <= 0 || 1 + epsCagr <= 0 || exitPe <= 0) {
-        return {
-            ...base,
-            multiple: 0,
-            totalReturnCagr: null,
-            earningsCagr: fallbackEpsCagr,
-            terminalEps: null,
-            terminalPrice: null,
-            terminalTotalValue: null,
-        };
-    }
-    const safeDivRate = Number.isFinite(divRate) ? Math.min(0.25, Math.max(0, divRate)) : 0;
-    const terminalEps = eps * (1 + epsCagr) ** horizon;
-    const terminalPrice = terminalEps * exitPe;
-    const terminalTotalValue = terminalPrice * (1 + safeDivRate) ** horizon;
-    const multiple = price > 0 ? terminalTotalValue / price : 0;
-    const totalReturnCagr = multiple > 0 ? multiple ** (1 / safeHorizon) - 1 : null;
-    const earningsCagr = deriveEarningsCagrHelper(
-        terminalEps,
-        entryEps,
-        safeHorizon,
-        fallbackEpsCagr
-    );
-    return {
-        ...base,
-        multiple,
-        totalReturnCagr,
-        earningsCagr,
-        terminalEps,
-        terminalPrice,
-        terminalTotalValue,
-    };
-}
-
-function diffDescriptor(price, entry) {
-    if (!Number.isFinite(entry) || entry <= 0) {
+function formatSignedPercent(value, decimals = 1) {
+    if (!Number.isFinite(value)) {
         return 'n/a';
     }
-    const diff = ((price - entry) / entry) * 100;
-    const direction = diff >= 0 ? 'above' : 'below';
-    return `${Math.abs(diff).toFixed(1)}% ${direction} target`;
+    const pct = value * 100;
+    const sign = pct >= 0 ? '+' : '';
+    return `${sign}${pct.toFixed(decimals)}%`;
 }
 
-function computeScenarioOutcome(scenario, { price, eps, horizon, divRate = 0 }) {
-    const safeHorizon = horizon > 0 ? horizon : 1;
-    const base = computeBaseScenarioOutcome(scenario);
-    const entryEps = Number.isFinite(eps) && eps > 0 ? eps : null;
-    const fallbackEpsCagr = resolveFallbackEpsCagr(scenario);
-
-    const precomputedMultiple = extractOutcomeNumber(
-        scenario.precomputedMultiple ?? scenario.multiple,
-        null
-    );
-    if (precomputedMultiple !== null && precomputedMultiple > 0) {
-        return computePrecomputedScenarioOutcome(
-            scenario,
-            base,
-            precomputedMultiple,
-            entryEps,
-            safeHorizon,
-            fallbackEpsCagr,
-            price
-        );
+function formatPlainPercent(value, decimals = 1) {
+    if (!Number.isFinite(value)) {
+        return 'n/a';
     }
-    return computeDerivedScenarioOutcome(
-        scenario,
-        base,
-        price,
-        eps,
-        horizon,
-        safeHorizon,
-        entryEps,
-        fallbackEpsCagr,
-        divRate
-    );
+    return `${(value * 100).toFixed(decimals)}%`;
 }
 
-const DEFAULT_RISK_FREE_RATE = DECISION_RISK_FREE_RATE;
-const KELLY_FRACTION_CAP = DECISION_KELLY_CAP;
-
-function kellyLogGrowth(f, kellyReturns, riskFreeRate) {
-    let sum = 0;
-    for (let i = 0; i < kellyReturns.length; i++) {
-        const { prob, ret } = kellyReturns[i];
-        const wealth = 1 + riskFreeRate + f * (ret - riskFreeRate);
-        if (wealth <= 0) {
-            return -Infinity;
-        }
-        sum += prob * Math.log(wealth);
-    }
-    return sum;
-}
-
-function kellyGrowthDerivative(f, kellyReturns, riskFreeRate) {
-    let sum = 0;
-    for (let i = 0; i < kellyReturns.length; i++) {
-        const { prob, ret } = kellyReturns[i];
-        const excess = ret - riskFreeRate;
-        const wealth = 1 + riskFreeRate + f * excess;
-        if (wealth <= 0) {
-            return -Infinity;
-        }
-        sum += (prob * excess) / wealth;
-    }
-    return sum;
-}
-
-function kellyMaxFraction(kellyReturns, riskFreeRate) {
-    let fMax = Infinity;
-    for (let i = 0; i < kellyReturns.length; i++) {
-        const excess = kellyReturns[i].ret - riskFreeRate;
-        if (excess < 0) {
-            fMax = Math.min(fMax, (1 + riskFreeRate) / -excess);
-        }
-    }
-    return fMax;
-}
-
-function solveKellyFraction(kellyReturns, riskFreeRate, sigma = 0) {
-    return solveGh7Kelly(kellyReturns, sigma, riskFreeRate, KELLY_FRACTION_CAP);
-}
-
-function solveZeroGrowthFraction(kellyReturns, riskFreeRate, fullKelly) {
-    if (!kellyReturns.length || !(fullKelly > 0)) {
+function toFiniteNumber(value) {
+    if (value === null || value === undefined || value === '' || typeof value === 'boolean') {
         return null;
     }
-    const baseline = Math.log(1 + riskFreeRate);
-    const fMax = kellyMaxFraction(kellyReturns, riskFreeRate);
-    const hiBound = Number.isFinite(fMax) ? fMax * (1 - 1e-9) : KELLY_FRACTION_CAP;
-    if (kellyLogGrowth(hiBound, kellyReturns, riskFreeRate) >= baseline) {
-        return null;
-    }
-    let lo = fullKelly;
-    let hi = hiBound;
-    for (let i = 0; i < 80; i++) {
-        const mid = (lo + hi) / 2;
-        if (kellyLogGrowth(mid, kellyReturns, riskFreeRate) > baseline) {
-            lo = mid;
-        } else {
-            hi = mid;
-        }
-    }
-    return (lo + hi) / 2;
+    const num = Number(value);
+    return Number.isFinite(num) ? num : null;
 }
 
-function computeGeometricCagr(kellyReturns) {
-    if (!kellyReturns.length) {
-        return null;
-    }
-    let sum = 0;
-    for (let i = 0; i < kellyReturns.length; i++) {
-        if (kellyReturns[i].ret <= -1) {
-            return -1;
-        }
-        sum += kellyReturns[i].prob * Math.log(1 + kellyReturns[i].ret);
-    }
-    return Math.exp(sum) - 1;
-}
-
-function computeScenarioVolatility(kellyReturns) {
-    if (!kellyReturns.length) {
-        return null;
-    }
-    let mean = 0;
-    for (let i = 0; i < kellyReturns.length; i++) {
-        mean += kellyReturns[i].prob * kellyReturns[i].ret;
-    }
-    let variance = 0;
-    for (let i = 0; i < kellyReturns.length; i++) {
-        variance += kellyReturns[i].prob * (kellyReturns[i].ret - mean) ** 2;
-    }
-    return Math.sqrt(variance);
-}
-
-function resolveCurrentWeight(config) {
-    const raw = Number(config.position?.currentWeight ?? config.weight);
-    return Number.isFinite(raw) ? raw : 0;
-}
-
-function solveImpliedEdgeBelief(kellyReturns, riskFreeRate, fullKelly, currentWeight) {
-    if (!kellyReturns.length || !(fullKelly > 0) || !(currentWeight > 0)) {
-        return null;
-    }
-    if (currentWeight >= fullKelly) {
-        return 1;
-    }
-    const meanReturn = kellyReturns.reduce((sum, r) => sum + r.prob * r.ret, 0);
-    const meanExcess = meanReturn - riskFreeRate;
-    if (!(meanExcess > 0)) {
-        return null;
-    }
-    // f* falls monotonically as a uniform haircut δ on scenario returns grows
-    // from 0 to meanExcess; bisect for the δ where f* equals the position.
-    let lo = 0;
-    let hi = meanExcess;
-    for (let i = 0; i < 80; i++) {
-        const mid = (lo + hi) / 2;
-        const shifted = kellyReturns.map((r) => ({ prob: r.prob, ret: r.ret - mid }));
-        if (solveKellyFraction(shifted, riskFreeRate) > currentWeight) {
-            lo = mid;
-        } else {
-            hi = mid;
-        }
-    }
-    return 1 - (lo + hi) / 2 / meanExcess;
-}
-
-function computeKellyExtras(kellyReturns, riskFreeRate, fullKelly, scaledKelly, currentWeight) {
-    const baselineGrowth = Math.log(1 + riskFreeRate);
-    const growthAtFull =
-        fullKelly > 0 ? kellyLogGrowth(fullKelly, kellyReturns, riskFreeRate) : baselineGrowth;
-    const scaledGrowthRetention =
-        fullKelly > 0 && growthAtFull > baselineGrowth
-            ? (kellyLogGrowth(scaledKelly, kellyReturns, riskFreeRate) - baselineGrowth) /
-              (growthAtFull - baselineGrowth)
-            : null;
-    const meanReturn = kellyReturns.reduce((sum, r) => sum + r.prob * r.ret, 0);
-    const meanExcess = meanReturn - riskFreeRate;
-    const kellyAtHalfEdge =
-        meanExcess > 0
-            ? solveKellyFraction(
-                  kellyReturns.map((r) => ({ prob: r.prob, ret: r.ret - meanExcess / 2 })),
-                  riskFreeRate
-              )
-            : null;
-    const impliedEdgeBelief = solveImpliedEdgeBelief(
-        kellyReturns,
-        riskFreeRate,
-        fullKelly,
-        currentWeight
-    );
-    return { scaledGrowthRetention, kellyAtHalfEdge, impliedEdgeBelief };
-}
-
-// Thorp's fractional-Kelly drawdown relation: betting c·f*, the probability
-// of ever falling to fraction x of peak wealth is approximately x^(2/c - 1).
-function computeDrawdownRisk(fullKelly, scaledKelly, maxDrawdown) {
-    if (!(fullKelly > 0) || !(scaledKelly > 0)) {
-        return null;
-    }
-    const c = scaledKelly / fullKelly;
-    return (1 - maxDrawdown) ** (2 / c - 1);
-}
-
-function computeMetrics(config) {
-    const preferences = getPreferences(config);
-    const market = config.market || {};
-    const benchmarkDescriptor = getBenchmarkDescriptor(preferences);
-    const baseMetrics = computeDecisionMetrics(config);
-    const exitYear = computeExitYear(config, baseMetrics.horizon);
-    const sharesOutstanding = getSharesOutstanding(config);
-    const kellyReturns = baseMetrics.kellyReturns || [];
-    const maxKellyFraction = kellyMaxFraction(kellyReturns, baseMetrics.riskFreeRate);
-    const zeroGrowthFraction = solveZeroGrowthFraction(
-        kellyReturns,
-        baseMetrics.riskFreeRate,
-        baseMetrics.fullKelly
-    );
-    const kellyExtras = computeKellyExtras(
-        kellyReturns,
-        baseMetrics.riskFreeRate,
-        baseMetrics.fullKelly ?? 0,
-        baseMetrics.scaledKelly ?? 0,
-        resolveCurrentWeight(config)
-    );
-    const maxDrawdownRaw = Number(preferences.maxDrawdown);
-    const maxDrawdown = Number.isFinite(maxDrawdownRaw) ? maxDrawdownRaw : 0.3;
-    const drawdownToleranceRaw = Number(preferences.drawdownTolerance);
-    const drawdownTolerance = Number.isFinite(drawdownToleranceRaw) ? drawdownToleranceRaw : 0.05;
-    const drawdownRiskAtScaled = computeDrawdownRisk(
-        baseMetrics.fullKelly,
-        baseMetrics.scaledKelly,
-        maxDrawdown
-    );
-
-    return {
-        ...baseMetrics,
-        benchmarkDescriptor,
-        market,
-        kellyMaxFraction: maxKellyFraction,
-        zeroGrowthFraction,
-        scaledGrowthRetention: kellyExtras.scaledGrowthRetention,
-        kellyAtHalfEdge: kellyExtras.kellyAtHalfEdge,
-        impliedEdgeBelief: kellyExtras.impliedEdgeBelief,
-        maxDrawdown,
-        drawdownTolerance,
-        drawdownRiskAtScaled,
-        exitYear,
-        sharesOutstanding,
-    };
-}
-
-function renderSummary(config) {
-    if (!summaryStatsEl) {
-        return;
-    }
-    summaryStatsEl.replaceChildren();
-
-    if (!config || !config.metrics) {
-        const div = document.createElement('div');
-        div.className = 'pane-empty';
-        div.textContent = 'No metrics available';
-        summaryStatsEl.appendChild(div);
-        return;
-    }
-
-    const metrics = config.metrics;
-    const preferences = getPreferences(config);
-    const benchmarkDescriptor = metrics.benchmarkDescriptor || getBenchmarkDescriptor(preferences);
-    const edgeLabel = `Edge vs ${benchmarkDescriptor.name || 'Benchmark'}`;
-
-    [
-        { label: 'Expected CAGR', value: formatPercent(metrics.expectedCagr) },
-        {
-            label: 'Geo CAGR',
-            value: Number.isFinite(metrics.geometricCagr)
-                ? formatPercent(metrics.geometricCagr)
-                : 'n/a',
-        },
-        { label: edgeLabel, value: formatPercent(metrics.edge) },
-        { label: 'Full Kelly', value: formatPercent(metrics.fullKelly) },
-        { label: 'Scaled Kelly', value: formatPercent(metrics.scaledKelly) },
-        { label: 'Price', value: formatCurrency(metrics.price) },
-    ].forEach((stat) => {
-        const card = document.createElement('div');
-        card.className = 'stat-card';
-        const h3 = document.createElement('h3');
-        h3.textContent = stat.label;
-        const p = document.createElement('p');
-        p.textContent = stat.value;
-        card.append(h3, p);
-        summaryStatsEl.appendChild(card);
-    });
-}
-
-function renderScenarioCards(config) {
-    if (!scenarioResultsEl) {
-        return;
-    }
-    const outcomes = (config.metrics && config.metrics.outcomes) || [];
-    scenarioResultsEl.replaceChildren();
-    const sharesOutstanding =
-        config.metrics && Number.isFinite(config.metrics.sharesOutstanding)
-            ? config.metrics.sharesOutstanding
-            : null;
-    outcomes.forEach((outcome) => {
-        const terminalEps =
-            outcome && Number.isFinite(outcome.terminalEps) ? outcome.terminalEps : null;
-        const totalEarnings =
-            terminalEps !== null && sharesOutstanding !== null
-                ? terminalEps * sharesOutstanding
-                : null;
-        const card = document.createElement('div');
-        card.className = 'result-card';
-
-        const h4 = document.createElement('h4');
-        h4.textContent = outcome.name;
-        card.appendChild(h4);
-
-        const createP = (text) => {
-            const p = document.createElement('p');
-            p.textContent = text;
-            return p;
-        };
-
-        card.appendChild(createP(`Prob: ${(outcome.prob * 100).toFixed(1)}%`));
-        card.appendChild(createP(`Multiple: ${outcome.multiple.toFixed(2)}x`));
-        card.appendChild(createP(`Total Return CAGR: ${formatPercent(outcome.totalReturnCagr)}`));
-        card.appendChild(createP(`Earnings CAGR: ${formatPercent(outcome.earningsCagr)}`));
-        card.appendChild(createP(`Implied Annual EPS: ${formatCurrency(terminalEps)}`));
-        card.appendChild(createP(`Total Annual Earnings: ${formatCompactCurrency(totalEarnings)}`));
-
-        scenarioResultsEl.appendChild(card);
-    });
-}
-
-function renderValueBands(config, targetEl = valueBandsEl) {
-    if (!targetEl) {
-        return;
-    }
-    const preferences = getPreferences(config);
-    const targetCagrRaw = Number(preferences.targetCagr ?? 0.1);
-    const targetCagr = Number.isFinite(targetCagrRaw) ? targetCagrRaw : 0.1;
-    const metrics = config.metrics;
-    const exitYearValue = Number.isFinite(metrics.exitYear) ? metrics.exitYear : null;
-    targetEl.replaceChildren();
-    [
-        { label: 'Expected Terminal Price', value: formatCurrency(metrics.expectedTerminalPrice) },
-        {
-            label: `Price for ${(targetCagr * 100).toFixed(1)}% CAGR`,
-            value: formatCurrency(metrics.entryPriceForTarget),
-        },
-        {
-            label: 'Current Price vs Value',
-            value: diffDescriptor(metrics.price, metrics.entryPriceForTarget),
-        },
-        {
-            label: 'Exit Year',
-            value: exitYearValue ?? 'n/a',
-        },
-    ].forEach((band) => {
-        const dt = document.createElement('dt');
-        dt.textContent = band.label;
-        const dd = document.createElement('dd');
-        dd.textContent = band.value;
-        targetEl.append(dt, dd);
-    });
-}
-
-// Overview landing screen (G1): the four highest-signal scenario fields as
-// compact rows, ordered by probability — name, prob, multiple, price CAGR.
-function renderOverviewScenarios(config) {
-    if (!overviewScenariosEl) {
-        return;
-    }
-    overviewScenariosEl.replaceChildren();
-    const outcomes = (config.metrics && config.metrics.outcomes) || [];
-    [...outcomes]
-        .sort((a, b) => b.prob - a.prob)
-        .forEach((outcome) => {
-            const row = document.createElement('div');
-            row.className = 'overview-scenario-row';
-
-            const name = document.createElement('span');
-            name.className = 'overview-scenario-name';
-            name.textContent = outcome.name;
-
-            const vals = document.createElement('span');
-            vals.className = 'overview-scenario-vals';
-            [
-                `${(outcome.prob * 100).toFixed(1)}%`,
-                `${outcome.multiple.toFixed(2)}x`,
-                formatPercent(outcome.totalReturnCagr),
-            ].forEach((text) => {
-                const span = document.createElement('span');
-                span.textContent = text;
-                vals.appendChild(span);
-            });
-
-            row.append(name, vals);
-            overviewScenariosEl.appendChild(row);
-        });
-}
-
-function drawKellyMarker(
-    ctx,
-    f,
-    maxF,
-    toX,
-    toY,
-    g,
-    padTop,
-    plotH,
-    width,
-    color,
-    label,
-    isDashed = false
-) {
-    if (f < 0 || f > maxF) {
-        return;
-    }
-    const x = toX(f);
-    const y = toY(g(f));
-    if (typeof ctx.save === 'function') {
-        ctx.save();
-    }
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 3;
-    if (isDashed && typeof ctx.setLineDash === 'function') {
-        ctx.setLineDash([6, 6]);
-    }
-    ctx.beginPath();
-    ctx.moveTo(x, padTop);
-    ctx.lineTo(x, padTop + plotH);
-    ctx.stroke();
-
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    if (typeof ctx.arc === 'function') {
-        ctx.arc(x, y, 7, 0, Math.PI * 2);
-        ctx.fill();
-    }
-    if (typeof ctx.fillText === 'function') {
-        ctx.font = '20px "JetBrains Mono", monospace';
-        ctx.fillText(label, Math.min(x - 30, width - 120), padTop - 12);
-    }
-    if (typeof ctx.restore === 'function') {
-        ctx.restore();
-    }
-}
-
-function drawKellyCurvePath(ctx, toX, toY, g, maxF, pointsCount, padLeft, plotW, baselineY) {
-    ctx.strokeStyle = PANE_CHART_COLORS.grid;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(padLeft, baselineY);
-    ctx.lineTo(padLeft + plotW, baselineY);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.strokeStyle = PANE_CHART_COLORS.line;
-    ctx.lineWidth = 4;
-    for (let i = 0; i <= pointsCount; i++) {
-        const f = (i / pointsCount) * maxF;
-        const y = toY(g(f));
-        const x = toX(f);
-        if (i === 0) {
-            ctx.moveTo(x, y);
-        } else {
-            ctx.lineTo(x, y);
-        }
-    }
-    ctx.stroke();
-}
-
-function updateKellyMetricsBadges(
-    targetEl,
-    config,
-    metrics,
-    fullKelly,
-    scaledKelly,
-    currentWeight
-) {
-    if (!targetEl) {
-        return;
-    }
-    targetEl.replaceChildren();
-    const createBadge = (label, val, highlight = false) => {
-        const span = document.createElement('span');
-        span.className = 'concentration-badge';
-        if (highlight) {
-            span.classList.add('concentration-badge--highlight');
-        }
-        span.textContent = `${label}: ${val}`;
-        return span;
-    };
-
-    targetEl.appendChild(createBadge('Full Kelly', formatPercent(fullKelly)));
-    targetEl.appendChild(createBadge('Scaled (½K)', formatPercent(scaledKelly), true));
-    const maxWeight = Number(config.position?.constraints?.maxWeight);
-    if (Number.isFinite(maxWeight) && maxWeight > 0 && Number.isFinite(scaledKelly)) {
-        const recommended = Math.min(scaledKelly, maxWeight);
-        const capped = scaledKelly > maxWeight;
-        targetEl.appendChild(
-            createBadge('Recommended', `${formatPercent(recommended)}${capped ? ' (capped)' : ''}`)
-        );
-    }
-    targetEl.appendChild(createBadge('Current Weight', formatPercent(currentWeight)));
-    if (Number.isFinite(metrics.riskFreeRate)) {
-        targetEl.appendChild(createBadge('Rf', formatPercent(metrics.riskFreeRate)));
-    }
-    if (
-        Number.isFinite(metrics.scenarioVolatility) &&
-        Number.isFinite(metrics.volatility) &&
-        metrics.volatility > 0
-    ) {
-        targetEl.appendChild(
-            createBadge(
-                'σ Scen/Input',
-                `${formatPercent(metrics.scenarioVolatility)} / ${formatPercent(metrics.volatility)}`
-            )
-        );
-    }
-    if (Number.isFinite(metrics.scaledGrowthRetention)) {
-        targetEl.appendChild(
-            createBadge(
-                'Scaled Growth',
-                `${(metrics.scaledGrowthRetention * 100).toFixed(0)}% of max`
-            )
-        );
-    }
-    if (Number.isFinite(metrics.kellyAtHalfEdge)) {
-        targetEl.appendChild(createBadge('Half-Edge K', formatPercent(metrics.kellyAtHalfEdge)));
-    }
-    if (Number.isFinite(metrics.impliedEdgeBelief)) {
-        targetEl.appendChild(
-            createBadge('Implied Edge', `${(metrics.impliedEdgeBelief * 100).toFixed(0)}% of model`)
-        );
-    }
-    if (Number.isFinite(metrics.drawdownRiskAtScaled)) {
-        targetEl.appendChild(
-            createBadge(
-                `P(DD>${Math.round(metrics.maxDrawdown * 100)}%)`,
-                `~${formatPercent(metrics.drawdownRiskAtScaled)}`
-            )
-        );
-    }
-    if (config.symbol === 'PORT' && metrics.covarianceRatio) {
-        targetEl.appendChild(
-            createBadge(
-                'Covariance Dampener',
-                `${metrics.covarianceRatio.toFixed(2)}x Vol vs Independence`
-            )
-        );
-    }
-}
-
-function drawAllKellyMarkers(
-    ctx,
-    fullKelly,
-    scaledKelly,
-    currentWeight,
-    maxF,
-    toX,
-    toY,
-    g,
-    padTop,
-    plotH,
-    width,
-    zeroGrowthFraction,
-    hasExactCurve
-) {
-    if (fullKelly > 0) {
-        drawKellyMarker(
-            ctx,
-            fullKelly * 0.25,
-            maxF,
-            toX,
-            toY,
-            g,
-            padTop,
-            plotH,
-            width,
-            PANE_CHART_COLORS.blue,
-            '¼K',
-            true
-        );
-        drawKellyMarker(
-            ctx,
-            scaledKelly,
-            maxF,
-            toX,
-            toY,
-            g,
-            padTop,
-            plotH,
-            width,
-            PANE_CHART_COLORS.green,
-            '½K (Rec)',
-            true
-        );
-        drawKellyMarker(
-            ctx,
-            fullKelly,
-            maxF,
-            toX,
-            toY,
-            g,
-            padTop,
-            plotH,
-            width,
-            PANE_CHART_COLORS.gold,
-            'Full K',
-            true
-        );
-        let zeroGrowthF = null;
-        let zeroGrowthLabel = '0 Growth';
-        if (Number.isFinite(zeroGrowthFraction)) {
-            zeroGrowthF = zeroGrowthFraction;
-        } else if (!hasExactCurve) {
-            zeroGrowthF = fullKelly * 2;
-            zeroGrowthLabel = '2x K (0 Growth)';
-        }
-        if (zeroGrowthF !== null) {
-            drawKellyMarker(
-                ctx,
-                zeroGrowthF,
-                maxF,
-                toX,
-                toY,
-                g,
-                padTop,
-                plotH,
-                width,
-                PANE_CHART_COLORS.red,
-                zeroGrowthLabel,
-                true
-            );
-        }
-    }
-    if (currentWeight > 0) {
-        drawKellyMarker(
-            ctx,
-            currentWeight,
-            maxF,
-            toX,
-            toY,
-            g,
-            padTop,
-            plotH,
-            width,
-            PANE_CHART_COLORS.line,
-            `Curr: ${(currentWeight * 100).toFixed(1)}%`
-        );
-    }
-}
-
-function buildKellyGrowthCurve(metrics, edge, variance) {
-    const kellyReturns = Array.isArray(metrics.kellyReturns) ? metrics.kellyReturns : null;
-    const hasExactCurve = !!(kellyReturns && kellyReturns.length);
-    const riskFreeRate = Number.isFinite(metrics.riskFreeRate)
-        ? metrics.riskFreeRate
-        : DEFAULT_RISK_FREE_RATE;
-    const r = hasExactCurve ? riskFreeRate : metrics.benchmark || 0.065;
-    const g = hasExactCurve
-        ? (f) => Math.exp(kellyLogGrowth(f, kellyReturns, riskFreeRate)) - 1
-        : (f) => r + f * edge - 0.5 * f * f * variance;
-    return { r, g, hasExactCurve };
-}
-
-function resolveKellyMaxF(fullKelly, metrics, hasExactCurve) {
-    const baseMaxF = fullKelly > 0 ? fullKelly * 2.4 : 0.6;
-    let maxF = Math.max(0.4, baseMaxF);
-    if (hasExactCurve && Number.isFinite(metrics.zeroGrowthFraction)) {
-        maxF = Math.min(maxF, metrics.zeroGrowthFraction * 1.2);
-    }
-    if (hasExactCurve && Number.isFinite(metrics.kellyMaxFraction)) {
-        maxF = Math.min(maxF, metrics.kellyMaxFraction * 0.999);
-    }
-    return maxF;
-}
-
-function computeKellyParameters(config, metrics) {
-    const edge = metrics.edge || 0;
-    const volatility = metrics.volatility || 0.3;
-    const variance = volatility ** 2;
-    const fallbackKelly = variance > 0 ? edge / variance : 0;
-    const fullKelly = Number.isFinite(metrics.fullKelly) ? metrics.fullKelly : fallbackKelly;
-    const scaledKelly = Number.isFinite(metrics.scaledKelly)
-        ? metrics.scaledKelly
-        : fullKelly * (metrics.kellyScale || 0.5);
-    const currentWeight =
-        config.position && Number.isFinite(config.position.currentWeight)
-            ? config.position.currentWeight
-            : config.weight || 0;
-
-    const { r, g, hasExactCurve } = buildKellyGrowthCurve(metrics, edge, variance);
-    const maxF = resolveKellyMaxF(fullKelly, metrics, hasExactCurve);
-    const peakG = g(fullKelly > 0 ? fullKelly : 0);
-    const minG = Math.min(r - 0.05, Math.max(g(maxF), r - 0.75));
-    const rangeG = Math.max(0.05, peakG - minG);
-
-    return {
-        r,
-        fullKelly,
-        scaledKelly,
-        currentWeight,
-        maxF,
-        g,
-        minG,
-        rangeG,
-        zeroGrowthFraction: Number.isFinite(metrics.zeroGrowthFraction)
-            ? metrics.zeroGrowthFraction
-            : null,
-        hasExactCurve,
-    };
-}
-
-function renderKellyCurve(config) {
-    if (!kellyCurveCanvas) {
-        return;
-    }
-    const ctx = kellyCurveCanvas.getContext('2d');
-    if (!ctx) {
-        return;
-    }
-    const width = kellyCurveCanvas.width || 600;
-    const height = kellyCurveCanvas.height || 200;
-    if (typeof ctx.clearRect === 'function') {
-        ctx.clearRect(0, 0, width, height);
-    }
-
-    const metrics = config.metrics;
-    if (!metrics) {
-        return;
-    }
-
-    const params = computeKellyParameters(config, metrics);
-    const padLeft = 90;
-    const padRight = 40;
-    const padTop = 50;
-    const padBottom = 50;
-    const plotW = width - padLeft - padRight;
-    const plotH = height - padTop - padBottom;
-
-    const toX = (f) => padLeft + (f / params.maxF) * plotW;
-    const toY = (val) => padTop + (1 - (val - params.minG) / params.rangeG) * plotH;
-
-    if (typeof ctx.fillText === 'function') {
-        // Muted y-axis min/max growth labels (2× backing store → 20px renders 10px)
-        ctx.fillStyle = PANE_CHART_COLORS.muted;
-        ctx.font = '20px "JetBrains Mono", monospace';
-        ctx.textAlign = 'right';
-        ctx.fillText(formatPercent(params.minG + params.rangeG), padLeft - 10, padTop + 18);
-        ctx.fillText(formatPercent(params.minG), padLeft - 10, padTop + plotH);
-        ctx.textAlign = 'left';
-    }
-
-    if (typeof ctx.beginPath === 'function') {
-        drawKellyCurvePath(ctx, toX, toY, params.g, params.maxF, 40, padLeft, plotW, toY(params.r));
-        drawAllKellyMarkers(
-            ctx,
-            params.fullKelly,
-            params.scaledKelly,
-            params.currentWeight,
-            params.maxF,
-            toX,
-            toY,
-            params.g,
-            padTop,
-            plotH,
-            width,
-            params.zeroGrowthFraction,
-            params.hasExactCurve
-        );
-    }
-
-    updateKellyMetricsBadges(
-        kellyMetricsEl,
-        config,
-        metrics,
-        params.fullKelly,
-        params.scaledKelly,
-        params.currentWeight
-    );
-
-    kellyCurveCanvas.setAttribute(
-        'aria-label',
-        `Kelly curve — full ${formatPercent(params.fullKelly)}, scaled ½K ` +
-            `${formatPercent(params.scaledKelly)}, current weight ` +
-            `${formatPercent(params.currentWeight)}.`
-    );
-}
-
-function renderBeliefState(config) {
-    if (!beliefStateCardEl) {
-        return;
-    }
-    beliefStateCardEl.replaceChildren();
-
-    const belief = config.belief_state;
-    if (!belief) {
-        const p = document.createElement('p');
-        p.className = 'pane-empty';
-        p.textContent = 'Belief state not yet initialized for this ticker.';
-        beliefStateCardEl.appendChild(p);
-        return;
-    }
-
-    const header = document.createElement('div');
-    header.className = 'belief-header';
-
-    const prob = document.createElement('span');
-    prob.className = 'belief-prob';
-    prob.textContent = `${(belief.probability * 100).toFixed(1)}%`;
-
-    const asOf = belief.as_of ? belief.as_of.slice(0, 10) : null;
-    const meta = document.createElement('span');
-    meta.className = 'belief-meta';
-    meta.textContent = `confidence ${(belief.confidence * 100).toFixed(0)}%${
-        asOf ? ` · as of ${asOf}` : ''
-    }`;
-
-    header.append(prob, meta);
-    beliefStateCardEl.appendChild(header);
-
-    if (config.industry_thesis) {
-        const industryLink = document.createElement('div');
-        industryLink.className = 'belief-thesis';
-        const docName = config.industry_thesis.split('/').pop();
-        // security: remediate DOM-based XSS sink
-        const span = document.createElement('span');
-        span.className = 'belief-thesis-label';
-        span.textContent = 'Industry Layer: ';
-        const a = document.createElement('a');
-        a.className = 'belief-thesis-link';
-        a.href = '../' + config.industry_thesis;
-        a.textContent = docName;
-        industryLink.appendChild(span);
-        industryLink.appendChild(a);
-        beliefStateCardEl.appendChild(industryLink);
-    }
-
-    const groups = [
-        {
-            title: 'Evidence For (Bullish Moat Factors):',
-            modifier: '',
-            items: belief.evidence_for,
-            liClass: 'evidence-for-item',
-        },
-        {
-            title: 'Evidence Against & Falsification Risks:',
-            modifier: 'belief-group-title--against',
-            items: belief.evidence_against,
-            liClass: 'evidence-against-item',
-        },
-        {
-            title: 'Open Questions & Resolvable Unknowns:',
-            modifier: 'belief-group-title--questions',
-            items: belief.open_questions,
-            liClass: 'open-question-item',
-        },
-    ];
-    groups.forEach((group) => {
-        if (!group.items || group.items.length === 0) {
-            return;
-        }
-        const title = document.createElement('div');
-        title.className = `belief-group-title${group.modifier ? ` ${group.modifier}` : ''}`;
-        title.textContent = group.title;
-        const ul = document.createElement('ul');
-        ul.className = 'belief-list';
-        group.items.forEach((item) => {
-            const li = document.createElement('li');
-            li.className = group.liClass;
-            li.textContent = item;
-            ul.appendChild(li);
-        });
-        beliefStateCardEl.append(title, ul);
-    });
-}
-
-async function renderEvidenceTimeline(config) {
-    if (!evidenceTimelineEl) {
-        return;
-    }
-    evidenceTimelineEl.replaceChildren();
-
-    if (!config || !config.symbol || config.symbol === 'PORT') {
-        const p = document.createElement('p');
-        p.className = 'pane-empty';
-        p.textContent = 'Select an individual ticker to view chronological evidence log.';
-        evidenceTimelineEl.appendChild(p);
-        return;
-    }
-
-    let evidenceList = state.evidenceCache.get(config.symbol);
-    let fetchFailed = false;
-    if (!evidenceList) {
-        try {
-            const text = await fetchText(`../data/analysis/${config.symbol}.evidence.jsonl`);
-            evidenceList = BayesianEngine.parseJsonl(text);
-            state.evidenceCache.set(config.symbol, evidenceList);
-        } catch {
-            evidenceList = [];
-            fetchFailed = true;
-        }
-    }
-
-    if (fetchFailed) {
-        const p = document.createElement('p');
-        p.className = 'pane-empty pane-empty--error';
-        p.textContent = 'Evidence log unavailable (fetch failed).';
-        evidenceTimelineEl.appendChild(p);
-        return;
-    }
-
-    if (!evidenceList || evidenceList.length === 0) {
-        const p = document.createElement('p');
-        p.className = 'pane-empty';
-        p.textContent = 'No logged evidence entries on disk yet.';
-        evidenceTimelineEl.appendChild(p);
-        return;
-    }
-
-    const replayEngine = new BayesianEngine(config.scenarios);
-    const { history } = replayEngine.replay(evidenceList);
-
-    const today = new Date().toISOString().slice(0, 10);
-    let validCount = 0;
-    let supersededCount = 0;
-
-    history.forEach((entry) => {
-        const raw = evidenceList[entry.index] || {};
-        const validTo = entry.valid_to || raw.valid_to || entry.validTo || raw.validTo;
-        if (validTo && validTo < today) {
-            supersededCount++;
-        } else {
-            validCount++;
-        }
-    });
-
-    const headerEl =
-        (paneRoot && paneRoot.querySelector('#evidenceTimelineHeader')) ||
-        (evidenceTimelineEl.previousElementSibling &&
-        evidenceTimelineEl.previousElementSibling.classList.contains('block-header')
-            ? evidenceTimelineEl.previousElementSibling
-            : null);
-
-    if (headerEl) {
-        let countSpan = headerEl.querySelector('.timeline-count-badge');
-        if (!countSpan) {
-            countSpan = document.createElement('span');
-            countSpan.className = 'timeline-count-badge';
-            headerEl.appendChild(countSpan);
-        }
-        countSpan.textContent = `${validCount} valid / ${supersededCount} superseded`;
-    } else {
-        const countDiv = document.createElement('div');
-        countDiv.className = 'timeline-count-badge timeline-count-badge--block';
-        countDiv.textContent = `${validCount} valid / ${supersededCount} superseded`;
-        evidenceTimelineEl.appendChild(countDiv);
-    }
-
-    history.forEach((entry) => {
-        const raw = evidenceList[entry.index] || {};
-        const validTo = entry.valid_to || raw.valid_to || entry.validTo || raw.validTo;
-        const isSuperseded = Boolean(validTo && validTo < today);
-
-        const itemDiv = document.createElement('div');
-        itemDiv.className = `timeline-entry ${entry.direction}${isSuperseded ? ' superseded' : ''}`;
-
-        const metaDiv = document.createElement('div');
-        metaDiv.className = 'timeline-meta';
-
-        const leftSpan = document.createElement('span');
-        leftSpan.textContent = `${entry.date || 'Undated'} · ${entry.direction.toUpperCase()} (${(entry.strength * 100).toFixed(0)}%)`;
-
-        const posteriorSpan = document.createElement('span');
-        const bullP = entry.posteriors[0] ? (entry.posteriors[0].prob * 100).toFixed(1) : '0';
-        posteriorSpan.textContent = `Bull: ${bullP}%`;
-
-        metaDiv.append(leftSpan, posteriorSpan);
-
-        if (isSuperseded) {
-            const tag = document.createElement('span');
-            tag.className = 'timeline-superseded-tag';
-            tag.textContent = 'SUPERSEDED';
-            metaDiv.appendChild(tag);
-        }
-
-        const claimP = document.createElement('div');
-        claimP.className = 'timeline-claim';
-        claimP.textContent = entry.claim;
-
-        itemDiv.append(metaDiv, claimP);
-
-        if (entry.sourceUrl) {
-            const sourceLink = document.createElement('a');
-            sourceLink.className = 'timeline-source';
-            sourceLink.href = entry.sourceUrl;
-            sourceLink.target = '_blank';
-            sourceLink.rel = 'noopener noreferrer';
-            sourceLink.textContent = entry.sourceUrl.replace(/^https?:\/\//, '').split('/')[0];
-            itemDiv.appendChild(sourceLink);
-        }
-
-        evidenceTimelineEl.appendChild(itemDiv);
-    });
-}
-
-function computeStalePredictions(predictions, asOf) {
-    if (!Array.isArray(predictions)) {
-        return [];
-    }
-    const today = asOf || new Date().toISOString().slice(0, 10);
-    return predictions.filter((p) => {
-        if (!p || p.resolved === true) {
-            return false;
-        }
-        return p.target_date && p.target_date < today;
-    });
-}
-
-function computeTickerFlags(flagsData, symbol) {
-    if (!flagsData || !Array.isArray(flagsData.flags)) {
-        return [];
-    }
-    return flagsData.flags.filter((flag) => flag && flag.ticker === symbol);
-}
-
-function formatFlagLabel(flag) {
-    if (flag.kind === 'filing') {
-        return `${flag.form} filed ${flag.date}`;
-    }
-    if (flag.kind === 'review-date') {
-        return `review date ${flag.date}`;
-    }
-    return flag.date || 'event';
-}
-
-function renderPredictions(config) {
-    if (!predictionsCardEl) {
-        return;
-    }
-    predictionsCardEl.replaceChildren();
-
-    const predictions = config.predictions || [];
-    const brierResult = BayesianEngine.computeBrierScore(predictions);
-    const stalePredictions = computeStalePredictions(predictions);
-
-    const titleDiv = document.createElement('div');
-    titleDiv.className = 'prediction-title-row';
-
-    const h4 = document.createElement('h4');
-    h4.className = 'prediction-title';
-    h4.textContent = 'Falsifiable Predictions';
-
-    const badgesContainer = document.createElement('div');
-    badgesContainer.className = 'prediction-badge-row';
-
-    const brierBadge = document.createElement('span');
-    brierBadge.className = 'prediction-badge';
-    brierBadge.textContent = brierResult
-        ? `Brier: ${brierResult.brierScore} (N=${brierResult.count})`
-        : 'Brier: N/A';
-    badgesContainer.appendChild(brierBadge);
-
-    if (stalePredictions.length > 0) {
-        const staleBadge = document.createElement('span');
-        staleBadge.className = 'prediction-stale-badge';
-        staleBadge.textContent = `${stalePredictions.length} Overdue`;
-        badgesContainer.appendChild(staleBadge);
-    }
-
-    const tickerFlags = computeTickerFlags(state.eventFlags, config.symbol);
-    if (tickerFlags.length > 0) {
-        const flagsBadge = document.createElement('span');
-        flagsBadge.className = 'prediction-flags-badge';
-        flagsBadge.textContent = `${tickerFlags.length} flags`;
-        flagsBadge.title = tickerFlags.map(formatFlagLabel).join('\n');
-        badgesContainer.appendChild(flagsBadge);
-    }
-
-    titleDiv.append(h4, badgesContainer);
-    predictionsCardEl.appendChild(titleDiv);
-
-    if (predictions.length === 0) {
-        const p = document.createElement('p');
-        p.className = 'pane-empty';
-        p.textContent = 'No dated predictions recorded yet.';
-        predictionsCardEl.appendChild(p);
-        return;
-    }
-
-    predictions.forEach((p) => {
-        const row = document.createElement('div');
-        row.className = 'prediction-item';
-
-        const claimSpan = document.createElement('span');
-        claimSpan.className = 'prediction-claim';
-        claimSpan.textContent = p.claim;
-
-        const probNum = Number(p.probability);
-        const probText = Number.isFinite(probNum) ? `${(probNum * 100).toFixed(0)}%` : 'n/a';
-        const statusText = p.resolved ? (p.outcome ? 'True' : 'False') : `Pending (${probText})`;
-
-        const detailRow = document.createElement('div');
-        detailRow.className = 'prediction-detail-row';
-
-        const metaSpan = document.createElement('span');
-        metaSpan.className = 'prediction-meta';
-        metaSpan.textContent = `Target ${p.target_date} · ${probText} · ${statusText}`;
-
-        const statusSpan = document.createElement('span');
-        statusSpan.className = `prediction-status ${p.resolved ? 'status-resolved' : 'status-pending'}`;
-        statusSpan.textContent = statusText;
-
-        detailRow.append(metaSpan, statusSpan);
-        row.append(claimSpan, detailRow);
-        predictionsCardEl.appendChild(row);
-    });
-}
-
-function renderDecisionJournal(config) {
-    if (!decisionJournalCardEl) {
-        return;
-    }
-    decisionJournalCardEl.replaceChildren();
-
-    const journal = config.decision_journal || [];
-    const h4 = document.createElement('h4');
-    h4.className = 'journal-title';
-    h4.textContent = 'Decision Journal';
-    decisionJournalCardEl.appendChild(h4);
-
-    if (journal.length === 0) {
-        const p = document.createElement('p');
-        p.className = 'pane-empty';
-        p.textContent = 'No decision journal entries logged yet.';
-        decisionJournalCardEl.appendChild(p);
-        return;
-    }
-
-    const latest = journal[journal.length - 1];
-    const actionDiv = document.createElement('div');
-    // security: remediate DOM-based XSS sink
-    const actionSpan = document.createElement('span');
-    actionSpan.className = 'decision-action';
-    actionSpan.textContent = latest.action || 'ACTION';
-    const metaSpan = document.createElement('span');
-    metaSpan.className = 'action-meta';
-    metaSpan.textContent = `Entry ${journal.length} of ${journal.length} · (${latest.date}) · Review: ${latest.review_date || 'TBD'}`;
-    actionDiv.appendChild(actionSpan);
-    actionDiv.appendChild(document.createTextNode(' '));
-    actionDiv.appendChild(metaSpan);
-    const sitDiv = document.createElement('div');
-    sitDiv.className = 'journal-situation';
-    sitDiv.textContent = latest.situation || '';
-
-    decisionJournalCardEl.append(actionDiv, sitDiv);
-
-    if (latest.alternatives_rejected && latest.alternatives_rejected.length > 0) {
-        const altDiv = document.createElement('div');
-        altDiv.className = 'journal-alternatives';
-        altDiv.textContent = `Rejected: ${latest.alternatives_rejected.join('; ')}`;
-        decisionJournalCardEl.appendChild(altDiv);
-    }
-}
-
-// Read-only context strip — security context is switched via the terminal
-// command `analysis <TICKER>`, never by clicking inside the pane.
-function renderContextStrip() {
-    if (!contextEl) {
-        return;
-    }
-    contextEl.replaceChildren();
-
-    if (!state.configs || !state.configs.length) {
-        const span = document.createElement('span');
-        span.className = 'context-empty';
-        span.textContent = 'No tickers loaded';
-        contextEl.appendChild(span);
-        return;
-    }
-
-    const portfolio = state.configs.find((cfg) => cfg.symbol === 'PORT');
-    const others = state.configs
-        .filter((cfg) => cfg.symbol !== 'PORT')
-        .sort((a, b) => b.weight - a.weight);
-
-    if (portfolio) {
-        appendContextSymbol(portfolio);
-    }
-    others.forEach((config) => {
-        appendContextSymbol(config);
-    });
-
-    const meta = document.createElement('span');
-    meta.className = 'context-meta';
-    meta.id = 'contextMeta';
-    contextEl.appendChild(meta);
-    updateContextMeta();
-}
-
-function appendContextSymbol(config) {
-    const span = document.createElement('span');
-    const isActive = config.symbol === state.activeSymbol;
-    span.className = `context-symbol${isActive ? ' active' : ''}`;
-    if (isActive) {
-        span.setAttribute('aria-current', 'true');
-    }
-    span.textContent = config.symbol;
-    span.title = `${config.name} · ${formatPercent(config.weight)}`;
-    contextEl.appendChild(span);
-}
-
-const SECTION_LABELS = {
-    overview: 'OVERVIEW',
-    scenarios: 'SCENARIOS',
-    value: 'VALUE',
-    kelly: 'KELLY',
-    mc: 'MONTE CARLO',
-    belief: 'BELIEF',
-    evidence: 'EVIDENCE',
-    predictions: 'PREDICTIONS',
-    journal: 'JOURNAL',
-};
-
-// Right side of the context strip: the active function code and the as-of
-// date of the underlying config data (Bloomberg function-screen chrome).
-function updateContextMeta() {
-    const meta = paneRoot && paneRoot.querySelector('#contextMeta');
-    if (!meta) {
-        return;
-    }
-    const config = state.configs.find((cfg) => cfg.symbol === state.activeSymbol);
-    const asOf = config && config.meta ? config.meta.asOf : null;
-    const asOfText = typeof asOf === 'string' && asOf ? asOf.slice(0, 10) : '—';
-    const func = SECTION_LABELS[state.activeSection] || state.activeSection.toUpperCase();
-    meta.textContent = `${func} · ${asOfText}`;
-}
-
-function renderActiveTicker() {
-    const config = state.configs.find((cfg) => cfg.symbol === state.activeSymbol);
-    if (!config) {
-        return;
-    }
-    renderSummary(config);
-    renderScenarioCards(config);
-    renderValueBands(config);
-    renderOverviewScenarios(config);
-    renderValueBands(config, overviewValueBandsEl);
-    renderKellyCurve(config);
-    renderBeliefState(config);
-    renderEvidenceTimeline(config);
-    renderPredictions(config);
-    renderDecisionJournal(config);
-
-    // Initialize Bayesian Engine
-    state.bayesEngine = new BayesianEngine(config.scenarios);
-    renderBayesOutput();
-
-    // Reset Risk UI
-    [monteCarloCanvas, monteCarloFanCanvas].forEach((canvas) => {
-        if (!canvas) {
-            return;
-        }
-        const ctx = canvas.getContext('2d');
-        if (ctx && typeof ctx.clearRect === 'function') {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-        }
-    });
-    if (riskMetricsEl) {
-        const p = document.createElement('p');
-        p.className = 'pane-empty';
-        p.textContent = 'Run simulation to see metrics.';
-        riskMetricsEl.replaceChildren(p);
-    }
-    checkPaneViewportFit();
-}
-
-// --- Bayesian Handlers ---
-
-function renderBayesOutput() {
-    if (!state.bayesEngine || !bayesOutput) {
-        return;
-    }
-    const priors = state.bayesEngine.priors;
-    const elements = priors.map((p) => {
-        const row = document.createElement('div');
-        row.className = 'sandbox-row';
-
-        const nameSpan = document.createElement('span');
-        nameSpan.textContent = p.name;
-
-        const probStrong = document.createElement('strong');
-        probStrong.textContent = `${(p.prob * 100).toFixed(1)}%`;
-
-        row.appendChild(nameSpan);
-        row.appendChild(probStrong);
-        return row;
-    });
-
-    bayesOutput.replaceChildren(...elements);
-}
-
-// --- Bayesian Sandbox ---
-
-export function applyBayesSandbox(action) {
-    if (!state.bayesEngine) {
-        return null;
-    }
-    if (action === 'bull') {
-        state.bayesEngine.update('bullish', 0.6);
-    } else if (action === 'bear') {
-        state.bayesEngine.update('bearish', 0.6);
-    } else if (action === 'reset') {
-        const config = state.configs.find((cfg) => cfg.symbol === state.activeSymbol);
-        if (!config) {
-            return null;
-        }
-        state.bayesEngine.reset(config.scenarios);
-    } else {
-        return null;
-    }
-    renderBayesOutput();
-    return state.bayesEngine.priors.map((p) => ({ name: p.name, prob: p.prob }));
-}
-
-// --- Monte Carlo ---
-
-export function runMonteCarloSimulation(paths = 10000) {
-    const config = state.configs.find((cfg) => cfg.symbol === state.activeSymbol);
-    if (!config || !config.metrics) {
-        return Promise.resolve(null);
-    }
-
-    const worker = getMonteCarloWorker();
-    return new Promise((resolve) => {
-        worker.onmessage = function (e) {
-            const { type, result } = e.data;
-            if (type !== 'SIMULATION_COMPLETE' && type !== 'PATH_SIMULATION_COMPLETE') {
-                return;
-            }
-            if (result && result.error) {
-                if (riskMetricsEl) {
-                    const p = document.createElement('p');
-                    p.className = 'pane-empty pane-empty--error';
-                    p.textContent = result.error;
-                    riskMetricsEl.replaceChildren(p);
-                }
-                resolve(null);
-                return;
-            }
-            renderMonteCarloResults(result);
-            resolve(result);
-        };
-        worker.onerror = function () {
-            if (riskMetricsEl) {
-                const p = document.createElement('p');
-                p.className = 'pane-empty pane-empty--error';
-                p.textContent = 'Monte Carlo simulation failed; see console for details.';
-                riskMetricsEl.replaceChildren(p);
-            }
-            resolve(null);
-        };
-        const fullKelly = config.metrics.fullKelly;
-        const fGrid =
-            fullKelly > 0 ? [0, 0.25, 0.5, 0.75, 1, 1.5, 2].map((m) => m * fullKelly) : [0, 0.5, 1];
-        if (riskMetricsEl) {
-            const pending = document.createElement('p');
-            pending.className = 'mc-status';
-            pending.textContent = `Running ${paths.toLocaleString('en-US')} paths…`;
-            riskMetricsEl.replaceChildren(pending);
-        }
-        worker.postMessage({
-            type: 'RUN_PATH_SIMULATION',
-            payload: {
-                price: config.metrics.price,
-                eps: config.metrics.eps,
-                scenarios: config.scenarios,
-                volatility: config.metrics.volatility,
-                horizon: config.metrics.horizon,
-                paths,
-                riskFreeRate: config.metrics.riskFreeRate,
-                fGrid,
-                maxDrawdown: config.metrics.maxDrawdown,
-            },
-        });
-    });
-}
-
-// Path results carry sorted terminalValues instead of paths; either source
-// gives the same annualized return draws for the Kelly solve.
-function _renderMcKellyCards(result, mcMetrics, riskMetricsEl, createStatCard) {
-    const mcDraws =
-        Array.isArray(result.paths) && result.paths.length > 0
-            ? result.paths
-            : result.terminalValues;
-    if (
-        !mcMetrics ||
-        !Array.isArray(mcDraws) ||
-        mcDraws.length === 0 ||
-        !(mcMetrics.price > 0) ||
-        !(mcMetrics.horizon > 0) ||
-        !Number.isFinite(mcMetrics.riskFreeRate)
-    ) {
-        return;
-    }
-    const n = mcDraws.length;
-    const mcReturns = mcDraws.map((v) => ({
-        prob: 1 / n,
-        ret: (v / mcMetrics.price) ** (1 / mcMetrics.horizon) - 1,
-    }));
-    const mcKelly = solveKellyFraction(mcReturns, mcMetrics.riskFreeRate);
-    riskMetricsEl.appendChild(createStatCard('MC Kelly', formatPercent(mcKelly)));
-    if (Number.isFinite(mcMetrics.fullKelly)) {
-        riskMetricsEl.appendChild(
-            createStatCard('Estimation Drag', formatPercent(mcMetrics.fullKelly - mcKelly))
-        );
-    }
-}
-
-function _renderMonteCarloMetrics(result, riskMetricsEl) {
-    riskMetricsEl.replaceChildren();
-
-    const createStatCard = (title, value) => {
-        const card = document.createElement('div');
-        card.className = 'stat-card';
-
-        const h3 = document.createElement('h3');
-        h3.textContent = title;
-
-        const p = document.createElement('p');
-        p.textContent = value;
-
-        card.appendChild(h3);
-        card.appendChild(p);
-        return card;
-    };
-
-    if (Number.isFinite(result.median)) {
-        riskMetricsEl.appendChild(createStatCard('Median Price', formatCurrency(result.median)));
-    }
-    riskMetricsEl.appendChild(createStatCard('Mean Terminal Price', formatCurrency(result.mean)));
-    if (Number.isFinite(result.VaR_80)) {
-        riskMetricsEl.appendChild(createStatCard('VaR (20% Tail)', formatCurrency(result.VaR_80)));
-    }
-    if (Number.isFinite(result.CVaR_80)) {
-        riskMetricsEl.appendChild(
-            createStatCard('CVaR (20% Tail)', formatCurrency(result.CVaR_80))
-        );
-    }
-    riskMetricsEl.appendChild(createStatCard('VaR (95%)', formatCurrency(result.VaR_95)));
-    riskMetricsEl.appendChild(createStatCard('CVaR (95%)', formatCurrency(result.CVaR_95)));
-    const mcConfig = state.configs.find((cfg) => cfg.symbol === state.activeSymbol);
-    const mcMetrics = mcConfig && mcConfig.metrics;
-    _renderMcKellyCards(result, mcMetrics, riskMetricsEl, createStatCard);
-    if (result.maxDrawdown && Number.isFinite(result.maxDrawdown.p95)) {
-        riskMetricsEl.appendChild(
-            createStatCard('Max DD (p95)', formatPercent(result.maxDrawdown.p95))
-        );
-    }
-    if (
-        Array.isArray(result.exceedance) &&
-        result.exceedance.length > 0 &&
-        mcMetrics &&
-        Number.isFinite(mcMetrics.drawdownTolerance)
-    ) {
-        const acceptable = result.exceedance.filter(
-            (entry) => entry.prob <= mcMetrics.drawdownTolerance
-        );
-        const ddCapped = acceptable.length > 0 ? acceptable[acceptable.length - 1].f : 0;
-        riskMetricsEl.appendChild(createStatCard('DD-Capped K', formatPercent(ddCapped)));
-    }
-}
-
-function _renderMonteCarloHistogram(result, ctx, width, height) {
-    if (typeof ctx.clearRect === 'function') {
-        ctx.clearRect(0, 0, width, height);
-    }
-
-    if (result.histogram && result.histogram.counts && typeof ctx.fillRect === 'function') {
-        const { counts } = result.histogram;
-        let maxCount = -Infinity;
-        for (let i = 0; i < counts.length; i++) {
-            if (counts[i] > maxCount) {
-                maxCount = counts[i];
-            }
-        }
-        const barWidth = width / counts.length;
-
-        ctx.fillStyle = PANE_CHART_COLORS.red;
-        counts.forEach((count, i) => {
-            const barHeight = (count / maxCount) * (height - 40);
-            ctx.fillRect(i * barWidth, height - barHeight, barWidth - 2, barHeight);
-        });
-    }
-}
-
-// VaR marker lines on the terminal-price histogram. Path results carry
-// sorted terminalValues, which gives the x-axis scale; without them the
-// markers are skipped silently.
-function _renderHistogramVaRMarkers(result, ctx, width, height) {
-    const values = result.terminalValues;
-    if (!Array.isArray(values) || values.length === 0 || typeof ctx.beginPath !== 'function') {
-        return;
-    }
-    const min = values[0];
-    const max = values[values.length - 1];
-    const range = max - min;
-    if (!(range > 0)) {
-        return;
-    }
-    [
-        { value: result.VaR_80, color: PANE_CHART_COLORS.blue, label: 'VaR80' },
-        { value: result.VaR_95, color: PANE_CHART_COLORS.red, label: 'VaR95' },
-    ].forEach((marker) => {
-        if (!Number.isFinite(marker.value)) {
-            return;
-        }
-        const x = ((marker.value - min) / range) * width;
-        if (typeof ctx.save === 'function') {
-            ctx.save();
-        }
-        ctx.strokeStyle = marker.color;
-        ctx.lineWidth = 3;
-        if (typeof ctx.setLineDash === 'function') {
-            ctx.setLineDash([6, 6]);
-        }
-        ctx.beginPath();
-        ctx.moveTo(x, 20);
-        ctx.lineTo(x, height - 20);
-        ctx.stroke();
-        if (typeof ctx.restore === 'function') {
-            ctx.restore();
-        }
-        if (typeof ctx.fillText === 'function') {
-            ctx.fillStyle = PANE_CHART_COLORS.muted;
-            ctx.font = '20px "JetBrains Mono", monospace';
-            ctx.fillText(marker.label, x + 10, 40);
-        }
-    });
-}
-
-function _renderMonteCarloFanChart(result, ctx, width, height) {
-    if (result.fanChart && result.fanChart.length > 1 && typeof ctx.beginPath === 'function') {
-        const fan = result.fanChart;
-        const padL = 80;
-        const padR = 40;
-        const padT = 40;
-        const padB = 50;
-        const plotW = width - padL - padR;
-        const plotH = height - padT - padB;
-
-        let minVal = Infinity;
-        let maxVal = -Infinity;
-        fan.forEach((pt) => {
-            if (pt.p5 < minVal) {
-                minVal = pt.p5;
-            }
-            if (pt.p95 > maxVal) {
-                maxVal = pt.p95;
-            }
-        });
-        minVal = Math.max(0, minVal * 0.9);
-        maxVal = maxVal * 1.1;
-        const range = maxVal - minVal || 1;
-
-        const getX = (i) => padL + (i / (fan.length - 1)) * plotW;
-        const getY = (val) => padT + (1 - (val - minVal) / range) * plotH;
-
-        ctx.fillStyle = PANE_CHART_COLORS.greenFill;
-        ctx.beginPath();
-        ctx.moveTo(getX(0), getY(fan[0].p5));
-        for (let i = 1; i < fan.length; i++) {
-            ctx.lineTo(getX(i), getY(fan[i].p5));
-        }
-        for (let i = fan.length - 1; i >= 0; i--) {
-            ctx.lineTo(getX(i), getY(fan[i].p95));
-        }
-        ctx.closePath();
-        ctx.fill();
-
-        ctx.strokeStyle = PANE_CHART_COLORS.green;
-        ctx.lineWidth = 4;
-        ctx.beginPath();
-        ctx.moveTo(getX(0), getY(fan[0].median));
-        for (let i = 1; i < fan.length; i++) {
-            ctx.lineTo(getX(i), getY(fan[i].median));
-        }
-        ctx.stroke();
-
-        if (typeof ctx.fillText === 'function') {
-            ctx.fillStyle = PANE_CHART_COLORS.muted;
-            ctx.font = '20px "JetBrains Mono", monospace';
-            ctx.fillText(
-                `Fan Envelope (P5–P95) · ${result.runCount || 10000} paths`,
-                padL + 20,
-                padT + 24
-            );
-        }
-    }
-}
-function renderMonteCarloResults(result) {
-    _renderMonteCarloMetrics(result, riskMetricsEl);
-
-    // Histogram (+ VaR markers) and fan envelope are separate canvases so
-    // each encoding gets its own coordinate system (G7).
-    const ctx = monteCarloCanvas.getContext('2d');
-    const { width, height } = monteCarloCanvas;
-    _renderMonteCarloHistogram(result, ctx, width, height);
-    _renderHistogramVaRMarkers(result, ctx, width, height);
-    monteCarloCanvas.setAttribute(
-        'aria-label',
-        `Terminal price histogram — median ${formatCurrency(result.median)}, ` +
-            `VaR(95%) ${formatCurrency(result.VaR_95)}, ` +
-            `${result.runCount || 10000} paths.`
-    );
-
-    if (monteCarloFanCanvas) {
-        const fanCtx = monteCarloFanCanvas.getContext('2d');
-        _renderMonteCarloFanChart(
-            result.annualFan ? { ...result, fanChart: result.annualFan } : result,
-            fanCtx,
-            monteCarloFanCanvas.width,
-            monteCarloFanCanvas.height
-        );
-        monteCarloFanCanvas.setAttribute(
-            'aria-label',
-            `P5–P95 fan envelope — ${result.runCount || 10000} paths.`
-        );
-    }
-    checkPaneViewportFit();
-}
-function aggregateScenarios(configs, horizon) {
-    const weightedConfigs = configs.filter((cfg) => Number(cfg.weight ?? 0) > 0);
-    const useMacroStates =
-        weightedConfigs.length > 0 &&
-        weightedConfigs.every((cfg) =>
-            (cfg.metrics?.outcomes || []).every((outcome) => outcome.macroState)
-        );
-
-    const groupKey = (outcome) =>
-        useMacroStates ? outcome.macroState : outcome.id || outcome.name || 'scenario';
-
-    const allKeys = [];
-    weightedConfigs.forEach((cfg) => {
-        cfg.metrics.outcomes.forEach((outcome) => {
-            const key = groupKey(outcome);
-            if (!allKeys.includes(key)) {
-                allKeys.push(key);
-            }
-        });
-    });
-
-    const scenarioMap = new Map();
-    weightedConfigs.forEach((cfg) => {
-        const holdingWeight = Number(cfg.weight ?? 0);
-        const outcomes = cfg.metrics.outcomes;
-        let probSum = 0;
-        let meanMultiple = 0;
-        outcomes.forEach((outcome) => {
-            probSum += outcome.prob || 0;
-            meanMultiple += (outcome.prob || 0) * outcome.multiple;
-        });
-        if (probSum > 0) {
-            meanMultiple /= probSum;
-        }
-        const seenKeys = new Set();
-        outcomes.forEach((outcome) => {
-            const key = groupKey(outcome);
-            seenKeys.add(key);
-            const entry = scenarioMap.get(key) || {
-                name: useMacroStates ? key : outcome.name || key,
-                weightedMultiple: 0,
-                weightedProb: 0,
-                weightedEarningsCagr: 0,
-                earningsWeight: 0,
-            };
-            entry.weightedMultiple += holdingWeight * outcome.multiple;
-            entry.weightedProb += holdingWeight * outcome.prob;
-            if (Number.isFinite(outcome.earningsCagr)) {
-                entry.weightedEarningsCagr += holdingWeight * outcome.earningsCagr;
-                entry.earningsWeight += holdingWeight;
-            }
-            scenarioMap.set(key, entry);
-        });
-        if (useMacroStates) {
-            // Neutral carry: an asset without a view on a macro state
-            // contributes its probability-weighted mean multiple to it.
-            allKeys.forEach((key) => {
-                if (!seenKeys.has(key)) {
-                    const entry = scenarioMap.get(key);
-                    if (entry) {
-                        entry.weightedMultiple += holdingWeight * meanMultiple;
-                    }
-                }
-            });
-        }
-    });
-
-    return Array.from(scenarioMap.entries()).map(([id, entry]) => {
-        const multiple = entry.weightedMultiple;
-        const priceCagr = multiple > 0 && horizon > 0 ? multiple ** (1 / horizon) - 1 : 0;
-        const normalizedProb = entry.weightedProb;
-        const earningsCagr =
-            entry.earningsWeight > 0 ? entry.weightedEarningsCagr / entry.earningsWeight : null;
-        const displayName = id.charAt(0).toUpperCase() + id.slice(1);
-        return {
-            id,
-            name: displayName,
-            prob: normalizedProb,
-            precomputedMultiple: multiple,
-            precomputedCagr: priceCagr,
-            precomputedEarningsCagr: earningsCagr,
-            notes: `Weighted ${displayName} scenario`,
-        };
-    });
-}
-
-function _initBaseConfigFields(raw, holdingDetails) {
-    return {
-        symbol: raw.symbol || holdingDetails.symbol || '',
-        name: raw.name || raw.symbol || '',
-        meta: raw.meta || {},
-        derived: raw.derived || {},
-    };
-}
-
-function _initBaseConfigNested(raw) {
-    return {
-        model: raw.model ? { ...raw.model } : {},
-        market: raw.market ? { ...raw.market } : {},
-        risk: raw.risk ? { ...raw.risk } : {},
-        position: raw.position ? { ...raw.position } : {},
-        scenarios: Array.isArray(raw.scenarios)
-            ? raw.scenarios.map((scenario) => ({ ...scenario }))
-            : [],
-    };
-}
-
-function _normalizeMarketConfig(market) {
-    const norm = market || {};
+function normalizeMarketConfig(market) {
+    const norm = market ? { ...market } : {};
     Object.keys(norm).forEach((key) => {
-        const num = Number(norm[key]);
-        if (Number.isFinite(num)) {
+        const num = toFiniteNumber(norm[key]);
+        if (num !== null) {
             norm[key] = num;
         }
     });
     return norm;
 }
 
-function _normalizeRiskConfig(risk) {
-    const norm = risk || {};
-    if (norm.volatility !== undefined) {
-        const riskVol = Number(norm.volatility);
-        norm.volatility = Number.isFinite(riskVol) ? riskVol : undefined;
-    }
+function normalizeRiskConfig(risk) {
+    const norm = risk ? { ...risk } : {};
+    const vol = toFiniteNumber(norm.volatility);
+    norm.volatility = vol !== null ? vol : null;
     return norm;
 }
 
-function _normalizeNumber(value, fallback) {
-    const num = Number(value);
-    if (Number.isFinite(num)) {
-        return num;
+function normalizeBenchmark(benchmark) {
+    if (benchmark && typeof benchmark === 'object') {
+        return {
+            type: benchmark.type || 'annualReturn',
+            name: benchmark.name || 'Benchmark',
+            value: toFiniteNumber(benchmark.value) ?? 0.065,
+        };
     }
-    return fallback;
+    return {
+        type: 'annualReturn',
+        name: 'Benchmark',
+        value: toFiniteNumber(benchmark) ?? 0.065,
+    };
 }
 
-function _normalizeModelPreferences(preferences, legacyManual) {
-    preferences.horizon = _normalizeNumber(preferences.horizon ?? legacyManual.horizon, 5);
-    preferences.kellyScale = _normalizeNumber(
-        preferences.kellyScale ?? legacyManual.kellyScale,
-        0.5
-    );
-    preferences.targetCagr = _normalizeNumber(
-        preferences.targetCagr ?? legacyManual.targetCagr,
-        0.1
-    );
-    preferences.riskFreeRate = _normalizeNumber(
-        preferences.riskFreeRate ?? legacyManual.riskFreeRate,
-        DEFAULT_RISK_FREE_RATE
-    );
-    preferences.maxDrawdown = _normalizeNumber(
-        preferences.maxDrawdown ?? legacyManual.maxDrawdown,
-        0.3
-    );
-    preferences.drawdownTolerance = _normalizeNumber(
-        preferences.drawdownTolerance ?? legacyManual.drawdownTolerance,
-        0.05
-    );
-
-    const benchmarkSource =
-        preferences.benchmark !== undefined
-            ? { benchmark: preferences.benchmark }
-            : { benchmark: legacyManual.benchmark ?? 0 };
-    preferences.benchmark = getBenchmarkDescriptor(benchmarkSource);
-}
-
-function _normalizeModelOverrides(overrides, legacyManual) {
+function normalizeModelConfig(model) {
+    const norm = model ? { ...model } : {};
+    norm.version = norm.version || '1.0.0';
+    const prefs = norm.preferences ? { ...norm.preferences } : {};
+    prefs.horizon = toFiniteNumber(prefs.horizon) ?? 5;
+    prefs.kellyScale = toFiniteNumber(prefs.kellyScale) ?? 0.5;
+    prefs.targetCagr = toFiniteNumber(prefs.targetCagr) ?? 0.12;
+    prefs.riskFreeRate = toFiniteNumber(prefs.riskFreeRate) ?? DEFAULT_RISK_FREE_RATE;
+    prefs.benchmark = normalizeBenchmark(prefs.benchmark);
+    const overrides = prefs.overrides ? { ...prefs.overrides } : {};
     ['price', 'eps', 'volatility'].forEach((key) => {
-        const value = overrides[key] !== undefined ? overrides[key] : legacyManual[key];
-        if (value !== undefined && value !== null) {
-            const num = Number(value);
-            if (Number.isFinite(num)) {
-                overrides[key] = num;
-            } else {
-                delete overrides[key];
-            }
+        const num = toFiniteNumber(overrides[key]);
+        if (num !== null) {
+            overrides[key] = num;
+        } else {
+            delete overrides[key];
         }
     });
-}
-
-function _normalizeModelConfig(model, legacyManual) {
-    const norm = model || {};
-    norm.version = norm.version || '1.0.0';
-    norm.engine = norm.engine || {
-        type: 'fermat-pascal-kelly',
-        useMonteCarlo: false,
-        paths: 10000,
-        useBayesianUpdate: false,
-    };
-    norm.preferences = norm.preferences || {};
-    norm.preferences.overrides = norm.preferences.overrides
-        ? { ...norm.preferences.overrides }
-        : {};
-
-    _normalizeModelPreferences(norm.preferences, legacyManual);
-    _normalizeModelOverrides(norm.preferences.overrides, legacyManual);
-
-    return norm;
-}
-
-function _normalizePositionConfig(position, raw, holdingDetails, legacyManual) {
-    const norm = position || {};
-    const holdingShares = holdingDetails?.shares ?? legacyManual.shares ?? raw.shares;
-    if (holdingShares !== undefined) {
-        const sharesNum = Number(holdingShares);
-        if (Number.isFinite(sharesNum)) {
-            norm.shares = sharesNum;
-        }
-    }
-    norm.constraints = norm.constraints || { minWeight: 0, maxWeight: 0.3 };
+    prefs.overrides = overrides;
+    norm.preferences = prefs;
     return norm;
 }
 
 function normalizeConfig(raw, holdingDetails = {}) {
-    const legacyManual = raw.manual || {};
+    const shares = toFiniteNumber(holdingDetails.shares ?? raw.position?.shares ?? raw.shares);
+    const position = raw.position ? { ...raw.position } : {};
+    if (shares !== null) {
+        position.shares = shares;
+    }
+    position.constraints = position.constraints || { minWeight: 0, maxWeight: 0.3 };
+
     const config = {
-        ..._initBaseConfigFields(raw, holdingDetails),
-        ..._initBaseConfigNested(raw),
+        ...raw,
+        symbol: raw.symbol || holdingDetails.symbol || '',
+        name: raw.name || raw.symbol || '',
+        meta: raw.meta ? { ...raw.meta } : {},
+        market: normalizeMarketConfig(raw.market),
+        risk: normalizeRiskConfig(raw.risk),
+        model: normalizeModelConfig(raw.model),
+        position,
+        scenarios: Array.isArray(raw.scenarios) ? raw.scenarios.map((s) => ({ ...s })) : [],
     };
-
-    config.market = _normalizeMarketConfig(config.market);
-    config.risk = _normalizeRiskConfig(config.risk);
-    config.model = _normalizeModelConfig(config.model, legacyManual);
-    config.position = _normalizePositionConfig(config.position, raw, holdingDetails, legacyManual);
-
-    config.scenarios = config.scenarios.map((scenario) => normalizeScenario(scenario));
-
     const price = getEffectivePrice(config);
-    const shares = Number(config.position.shares) || 0;
-    config.marketValue = shares * price;
+    config.marketValue = (Number(position.shares) || 0) * price;
     config.weight = 0;
     return config;
 }
 
-function getAssetPairCorrelation(symA, symB) {
-    if (!symA || !symB || symA === symB) {
-        return symA && symA === symB ? 1.0 : 0.0;
-    }
-    const pair = [symA, symB].sort().join(':');
-    const CORRELATION_MAP = {
-        'ANET:GOOG': 0.6,
-        'ANET:PDD': 0.25,
-        'ANET:VT': 0.65,
-        'GOOG:PDD': 0.25,
-        'GOOG:VT': 0.7,
-        'PDD:VT': 0.35,
-    };
-    return CORRELATION_MAP[pair] !== undefined ? CORRELATION_MAP[pair] : 0.0;
-}
-
-function computePortfolioCovarianceVolatility(configs) {
-    let covSum = 0;
-    let diagSum = 0;
-    for (let i = 0; i < configs.length; i++) {
-        const wi = Number(configs[i].weight) || 0;
-        const voli = getEffectiveVolatility(configs[i]);
-        diagSum += Math.pow(wi, 2) * Math.pow(voli, 2);
-
-        for (let j = 0; j < configs.length; j++) {
-            const wj = Number(configs[j].weight) || 0;
-            const volj = getEffectiveVolatility(configs[j]);
-            const corr =
-                i === j ? 1.0 : getAssetPairCorrelation(configs[i].symbol, configs[j].symbol);
-            covSum += wi * wj * voli * volj * corr;
-        }
-    }
-    const covVol = Math.sqrt(Math.max(0, covSum));
-    const diagVol = Math.sqrt(Math.max(0, diagSum));
+function unavailableHistory(symbol) {
     return {
-        volatility: covVol > 0 ? covVol : diagVol,
-        volatilityZeroCorr: diagVol,
-        covarianceRatio: diagVol > 0 ? covVol / diagVol : 1.0,
+        symbol,
+        prices: [],
+        eps: [],
+        priceBasis: 'unavailable',
+        priceBasisVerified: false,
+        epsPointInTimeCertified: false,
     };
 }
 
-function buildPortfolioConfig(configs) {
-    if (!configs.length) {
-        return null;
+function resolvePriceSourceAndApplyLive(config, realTimeData) {
+    const prefs = config.model.preferences || {};
+    const overrides = prefs.overrides || {};
+    const hasPriceOverride = toFiniteNumber(overrides.price) !== null;
+    const sym = config.symbol;
+    const rtPrices = realTimeData && realTimeData.prices ? realTimeData.prices : {};
+    const rtPrice = toFiniteNumber(rtPrices[sym]);
+    const marketUpdatedAt = config.market.marketDataUpdatedAt || null;
+
+    if (hasPriceOverride) {
+        config.priceSource = 'override';
+        config.priceAsOf = config.meta.asOf || null;
+        return;
     }
-    let totalValue = 0;
-    for (let i = 0; i < configs.length; i++) {
-        totalValue += configs[i].marketValue;
+
+    if (rtPrice !== null && rtPrice > 0) {
+        config.market.price = rtPrice;
+        const host =
+            typeof window !== 'undefined' && window.location ? window.location.hostname || '' : '';
+        const local = typeof window === 'undefined' || isLocalhost(host);
+        config.priceSource = local ? 'static_fund_data' : 'realtime_feed';
+        config.priceAsOf = realTimeData.date || marketUpdatedAt;
+        return;
     }
-    if (!(totalValue > 0)) {
-        return null;
-    }
-    const weighted = (selector) => {
-        let sum = 0;
-        for (let i = 0; i < configs.length; i++) {
-            sum += configs[i].weight * selector(configs[i]);
+
+    config.priceSource = 'config_snapshot';
+    config.priceAsOf = marketUpdatedAt || config.meta.asOf || null;
+}
+
+function buildCompositionWeightMap(realTimeData) {
+    const map = new Map();
+    const list = Array.isArray(realTimeData?.composition) ? realTimeData.composition : [];
+    for (let i = 0; i < list.length; i++) {
+        const item = list[i];
+        const sym = item?.ticker ? String(item.ticker).toUpperCase() : '';
+        const pct = toFiniteNumber(item?.percent);
+        if (sym && pct !== null) {
+            map.set(sym, pct / 100);
         }
-        return sum;
-    };
-    const basePreferences = getPreferences(configs[0]);
-    const horizonRaw = Number(basePreferences.horizon ?? 1);
-    const horizon = Number.isFinite(horizonRaw) && horizonRaw > 0 ? horizonRaw : 1;
-    const price = totalValue;
-    const eps = 1;
-    const benchmarkValue = weighted((cfg) => getBenchmarkDescriptor(getPreferences(cfg)).value);
-    const kellyScale = weighted((cfg) => getPreferences(cfg).kellyScale ?? 0.5);
-    const targetCagr = weighted((cfg) => getPreferences(cfg).targetCagr ?? 0.1);
-    const riskFreeRate = weighted(
-        (cfg) => getPreferences(cfg).riskFreeRate ?? DEFAULT_RISK_FREE_RATE
-    );
+    }
+    return map;
+}
 
-    const covResult = computePortfolioCovarianceVolatility(configs);
-    const volatility = covResult.volatility;
+function resolveNormalizedWeight(cfg, realTimeData, compWeightMap, fallbackTotalValue) {
+    if (compWeightMap.has(cfg.symbol)) {
+        return compWeightMap.get(cfg.symbol);
+    }
+    const balance = toFiniteNumber(realTimeData?.balance);
+    const usdWeight = toFiniteNumber(realTimeData?.tickerWeights?.[cfg.symbol]);
+    if (balance !== null && balance > 0 && usdWeight !== null) {
+        return usdWeight / balance;
+    }
+    return fallbackTotalValue > 0 ? cfg.marketValue / fallbackTotalValue : 0;
+}
 
-    const overrides = {
-        price,
-        eps,
-        volatility,
-    };
-    const model = {
-        version: '1.0.0',
-        engine: {
-            type: 'fermat-pascal-kelly',
-            useMonteCarlo: false,
-            paths: 10000,
-            useBayesianUpdate: false,
-        },
-        preferences: {
-            horizon,
-            benchmark: {
-                type: 'composite',
-                value: benchmarkValue,
-                name: 'SP500',
-            },
-            kellyScale,
-            targetCagr,
-            riskFreeRate,
-            overrides,
-        },
-    };
-    const scenarios = aggregateScenarios(configs, horizon);
-    const portfolio = {
-        symbol: 'PORT',
-        name: 'Portfolio',
-        meta: {
-            schemaVersion: '1.1.0',
-            asOf: new Date().toISOString(),
-            timezone: 'UTC',
-            source: 'analysis-lab',
-        },
-        model,
-        market: {
-            price,
-            eps,
-        },
-        risk: {
-            volatility,
-            volatilityZeroCorr: covResult.volatilityZeroCorr,
-            covarianceRatio: covResult.covarianceRatio,
-            estimateSource: covResult.covarianceRatio > 1.0 ? 'covariance-matrix' : 'weighted',
-            correlations: covResult.covarianceRatio > 1.0 ? 'calibrated-cross-asset' : null,
-        },
-        position: {
-            shares: totalValue && price > 0 ? totalValue / price : totalValue,
-            currentWeight: 1,
-            targetWeight: null,
-            maxKellyWeight: null,
-            portfolioId: 'PORT',
-            constraints: { minWeight: 0, maxWeight: 1 },
-        },
-        derived: {
-            expectedCagr: null,
-            expectedMultiple: null,
-            fairValueRange: null,
-            kelly: { fullKelly: null, scaledKelly: null },
-        },
-        scenarios,
-        marketValue: totalValue,
-        weight: 1,
-    };
-    portfolio.metrics = computeMetrics(portfolio);
-    portfolio.metrics.volatilityZeroCorr = covResult.volatilityZeroCorr;
-    portfolio.metrics.covarianceRatio = covResult.covarianceRatio;
-    return portfolio;
+function groupFlagsBySymbol(eventFlags) {
+    const map = new Map();
+    const flags = Array.isArray(eventFlags?.flags) ? eventFlags.flags : [];
+    for (let i = 0; i < flags.length; i++) {
+        const flag = flags[i];
+        const sym = flag?.ticker ? String(flag.ticker).toUpperCase() : '';
+        if (!sym) {
+            continue;
+        }
+        if (!map.has(sym)) {
+            map.set(sym, []);
+        }
+        map.get(sym).push(flag);
+    }
+    return map;
 }
 
 async function buildConfigs() {
-    const [analysisIndex, holdingsData, eventFlags] = await Promise.all([
+    const [analysisIndex, holdingsData, eventFlags, realTimeData] = await Promise.all([
         fetchJson('../data/analysis/index.json'),
         fetchJson('../data/holdings_details.json'),
-        // Absent event_flags.json means no sweep has run with --json-out yet —
-        // fail-open to null, never block ticker rendering on it.
         fetchJson('../data/analysis/event_flags.json').catch(() => null),
+        fetchRealTimeData().catch(() => null),
     ]);
+    const nowMs = Date.now();
+    state.lastNowMs = nowMs;
     state.eventFlags = eventFlags;
 
-    const configs = await Promise.all(
-        (analysisIndex.tickers || []).map(async (entry) => {
+    const entries = Array.isArray(analysisIndex?.tickers) ? analysisIndex.tickers : [];
+    const loaded = await Promise.all(
+        entries.map(async (entry) => {
             try {
-                const [raw, thesisTitles, evidenceText] = await Promise.all([
+                const histPath =
+                    entry.historyPath || `../data/analysis/${entry.symbol}.history.json`;
+                const [raw, history] = await Promise.all([
                     fetchJson(entry.path),
-                    fetchThesisScenarioTitles(entry.symbol),
-                    fetchText(`../data/analysis/${entry.symbol}.evidence.jsonl`).catch(() => null),
+                    fetchJson(histPath).catch(() => unavailableHistory(entry.symbol)),
                 ]);
                 const config = normalizeConfig(
                     { ...raw, symbol: raw.symbol || entry.symbol, name: raw.name || entry.name },
                     holdingsData[entry.symbol] || {}
                 );
-                config.symbol = entry.symbol;
-                config.name = raw.name || entry.name || entry.symbol;
-                applyThesisScenarioTitles(config, thesisTitles);
-                if (evidenceText) {
-                    const evidenceList = BayesianEngine.parseJsonl(evidenceText);
-                    state.evidenceCache.set(entry.symbol, evidenceList);
-                    config.scenarios = applyParameterPosteriors(
-                        config.scenarios,
-                        evidenceList,
-                        getEffectiveVolatility(config) * 0.5
-                    );
-                }
-                config.metrics = computeMetrics(config);
+                config.symbol = String(entry.symbol).toUpperCase();
+                config.name = raw.name || entry.name || config.symbol;
+                config.history = history;
+                resolvePriceSourceAndApplyLive(config, realTimeData);
+                config.marketValue =
+                    (Number(config.position?.shares) || 0) * getEffectivePrice(config);
                 return config;
             } catch (error) {
-                logger.warn('Analysis lab operations failed:', error);
+                logger.warn('Analysis lab load failed:', error);
                 return null;
             }
         })
     );
 
-    const validConfigs = configs.filter(Boolean);
-    let totalValue = 0;
-    for (let i = 0; i < validConfigs.length; i++) {
-        totalValue += validConfigs[i].marketValue;
-    }
+    const validConfigs = loaded.filter(Boolean);
+    const fallbackTotalValue = validConfigs.reduce((sum, cfg) => sum + cfg.marketValue, 0);
+    const rtBalance = toFiniteNumber(realTimeData?.balance);
+    state.portfolioTotalValue =
+        rtBalance !== null && rtBalance > 0 ? rtBalance : fallbackTotalValue;
+
+    const compWeightMap = buildCompositionWeightMap(realTimeData);
+    const flagsBySymbol = groupFlagsBySymbol(eventFlags);
+
     validConfigs.forEach((cfg) => {
-        cfg.weight = totalValue > 0 ? cfg.marketValue / totalValue : 0;
+        cfg.weight = resolveNormalizedWeight(cfg, realTimeData, compWeightMap, fallbackTotalValue);
+        cfg.metrics = computeMetrics(cfg);
+        cfg.decision = evaluateTickerDecision(cfg, cfg.metrics, {
+            currentWeight: cfg.weight,
+            eventFlags: flagsBySymbol.get(cfg.symbol) || [],
+            flagsGeneratedAt: eventFlags?.generatedAt || null,
+            nowMs,
+        });
     });
 
-    const portfolioConfig = buildPortfolioConfig(validConfigs);
-    const ordered = portfolioConfig ? [portfolioConfig, ...validConfigs] : validConfigs;
-    state.configs = ordered;
-    state.activeSymbol = ordered.length ? ordered[0].symbol : null;
+    state.configs = validConfigs;
 }
 
 function buildPaneDom(rootEl) {
@@ -2730,30 +412,367 @@ function resolvePaneElements(rootEl) {
     paneRoot = rootEl;
     syncPaneChartColors();
     contextEl = rootEl.querySelector('#paneContext');
-    summaryStatsEl = rootEl.querySelector('#summaryStats');
-    scenarioResultsEl = rootEl.querySelector('#scenarioResults');
-    valueBandsEl = rootEl.querySelector('#valueBands');
-    bayesOutput = rootEl.querySelector('#bayesOutput');
-    monteCarloCanvas = rootEl.querySelector('#monteCarloCanvas');
-    monteCarloFanCanvas = rootEl.querySelector('#monteCarloFanCanvas');
-    riskMetricsEl = rootEl.querySelector('#riskMetrics');
-    kellyCurveCanvas = rootEl.querySelector('#kellyCurveCanvas');
-    kellyMetricsEl = rootEl.querySelector('#kellyMetrics');
-    beliefStateCardEl = rootEl.querySelector('#beliefStateCard');
-    evidenceTimelineEl = rootEl.querySelector('#evidenceTimeline');
-    predictionsCardEl = rootEl.querySelector('#predictionsCard');
-    decisionJournalCardEl = rootEl.querySelector('#decisionJournalCard');
-    overviewScenariosEl = rootEl.querySelector('#overviewScenarios');
-    overviewValueBandsEl = rootEl.querySelector('#overviewValueBands');
+    decisionBoardEl = rootEl.querySelector('#decisionBoard');
+    boardBudgetFooterEl = rootEl.querySelector('#boardBudgetFooter');
+    verdictStripEl = rootEl.querySelector('#verdictStrip');
+    decisionChartCanvas = rootEl.querySelector('#decisionChartCanvas');
+    sizingBulletEl = rootEl.querySelector('#sizingBullet');
+    riskFooterEl = rootEl.querySelector('#riskFooter');
 }
 
-/**
- * Viewport-fit guard (deterministic ensure/detect layer): the analysis-stage
- * is a fixed-height flex column, so any section taller than the stage shows
- * up as scrollHeight > clientHeight. A hidden subtree reports 0 sizes and
- * cannot be measured — return null instead of guessing. See
- * docs/analysis-pane-visual-design.md, "Viewport fit".
- */
+function makeEl(tag, className, textContent = null) {
+    const el = document.createElement(tag);
+    if (className) {
+        el.className = className;
+    }
+    if (textContent !== null && textContent !== undefined) {
+        el.textContent = textContent;
+    }
+    return el;
+}
+
+function createContextPill(label, isActive) {
+    const pill = makeEl('span', `context-pill${isActive ? ' is-active' : ''}`, label);
+    if (isActive) {
+        pill.setAttribute('aria-current', 'page');
+    }
+    return pill;
+}
+
+function renderContextStrip() {
+    if (!contextEl) {
+        return;
+    }
+    contextEl.replaceChildren();
+
+    const strip = makeEl('div', 'context-strip');
+    strip.appendChild(createContextPill('PORT', state.activeSection === 'board'));
+    state.configs.forEach((cfg) => {
+        const isCurrent = state.activeSection === 'ticker' && state.activeSymbol === cfg.symbol;
+        strip.appendChild(createContextPill(cfg.symbol, isCurrent));
+    });
+
+    const activeCfg =
+        state.activeSection === 'ticker'
+            ? state.configs.find((c) => c.symbol === state.activeSymbol)
+            : null;
+    let metaText = 'BOARD';
+    if (activeCfg) {
+        const horizonLabel =
+            state.horizonMode === 'full' ? `FULL ${activeCfg.metrics?.horizon || 5}Y` : '2Y';
+        const asOf = activeCfg.priceAsOf ? String(activeCfg.priceAsOf).slice(0, 10) : 'n/a';
+        metaText = `${horizonLabel} · ${asOf} (${activeCfg.priceSource || 'snapshot'})`;
+    } else if (state.configs.length > 0) {
+        const firstDate = state.configs[0].priceAsOf
+            ? String(state.configs[0].priceAsOf).slice(0, 10)
+            : 'n/a';
+        metaText = `BOARD · ${firstDate}`;
+    }
+
+    contextEl.append(strip, makeEl('span', 'context-meta', metaText));
+}
+
+function createValuationSpark(decision, price) {
+    const wrap = makeEl('div', 'val-spark');
+    const bands = decision?.bands;
+    const triggerPct = decision?.triggerDistancePct;
+    const trigLabel = Number.isFinite(triggerPct) ? formatSignedPercent(triggerPct) : 'n/a';
+
+    if (!bands || !(price > 0) || decision.gate1Broken) {
+        wrap.appendChild(makeEl('span', 'val-spark-na', 'suppressed'));
+        return wrap;
+    }
+
+    const lo = bands.strongBuy * 0.85;
+    const hi = bands.sell * 1.15;
+    const span = Math.log(hi) - Math.log(lo);
+    const pos = span > 0 ? Math.min(1, Math.max(0, (Math.log(price) - Math.log(lo)) / span)) : 0.5;
+    const track = makeEl('span', 'val-spark-track');
+    const dot = makeEl('span', `val-spark-dot tone-${decision.verdictTone || 'muted'}`);
+    dot.style.left = `${(pos * 100).toFixed(1)}%`;
+    track.appendChild(dot);
+
+    wrap.append(track, makeEl('span', 'val-spark-pct', trigLabel));
+    return wrap;
+}
+
+function createMiniSizingBullet(decision) {
+    const wrap = makeEl('div', 'mini-bullet');
+    if (decision.kellyUnavailable) {
+        wrap.appendChild(makeEl('span', 'mini-bullet-na', 'Kelly n/a'));
+        return wrap;
+    }
+    const wMax = decision.maxWeight || 0.3;
+    const wCurr = decision.currentWeight || 0;
+    const wRec = decision.targetWeight ?? 0;
+    const scaleMax = Math.max(wMax * 1.25, wCurr * 1.15, 0.1);
+
+    const track = makeEl('span', 'mini-bullet-track');
+    const fill = makeEl('span', `mini-bullet-fill tone-${decision.verdictTone || 'muted'}`);
+    fill.style.width = `${Math.min(100, (wCurr / scaleMax) * 100).toFixed(1)}%`;
+    const tick = makeEl('span', 'mini-bullet-tick');
+    tick.style.left = `${Math.min(100, (wRec / scaleMax) * 100).toFixed(1)}%`;
+    track.append(fill, tick);
+
+    const text = `${formatPlainPercent(wCurr, 0)}→${formatPlainPercent(wRec, 0)}`;
+    wrap.append(track, makeEl('span', 'mini-bullet-text', text));
+    return wrap;
+}
+
+function renderDecisionBoard() {
+    const board = buildBoardSnapshot(
+        state.configs.map((cfg) => ({ symbol: cfg.symbol, config: cfg, decision: cfg.decision })),
+        { flagsGeneratedAt: state.eventFlags?.generatedAt || null, nowMs: state.lastNowMs }
+    );
+    if (!decisionBoardEl || !boardBudgetFooterEl) {
+        return board;
+    }
+
+    decisionBoardEl.replaceChildren();
+    const header = makeEl('div', 'board-row board-header');
+    header.setAttribute('role', 'row');
+    ['TICKER', 'VERDICT', 'VALUATION', 'MEAN', 'SIZING', 'PROBS / FLAGS'].forEach((title) => {
+        const cell = makeEl('span', 'board-cell', title);
+        cell.setAttribute('role', 'columnheader');
+        header.appendChild(cell);
+    });
+    decisionBoardEl.appendChild(header);
+
+    board.rows.forEach(({ symbol, config, decision }) => {
+        const rowEl = makeEl('div', 'board-row');
+        rowEl.setAttribute('role', 'row');
+
+        const symCell = makeEl('span', 'board-cell board-ticker', symbol);
+        const verdictCell = makeEl(
+            'span',
+            `board-cell board-verdict tone-${decision.verdictTone}`,
+            decision.verdictDisplay
+        );
+        const sparkCell = makeEl('span', 'board-cell board-val-cell');
+        sparkCell.appendChild(createValuationSpark(decision, config.metrics?.price));
+        const meanCell = makeEl(
+            'span',
+            'board-cell board-mean',
+            formatPlainPercent(config.metrics?.expectedCagr)
+        );
+        const sizeCell = makeEl('span', 'board-cell board-size-cell');
+        sizeCell.appendChild(createMiniSizingBullet(decision));
+
+        const probsCell = makeEl('span', 'board-cell board-probs');
+        const confText = decision.confidencePct !== null ? ` · c${decision.confidencePct}%` : '';
+        probsCell.appendChild(makeEl('span', null, `${decision.scenarioSplit}${confText}`));
+        if (decision.hasTickerFlag) {
+            probsCell.appendChild(makeEl('span', 'flag-badge', ' ⚑'));
+        }
+
+        [symCell, verdictCell, sparkCell, meanCell, sizeCell, probsCell].forEach((c) => {
+            c.setAttribute('role', 'cell');
+            rowEl.appendChild(c);
+        });
+        decisionBoardEl.appendChild(rowEl);
+    });
+
+    boardBudgetFooterEl.replaceChildren();
+    const summaryText =
+        `Normalized Holdings Σw_curr ${formatPlainPercent(board.totalCurrentWeight)} · ` +
+        `Kelly Target Σw_rec ${formatPlainPercent(board.totalRecommendedWeight)} · ` +
+        `Residual Target Cash ${formatPlainPercent(board.residualTargetCash)} ` +
+        '(not actual cash; incl. watchlist)';
+    boardBudgetFooterEl.appendChild(makeEl('span', 'budget-summary', summaryText));
+    board.warnings.forEach((warning) => {
+        boardBudgetFooterEl.appendChild(makeEl('span', 'flag-pill', `⚑ ${warning}`));
+    });
+
+    return board;
+}
+
+function renderVerdictStrip(config, decision, metrics) {
+    if (!verdictStripEl) {
+        return;
+    }
+    verdictStripEl.replaceChildren();
+    const identity = makeEl('span', 'verdict-identity', `${config.symbol} · ${config.name}`);
+    const badge = makeEl(
+        'span',
+        `verdict-badge tone-${decision.verdictTone}`,
+        decision.verdictDisplay
+    );
+    const meanText = `Mean ${formatPlainPercent(metrics?.expectedCagr)}`;
+    const trigText = decision.nextTrigger
+        ? `${decision.nextTrigger.label} ${formatCurrency(decision.nextTrigger.price)} (${formatSignedPercent(decision.nextTrigger.distancePct)})`
+        : 'Trigger n/a';
+    const probsText = `${decision.scenarioSplit}${decision.confidencePct !== null ? ` · c${decision.confidencePct}%` : ''}`;
+
+    verdictStripEl.append(
+        identity,
+        badge,
+        makeEl('span', 'verdict-metric', `${meanText} · ${trigText}`),
+        makeEl('span', 'verdict-probs', probsText)
+    );
+
+    decision.tickerWarnings.forEach((warn) => {
+        verdictStripEl.appendChild(makeEl('span', 'flag-pill', `⚑ ${warn}`));
+    });
+    if (decision.flagsStale) {
+        verdictStripEl.appendChild(makeEl('span', 'flag-pill', '⚑ FLAGS STALE'));
+    }
+}
+
+function renderSizingBullet(decision, metrics) {
+    if (!sizingBulletEl) {
+        return;
+    }
+    sizingBulletEl.replaceChildren();
+
+    const wCurr = decision.currentWeight || 0;
+    const wMax = decision.maxWeight || 0.3;
+    const wRec = decision.targetWeight;
+    const scaleMax = Math.max(wMax * 1.25, wCurr * 1.15, 0.1);
+
+    const track = makeEl('div', 'bullet-track');
+    if (!decision.kellyUnavailable && wRec !== null) {
+        const recZone = makeEl('span', 'bullet-zone-rec');
+        recZone.style.width = `${Math.min(100, (wRec / scaleMax) * 100).toFixed(1)}%`;
+        const roomZone = makeEl('span', 'bullet-zone-room');
+        roomZone.style.left = `${Math.min(100, (wRec / scaleMax) * 100).toFixed(1)}%`;
+        roomZone.style.width = `${Math.max(0, Math.min(100, (wMax / scaleMax) * 100) - Math.min(100, (wRec / scaleMax) * 100)).toFixed(1)}%`;
+        const overZone = makeEl('span', 'bullet-zone-over');
+        overZone.style.left = `${Math.min(100, (wMax / scaleMax) * 100).toFixed(1)}%`;
+        track.append(recZone, roomZone, overZone);
+    }
+
+    const bar = makeEl('span', `bullet-bar tone-${decision.verdictTone}`);
+    bar.style.width = `${Math.min(100, (wCurr / scaleMax) * 100).toFixed(1)}%`;
+    const capLine = makeEl('span', 'bullet-cap');
+    capLine.style.left = `${Math.min(100, (wMax / scaleMax) * 100).toFixed(1)}%`;
+    track.append(bar, capLine);
+
+    if (!decision.kellyUnavailable && wRec !== null) {
+        const targetTick = makeEl('span', 'bullet-target');
+        targetTick.style.left = `${Math.min(100, (wRec / scaleMax) * 100).toFixed(1)}%`;
+        track.appendChild(targetTick);
+    }
+
+    let readoutText;
+    if (decision.kellyUnavailable) {
+        readoutText = `${formatPlainPercent(wCurr)} / cap ${formatPlainPercent(wMax, 0)} · Kelly n/a`;
+    } else {
+        const delta = decision.weightDelta ?? 0;
+        const deltaUsd = state.portfolioTotalValue > 0 ? delta * state.portfolioTotalValue : null;
+        const usdBit =
+            deltaUsd !== null
+                ? ` · ${deltaUsd >= 0 ? '+' : '-'}${formatCompactCurrency(Math.abs(deltaUsd))}`
+                : '';
+        const halfKellyBit =
+            metrics?.fullKelly >= 1 - 1e-6
+                ? '½K ≥50% (cap)'
+                : `½K ${formatPlainPercent(metrics?.scaledKelly, 0)}`;
+        readoutText =
+            `${formatPlainPercent(wCurr)} / ${formatPlainPercent(wRec)} target ` +
+            `(${formatSignedPercent(delta)}${usdBit}) · ${halfKellyBit}`;
+    }
+
+    sizingBulletEl.append(
+        makeEl('span', 'bullet-label', 'SIZE'),
+        track,
+        makeEl('span', 'bullet-readout', readoutText)
+    );
+}
+
+function renderRiskFooter(config, decision, metrics) {
+    if (!riskFooterEl) {
+        return;
+    }
+    riskFooterEl.replaceChildren();
+
+    const outcomes = metrics?.outcomes || [];
+    const bearOutcome = outcomes.find((o) =>
+        String(o.id || o.name || '')
+            .toLowerCase()
+            .startsWith('bear')
+    );
+    const bearStr =
+        bearOutcome && Number.isFinite(bearOutcome.totalReturnCagr)
+            ? `${formatSignedPercent(bearOutcome.totalReturnCagr)}/yr`
+            : 'n/a';
+    const geoStr = formatPlainPercent(metrics?.geometricCagr);
+    const low52 = toFiniteNumber(config.market?.fiftyTwoWeekLow);
+    const high52 = toFiniteNumber(config.market?.fiftyTwoWeekHigh);
+    const rangeStr =
+        low52 !== null && high52 !== null
+            ? `${formatCurrency(low52)}–${formatCurrency(high52)}`
+            : 'n/a';
+
+    const predictions = Array.isArray(config.predictions) ? config.predictions : [];
+    const brier = computeBrierScore(predictions);
+    const predStr = brier
+        ? `${brier.count}/${predictions.length} (${brier.brierScore.toFixed(2)})`
+        : `0/${predictions.length} (n/a)`;
+    const revStr = decision.reviewDate || 'TBD';
+
+    const digest = `Bear ${bearStr} · Geo ${geoStr} · 52w ${rangeStr} · Pred ${predStr} · Rev ${revStr}`;
+    const hint = `an ${config.symbol} full | an | an close`;
+
+    riskFooterEl.append(
+        makeEl('span', 'risk-label', 'RISK'),
+        makeEl('span', 'risk-digest', digest),
+        makeEl('span', 'risk-hint', hint)
+    );
+}
+
+function currentChartPayload() {
+    const config = state.configs.find((c) => c.symbol === state.activeSymbol);
+    if (!config) {
+        return null;
+    }
+    return {
+        config,
+        history: config.history || unavailableHistory(config.symbol),
+        decision: config.decision,
+        metrics: config.metrics,
+        horizonMode: state.horizonMode,
+    };
+}
+
+function renderTickerDecision(config) {
+    if (!config) {
+        return;
+    }
+    renderVerdictStrip(config, config.decision, config.metrics);
+    if (decisionChartCanvas) {
+        renderDecisionChart(
+            decisionChartCanvas,
+            {
+                config,
+                history: config.history || unavailableHistory(config.symbol),
+                decision: config.decision,
+                metrics: config.metrics,
+                horizonMode: state.horizonMode,
+            },
+            PANE_CHART_COLORS
+        );
+        if (!detachChartInteractions) {
+            detachChartInteractions = attachDecisionChartInteractions(decisionChartCanvas, () => ({
+                payload: currentChartPayload(),
+                colors: PANE_CHART_COLORS,
+            }));
+        }
+    }
+    renderSizingBullet(config.decision, config.metrics);
+    renderRiskFooter(config, config.decision, config.metrics);
+}
+
+function toggleSectionVisibility(target) {
+    const resolved = ANALYSIS_SECTIONS.includes(target) ? target : 'board';
+    state.activeSection = resolved;
+    if (!paneRoot) {
+        return;
+    }
+    paneRoot.querySelectorAll('[data-analysis-section]').forEach((section) => {
+        section.classList.toggle('is-hidden', section.dataset.analysisSection !== resolved);
+    });
+}
+
 export function checkPaneViewportFit() {
     if (!paneRoot) {
         return null;
@@ -2765,7 +784,6 @@ export function checkPaneViewportFit() {
     const client = stage.clientHeight;
     const scroll = stage.scrollHeight;
     if (client === 0 || scroll === 0) {
-        // Hidden subtree (landmine: measurement during display:none is 0).
         return null;
     }
     const overflow = scroll - client;
@@ -2779,28 +797,30 @@ export function checkPaneViewportFit() {
     return { section: state.activeSection, overflow: 0 };
 }
 
-export function showAnalysisSection(name) {
-    const target = ANALYSIS_SECTIONS.includes(name) ? name : 'overview';
-    state.activeSection = target;
-    if (!paneRoot) {
-        return;
-    }
-    paneRoot.querySelectorAll('[data-analysis-section]').forEach((section) => {
-        section.classList.toggle('is-hidden', section.dataset.analysisSection !== target);
-    });
-    updateContextMeta();
+export function showDecisionBoard() {
+    state.activeSymbol = 'PORT';
+    toggleSectionVisibility('board');
+    renderContextStrip();
+    const board = renderDecisionBoard();
     checkPaneViewportFit();
+    return board;
 }
 
-export function setActiveAnalysisSymbol(symbol) {
-    const config = state.configs.find((cfg) => cfg.symbol === symbol);
+export function showTickerDecision(symbol, { horizonMode = '2y' } = {}) {
+    const norm = String(symbol || '')
+        .trim()
+        .toUpperCase();
+    const config = state.configs.find((cfg) => cfg.symbol === norm);
     if (!config) {
-        return false;
+        return null;
     }
     state.activeSymbol = config.symbol;
+    state.horizonMode = horizonMode === 'full' ? 'full' : '2y';
+    toggleSectionVisibility('ticker');
     renderContextStrip();
-    renderActiveTicker();
-    return true;
+    renderTickerDecision(config);
+    checkPaneViewportFit();
+    return buildDecisionSnapshot(config, config.decision, config.metrics);
 }
 
 export function getAnalysisSymbols() {
@@ -2808,219 +828,99 @@ export function getAnalysisSymbols() {
 }
 
 export function getActiveAnalysisConfig() {
+    if (state.activeSection === 'board') {
+        return null;
+    }
     return state.configs.find((cfg) => cfg.symbol === state.activeSymbol) || null;
 }
 
-function formatScenarioShort(outcome) {
-    const id = (outcome.id || outcome.name || 'scenario').toLowerCase();
-    return `${id} ${(outcome.prob * 100).toFixed(0)}% ${outcome.multiple.toFixed(1)}x`;
+// Temporary WO6 compatibility shims — removed in WO6.
+export function showAnalysisSection(name) {
+    if (name === 'overview' || name === 'board') {
+        showDecisionBoard();
+        return;
+    }
+    if (state.activeSymbol && state.activeSymbol !== 'PORT') {
+        showTickerDecision(state.activeSymbol, { horizonMode: state.horizonMode });
+        return;
+    }
+    showDecisionBoard();
 }
 
-function buildOverviewSnapshot(symbol, metrics) {
-    const bench = metrics.benchmarkDescriptor?.name || 'Benchmark';
-    return (
-        `Analysis (${symbol}) — expected CAGR ${formatPercent(metrics.expectedCagr)}, ` +
-        `edge ${formatPercent(metrics.edge)} vs ${bench}, ` +
-        `scaled Kelly ${formatPercent(metrics.scaledKelly)}.`
+export function setActiveAnalysisSymbol(symbol) {
+    if (String(symbol || '').toUpperCase() === 'PORT') {
+        showDecisionBoard();
+        return true;
+    }
+    return Boolean(showTickerDecision(symbol, { horizonMode: state.horizonMode }));
+}
+
+export function buildAnalysisSnapshot() {
+    if (state.activeSection === 'ticker') {
+        const cfg = getActiveAnalysisConfig();
+        return cfg
+            ? buildDecisionSnapshot(cfg, cfg.decision, cfg.metrics).text
+            : 'Analysis board active.';
+    }
+    const board = buildBoardSnapshot(
+        state.configs.map((cfg) => ({ symbol: cfg.symbol, config: cfg, decision: cfg.decision })),
+        { flagsGeneratedAt: state.eventFlags?.generatedAt || null, nowMs: state.lastNowMs }
     );
-}
-
-function buildScenariosSnapshot(symbol, metrics) {
-    const top = [...(metrics.outcomes || [])]
-        .sort((a, b) => b.prob - a.prob)
-        .slice(0, 3)
-        .map(formatScenarioShort)
-        .join(', ');
-    return top ? `Scenarios (${symbol}) — ${top}.` : "Showing analysis 'scenarios'.";
-}
-
-function buildValueSnapshot(symbol, metrics) {
-    const targetPct = (metrics.targetCagr * 100).toFixed(0);
-    return (
-        `Value (${symbol}) — terminal ${formatCurrency(metrics.expectedTerminalPrice)}, ` +
-        `entry for ${targetPct}% CAGR ${formatCurrency(metrics.entryPriceForTarget)} ` +
-        `(${diffDescriptor(metrics.price, metrics.entryPriceForTarget)}).`
-    );
-}
-
-function buildKellySnapshot(config, symbol, metrics) {
-    return (
-        `Kelly (${symbol}) — full ${formatPercent(metrics.fullKelly)}, ` +
-        `scaled ½K ${formatPercent(metrics.scaledKelly)}, ` +
-        `current weight ${formatPercent(resolveCurrentWeight(config))}.`
-    );
-}
-
-function buildBeliefSnapshot(config, symbol) {
-    const belief = config.belief_state;
-    if (!belief) {
-        return "Showing analysis 'belief'.";
-    }
-    const asOf = belief.as_of ? belief.as_of.slice(0, 10) : 'n/a';
-    return (
-        `Belief (${symbol}) — ${(belief.probability * 100).toFixed(1)}% ` +
-        `(confidence ${(belief.confidence * 100).toFixed(0)}%), as of ${asOf}.`
-    );
-}
-
-function buildEvidenceSnapshot(symbol) {
-    const list = state.evidenceCache.get(symbol);
-    if (!list) {
-        return "Showing analysis 'evidence'.";
-    }
-    if (list.length === 0) {
-        return `Evidence (${symbol}) — no logged entries.`;
-    }
-    const today = new Date().toISOString().slice(0, 10);
-    let validCount = 0;
-    let supersededCount = 0;
-    let latest = '';
-    list.forEach((entry) => {
-        const validTo = entry.valid_to || entry.validTo;
-        if (validTo && validTo < today) {
-            supersededCount++;
-        } else {
-            validCount++;
-        }
-        if (entry.date && entry.date > latest) {
-            latest = entry.date;
-        }
-    });
-    const latestText = latest ? `, latest ${latest}` : '';
-    return `Evidence (${symbol}) — ${validCount} valid / ${supersededCount} superseded${latestText}.`;
-}
-
-function buildPredictionsSnapshot(config, symbol) {
-    const predictions = config.predictions || [];
-    const brier = BayesianEngine.computeBrierScore(predictions);
-    const pending = predictions.filter((p) => !p.resolved).length;
-    const overdue = computeStalePredictions(predictions).length;
-    const brierText = brier ? `Brier ${brier.brierScore} (N=${brier.count})` : 'Brier N/A';
-    return `Predictions (${symbol}) — ${brierText}, ${pending} pending, ${overdue} overdue.`;
-}
-
-function buildJournalSnapshot(config, symbol) {
-    const journal = config.decision_journal || [];
-    if (journal.length === 0) {
-        return `Journal (${symbol}) — no entries.`;
-    }
-    const latest = journal[journal.length - 1];
-    return (
-        `Journal (${symbol}) — latest: ${latest.action || 'ACTION'} ${latest.date}, ` +
-        `review ${latest.review_date || 'TBD'} (${journal.length} entries).`
-    );
-}
-
-// One function-specific scrollback line per view (the plot precedent) —
-// built here, not in the handler, because the evidence cache and belief
-// state live in this module. Falls back to the generic line whenever the
-// active config or the function's data is missing.
-export function buildAnalysisSnapshot(func) {
-    const config = state.configs.find((cfg) => cfg.symbol === state.activeSymbol);
-    if (!config || !config.metrics) {
-        return `Showing analysis '${func}'.`;
-    }
-    const symbol = config.symbol;
-    const metrics = config.metrics;
-
-    switch (func) {
-        case 'overview':
-            return buildOverviewSnapshot(symbol, metrics);
-        case 'scenarios':
-            return buildScenariosSnapshot(symbol, metrics);
-        case 'value':
-            return buildValueSnapshot(symbol, metrics);
-        case 'kelly':
-            return buildKellySnapshot(config, symbol, metrics);
-        case 'belief':
-            return buildBeliefSnapshot(config, symbol);
-        case 'evidence':
-            return buildEvidenceSnapshot(symbol);
-        case 'predictions':
-            return buildPredictionsSnapshot(config, symbol);
-        case 'journal':
-            return buildJournalSnapshot(config, symbol);
-        default:
-            return `Showing analysis '${func}'.`;
-    }
+    return `Board — ${board.rows.map((r) => `${r.symbol}:${r.decision.verdictLabel}`).join(', ')}`;
 }
 
 export async function initAnalysisPane(rootEl, { autoLoad = true } = {}) {
+    if (detachChartInteractions) {
+        detachChartInteractions();
+        detachChartInteractions = null;
+    }
     buildPaneDom(rootEl);
     resolvePaneElements(rootEl);
-    showAnalysisSection(state.activeSection);
+    toggleSectionVisibility('board');
     if (!autoLoad) {
         return;
     }
     try {
-        if (summaryStatsEl) {
-            const loadingDiv = document.createElement('div');
-            loadingDiv.className = 'pane-empty';
-            loadingDiv.textContent = 'Loading analysis data…';
-            summaryStatsEl.replaceChildren(loadingDiv);
+        if (decisionBoardEl) {
+            decisionBoardEl.replaceChildren(makeEl('div', 'pane-empty', 'Loading analysis data…'));
         }
         await buildConfigs();
-        renderContextStrip();
-        renderActiveTicker();
+        showDecisionBoard();
     } catch (err) {
         logger.error('Analysis init failed:', err);
-        if (summaryStatsEl) {
-            const errDiv = document.createElement('div');
-            errDiv.className = 'pane-empty pane-empty--error';
-            errDiv.textContent = `Error: ${err.message}`;
-            summaryStatsEl.replaceChildren(errDiv);
+        if (decisionBoardEl) {
+            decisionBoardEl.replaceChildren(
+                makeEl('div', 'pane-empty pane-empty--error', `Error: ${err.message}`)
+            );
         }
     }
 }
 
-// Re-render the pane in the newly selected currency (listener precedent:
-// js/pages/terminal/index.js). FX rates arrive with the transaction data, so
-// wait for readiness before converting — the terminal's own listener runs
-// first (it registers at page load, this module lazy-loads later) and updates
-// selectedCurrency before this one fires.
 if (typeof document !== 'undefined') {
     document.addEventListener('currencyChangedGlobal', async (event) => {
         if (!paneRoot || !event?.detail?.currency) {
             return;
         }
         await whenTransactionDataReady();
-        const config = state.configs.find((cfg) => cfg.symbol === state.activeSymbol);
-        if (config) {
-            renderActiveTicker();
+        if (state.activeSection === 'ticker') {
+            const config = state.configs.find((cfg) => cfg.symbol === state.activeSymbol);
+            if (config) {
+                renderTickerDecision(config);
+            }
+        } else {
+            renderDecisionBoard();
         }
     });
 }
 
 export const __analysisLabTesting = {
-    normalizeScenario,
-    computeScenarioOutcome,
-    computeMetrics,
-    solveKellyFraction,
-    solveZeroGrowthFraction,
-    computeGeometricCagr,
-    computeScenarioVolatility,
-    kellyLogGrowth,
-    kellyGrowthDerivative,
-    aggregateScenarios,
-    extractScenarioTitles,
-    renderBayesOutput,
     state,
     normalizeConfig,
-    buildPortfolioConfig,
-    fetchText,
-    getSharesOutstanding,
-    getAssetPairCorrelation,
-    computePortfolioCovarianceVolatility,
-    renderKellyCurve,
-    renderBeliefState,
-    renderEvidenceTimeline,
-    renderPredictions,
-    computeStalePredictions,
-    computeTickerFlags,
-    renderDecisionJournal,
-    renderMonteCarloResults,
+    computeMetrics,
+    getEffectiveVolatility,
+    renderDecisionBoard,
+    renderTickerDecision,
     renderContextStrip,
-    buildAnalysisSnapshot,
     syncPaneChartColors,
     checkPaneViewportFit,
     PANE_CHART_COLORS,

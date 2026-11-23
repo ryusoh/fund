@@ -1,755 +1,258 @@
-describe('analysis lab data loading', () => {
-    const ORIGINAL_FETCH = global.fetch;
+import fs from 'fs';
+import path from 'path';
 
-    beforeEach(() => {
+const ROOT = path.resolve(process.cwd());
+
+function loadAnalysisJson(fileName) {
+    return JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'analysis', fileName), 'utf-8'));
+}
+
+const mockCtx = {
+    setTransform: jest.fn(),
+    clearRect: jest.fn(),
+    save: jest.fn(),
+    restore: jest.fn(),
+    beginPath: jest.fn(),
+    closePath: jest.fn(),
+    moveTo: jest.fn(),
+    lineTo: jest.fn(),
+    arc: jest.fn(),
+    fill: jest.fn(),
+    stroke: jest.fn(),
+    fillRect: jest.fn(),
+    setLineDash: jest.fn(),
+    fillText: jest.fn(),
+    measureText: jest.fn((t) => ({ width: String(t).length * 6 })),
+};
+
+describe('analysis lab 2-view controller (WO5)', () => {
+    let lab;
+    let mockFetchRealTimeData;
+    let mockWhenReady;
+    let mockSelectedCurrency;
+
+    async function setupLab({ realTimeData = null, hostname = 'localhost' } = {}) {
         jest.resetModules();
-        global.fetch = ORIGINAL_FETCH;
-        global.Worker = class {
-            constructor(stringUrl) {
-                this.url = stringUrl;
-                this.onmessage = () => {};
+        mockSelectedCurrency = 'USD';
+        mockFetchRealTimeData = jest.fn(async () => realTimeData);
+        mockWhenReady = jest.fn(async () => {});
+
+        jest.doMock('../../../../js/transactions/realtimeData.js', () => ({
+            fetchRealTimeData: mockFetchRealTimeData,
+        }));
+        jest.doMock('../../../../js/transactions/state.js', () => ({
+            getSelectedCurrency: () => mockSelectedCurrency,
+            whenTransactionDataReady: mockWhenReady,
+        }));
+        jest.doMock('../../../../js/transactions/utils.js', () => ({
+            convertValueToCurrency: (v) => (mockSelectedCurrency === 'CNY' ? v * 7 : v),
+            formatCurrency: (v) =>
+                mockSelectedCurrency === 'CNY'
+                    ? `¥${Number(v).toFixed(2)}`
+                    : `$${Number(v).toFixed(2)}`,
+            formatCurrencyCompact: (v) =>
+                mockSelectedCurrency === 'CNY'
+                    ? `¥${Math.round(v)}`
+                    : v >= 1000
+                      ? `$${(v / 1000).toFixed(1)}k`
+                      : `$${Math.round(v)}`,
+        }));
+        jest.doMock('../../../../js/utils/host.js', () => ({
+            isLocalhost: () => hostname === 'localhost' || hostname === '127.0.0.1',
+        }));
+
+        const indexPayload = loadAnalysisJson('index.json');
+        const holdingsPayload = JSON.parse(
+            fs.readFileSync(path.join(ROOT, 'data', 'holdings_details.json'), 'utf-8')
+        );
+        const flagsPayload = loadAnalysisJson('event_flags.json');
+
+        global.fetch = jest.fn(async (urlStr) => {
+            const url = String(urlStr);
+            if (url.includes('index.json')) {
+                return { ok: true, json: async () => indexPayload };
             }
-            postMessage() {}
-            terminate() {}
-        };
-        document.body.innerHTML = '';
-    });
+            if (url.includes('holdings_details.json')) {
+                return { ok: true, json: async () => holdingsPayload };
+            }
+            if (url.includes('event_flags.json')) {
+                return { ok: true, json: async () => flagsPayload };
+            }
+            for (const entry of indexPayload.tickers) {
+                const sym = entry.symbol;
+                if (url.includes(`${sym}.history.json`)) {
+                    return { ok: true, json: async () => loadAnalysisJson(`${sym}.history.json`) };
+                }
+                if (url.includes(`${sym}.json`)) {
+                    return { ok: true, json: async () => loadAnalysisJson(`${sym}.json`) };
+                }
+            }
+            return { ok: false, status: 404 };
+        });
 
-    afterEach(() => {
-        jest.restoreAllMocks();
-        jest.resetModules();
-        global.fetch = ORIGINAL_FETCH;
-        delete global.Worker;
-        document.body.innerHTML = '';
-    });
+        HTMLCanvasElement.prototype.getContext = jest.fn(() => mockCtx);
+        HTMLCanvasElement.prototype.getBoundingClientRect = jest.fn(() => ({
+            left: 0,
+            top: 0,
+            width: 672,
+            height: 192,
+        }));
 
-    async function setupPane(autoLoad = false) {
-        const module = await import('@pages/analysis/lab.js');
-        const container = document.createElement('div');
-        document.body.appendChild(container);
-        await module.initAnalysisPane(container, { autoLoad });
-        return { module, container };
+        document.body.innerHTML = '<section id="analysisSection" class="analysis-pane"></section>';
+        lab = await import('../../../../js/pages/analysis/lab.js');
+        const root = document.getElementById('analysisSection');
+        await lab.initAnalysisPane(root, { autoLoad: true });
+        return { lab, root };
     }
 
-    it('derives the canvas palette from pane CSS custom properties', async () => {
-        const module = await import('@pages/analysis/lab.js');
-        const container = document.createElement('div');
-        container.style.setProperty('--text-color', '#ffffff');
-        container.style.setProperty('--green-color', '#123456');
-        document.body.appendChild(container);
-        await module.initAnalysisPane(container, { autoLoad: false });
-
-        const { PANE_CHART_COLORS } = module.__analysisLabTesting;
-        expect(PANE_CHART_COLORS.line).toBe('#ffffff');
-        expect(PANE_CHART_COLORS.green).toBe('#123456');
-        expect(PANE_CHART_COLORS.greenFill).toBe('rgba(18, 52, 86, 0.15)');
+    afterEach(() => {
+        jest.clearAllMocks();
+        document.body.innerHTML = '';
     });
 
-    it('keeps fallback palette values when no custom properties resolve', async () => {
-        const { module } = await setupPane(false);
-        const { PANE_CHART_COLORS } = module.__analysisLabTesting;
-        expect(PANE_CHART_COLORS.line).toBe('#c9d1d9');
-        expect(PANE_CHART_COLORS.greenFill).toBe('rgba(52, 168, 83, 0.15)');
+    it('renders sorted 6-row Decision Board + residual target cash footer and returns null active config on board', async () => {
+        const { root } = await setupLab();
+        expect(lab.getActiveAnalysisConfig()).toBeNull();
+        expect(lab.getAnalysisSymbols()).toEqual(['AEHR', 'ANET', 'CBRS', 'GOOG', 'PDD', 'VT']);
+
+        const rows = Array.from(root.querySelectorAll('.decision-board .board-row')).slice(1);
+        expect(rows).toHaveLength(6);
+        const symbolsInOrder = rows.map((r) => r.querySelector('.board-ticker').textContent);
+        expect(symbolsInOrder[0]).toBe('CBRS');
+
+        const footerText = root.querySelector('#boardBudgetFooter').textContent;
+        expect(footerText).toContain('Residual Target Cash');
+        expect(footerText).toContain('not actual cash');
+        expect(footerText).toContain('THESIS PROB UNMIGRATED');
+        expect(footerText).toContain('FLAGS STALE');
     });
 
-    it('builds function-specific snapshot lines with generic fallbacks', async () => {
-        const { module } = await setupPane(false);
-        const { buildAnalysisSnapshot, state } = module.__analysisLabTesting;
+    it('switches to 3-layer ticker Decision Chart and supports 2y/full horizon switching', async () => {
+        const { root } = await setupLab();
+        const snap2y = lab.showTickerDecision('goog', { horizonMode: '2y' });
+        expect(snap2y.symbol).toBe('GOOG');
+        expect(snap2y.text).toContain('Mean ');
+        expect(lab.getActiveAnalysisConfig().symbol).toBe('GOOG');
 
-        state.configs = [
-            {
-                symbol: 'ANET',
-                name: 'Arista Networks',
-                metrics: {
-                    expectedCagr: 0.152,
-                    edge: 0.092,
-                    scaledKelly: 0.11,
-                    fullKelly: 0.221,
-                    benchmarkDescriptor: { name: 'SP500' },
-                    outcomes: [
-                        { id: 'bull', name: 'Bull', prob: 0.55, multiple: 2.1, priceCagr: 0.2 },
-                        { id: 'base', name: 'Base', prob: 0.35, multiple: 1.2, priceCagr: 0.05 },
-                        { id: 'bear', name: 'Bear', prob: 0.1, multiple: 0.6, priceCagr: -0.08 },
-                    ],
-                    targetCagr: 0.1,
-                    expectedTerminalPrice: 200,
-                    entryPriceForTarget: 124.2,
-                    price: 92.5,
+        const boardSection = root.querySelector('[data-analysis-section="board"]');
+        const tickerSection = root.querySelector('[data-analysis-section="ticker"]');
+        expect(boardSection.classList.contains('is-hidden')).toBe(true);
+        expect(tickerSection.classList.contains('is-hidden')).toBe(false);
+
+        expect(root.querySelector('#verdictStrip').textContent).toContain('GOOG · Alphabet');
+        expect(root.querySelector('#sizingBullet').textContent).toContain('SIZE');
+        expect(root.querySelector('#riskFooter').textContent).toContain('Rev 2026-11-30');
+        expect(root.querySelector('#paneContext').textContent).toContain('2Y ·');
+
+        lab.showTickerDecision('GOOG', { horizonMode: 'full' });
+        expect(root.querySelector('#paneContext').textContent).toContain('FULL 10Y');
+
+        expect(lab.showTickerDecision('UNKNOWN')).toBeNull();
+        const boardSnap = lab.showDecisionBoard();
+        expect(boardSnap.rows).toHaveLength(6);
+        expect(lab.getActiveAnalysisConfig()).toBeNull();
+    });
+
+    it('uses normalized composition fractions and divides USD tickerWeights by balance instead of using raw USD values', async () => {
+        await setupLab({
+            hostname: 'fund.example.com',
+            realTimeData: {
+                date: '2026-11-23',
+                balance: 1_000_000,
+                composition: [{ ticker: 'GOOG', value: 250_000, percent: 25 }],
+                // Deliberately omit ANET from composition to test tickerWeights / balance fallback
+                tickerWeights: {
+                    GOOG: 250_000,
+                    ANET: 300_000,
+                    PDD: 200_000,
+                    VT: 250_000,
+                },
+                prices: {
+                    GOOG: 280.0,
+                    ANET: 175.0,
+                    PDD: 88.0,
+                    VT: 146.0,
                 },
             },
-        ];
-        state.activeSymbol = 'ANET';
+        });
 
-        expect(buildAnalysisSnapshot('overview')).toContain(
-            'Analysis (ANET) — expected CAGR +15.20%'
-        );
-        expect(buildAnalysisSnapshot('overview')).toContain('vs SP500');
-        expect(buildAnalysisSnapshot('scenarios')).toBe(
-            'Scenarios (ANET) — bull 55% 2.1x, base 35% 1.2x, bear 10% 0.6x.'
-        );
-        expect(buildAnalysisSnapshot('kelly')).toBe(
-            'Kelly (ANET) — full +22.10%, scaled ½K +11.00%, current weight +0.00%.'
-        );
-        expect(buildAnalysisSnapshot('value')).toContain('Value (ANET) — terminal $200.00');
-        expect(buildAnalysisSnapshot('value')).toContain('25.5% below target');
-
-        // Evidence with nothing cached falls back to the generic line.
-        expect(buildAnalysisSnapshot('evidence')).toBe("Showing analysis 'evidence'.");
-
-        // Missing active config falls back for every function.
-        state.activeSymbol = 'MISSING';
-        expect(buildAnalysisSnapshot('kelly')).toBe("Showing analysis 'kelly'.");
+        const configs = lab.__analysisLabTesting.state.configs;
+        const goog = configs.find((c) => c.symbol === 'GOOG');
+        const anet = configs.find((c) => c.symbol === 'ANET');
+        expect(goog.weight).toBeCloseTo(0.25, 6);
+        // Must be 300_000 / 1_000_000 = 0.30, NEVER raw 300_000!
+        expect(anet.weight).toBeCloseTo(0.3, 6);
+        expect(anet.market.price).toBe(175.0);
+        expect(anet.priceSource).toBe('realtime_feed');
     });
 
-    it('adds a cache-busting query param and disables caching for data fetches', async () => {
-        const cacheBustValue = '1731900000000';
-        jest.spyOn(Date, 'now').mockReturnValue(Number(cacheBustValue));
-        const json = jest.fn().mockResolvedValue({ ok: true });
-        const fetchMock = jest.fn().mockResolvedValue({ ok: true, json });
-        global.fetch = fetchMock;
-
-        const { fetchJson } = await import('@pages/analysis/lab.js');
-        await fetchJson('../data/analysis/ANET.json');
-
-        expect(fetchMock).toHaveBeenCalledTimes(1);
-        const [requestedUrl, options] = fetchMock.mock.calls[0];
-        expect(requestedUrl).toContain(`?v=${cacheBustValue}`);
-        expect(options).toEqual({ cache: 'no-store' });
-        expect(json).toHaveBeenCalled();
-    });
-
-    it('prefers precomputed earnings CAGR data for aggregated scenarios', async () => {
-        const module = await import('@pages/analysis/lab.js');
-        const { computeScenarioOutcome } = module.__analysisLabTesting;
-        const scenario = {
-            id: 'base',
-            name: 'Base',
-            prob: 0.5,
-            precomputedMultiple: 1.5,
-            precomputedCagr: 0.12,
-            precomputedEarningsCagr: 0.18,
-            precomputedTerminalEps: 8,
-        };
-        const result = computeScenarioOutcome(scenario, { price: 100, eps: 5, horizon: 5 });
-        expect(result.priceCagr).toBeCloseTo(0.12);
-        expect(result.earningsCagr).toBeCloseTo(0.18);
-    });
-
-    it('aggregates portfolio earnings CAGR as a weighted average', async () => {
-        const module = await import('@pages/analysis/lab.js');
-        const { aggregateScenarios } = module.__analysisLabTesting;
-        const configs = [
-            {
-                weight: 0.6,
-                metrics: {
-                    outcomes: [
-                        { id: 'base', name: 'Base', multiple: 1.4, prob: 0.4, earningsCagr: 0.1 },
-                    ],
-                },
+    it('falls back to holdings_details weights and distinguishes localhost static_fund_data', async () => {
+        await setupLab({
+            hostname: 'localhost',
+            realTimeData: {
+                date: '2026-11-23',
+                balance: 1_000_000,
+                composition: [],
+                tickerWeights: {},
+                prices: { GOOG: 270.0 },
             },
-            {
-                weight: 0.4,
-                metrics: {
-                    outcomes: [
-                        { id: 'base', name: 'Base', multiple: 2.0, prob: 0.3, earningsCagr: 0.25 },
-                    ],
-                },
-            },
-        ];
-        const scenarios = aggregateScenarios(configs, 4);
-        const baseScenario = scenarios.find((scenario) => scenario.id === 'base');
-        expect(baseScenario).toBeDefined();
-        expect(baseScenario.precomputedEarningsCagr).toBeCloseTo(0.6 * 0.1 + 0.4 * 0.25, 5);
+        });
+        const goog = lab.__analysisLabTesting.state.configs.find((c) => c.symbol === 'GOOG');
+        expect(goog.priceSource).toBe('static_fund_data');
+        expect(goog.weight).toBeGreaterThan(0);
+        expect(goog.weight).toBeLessThan(1);
     });
 
-    describe('Kelly criterion math (Tier-A fixes)', () => {
-        function kellyConfig(overrides = {}) {
-            return {
-                market: { price: 100, eps: 10 },
-                model: {
-                    preferences: {
-                        horizon: 1,
-                        benchmark: 0.065,
-                        kellyScale: 0.5,
-                        riskFreeRate: 0,
-                    },
-                },
-                scenarios: [
-                    { id: 'bull', prob: 0.5, precomputedMultiple: 1.2 },
-                    { id: 'bear', prob: 0.5, precomputedMultiple: 0.9 },
-                ],
-                ...overrides,
-            };
-        }
+    it('gates currencyChangedGlobal re-rendering on whenTransactionDataReady and updates both views', async () => {
+        const { root } = await setupLab();
+        lab.showTickerDecision('GOOG');
+        mockSelectedCurrency = 'CNY';
 
-        it('solves exact discrete Kelly instead of the edge/variance approximation', async () => {
-            const { computeMetrics } = (await import('@pages/analysis/lab.js'))
-                .__analysisLabTesting;
-            const metrics = computeMetrics(kellyConfig());
-            // G(f) = 0.5·ln(1+0.2f) + 0.5·ln(1−0.1f) → FOC gives f* = 2.5
-            expect(metrics.fullKelly).toBeCloseTo(2.5, 3);
-            expect(metrics.scaledKelly).toBeCloseTo(1.25, 3);
-            expect(metrics.kellyMaxFraction).toBeCloseTo(10, 5);
-        });
-
-        it('reports geometric CAGR alongside the arithmetic expected CAGR', async () => {
-            const { computeMetrics } = (await import('@pages/analysis/lab.js'))
-                .__analysisLabTesting;
-            const metrics = computeMetrics(
-                kellyConfig({
-                    scenarios: [
-                        { id: 'bull', prob: 0.5, precomputedMultiple: 2 },
-                        { id: 'bear', prob: 0.5, precomputedMultiple: 0.5 },
-                    ],
-                })
-            );
-            expect(metrics.expectedCagr).toBeCloseTo(0.25, 6);
-            expect(metrics.geometricCagr).toBeCloseTo(Math.sqrt(2 * 0.5) - 1, 6);
-        });
-
-        it('returns zero Kelly when the risk-free rate beats the expected return', async () => {
-            const { computeMetrics } = (await import('@pages/analysis/lab.js'))
-                .__analysisLabTesting;
-            const metrics = computeMetrics(
-                kellyConfig({
-                    model: { preferences: { horizon: 1, kellyScale: 0.5, riskFreeRate: 0.06 } },
-                })
-            );
-            // E[r] = 0.05 < rf = 0.06 → no position
-            expect(metrics.fullKelly).toBe(0);
-            expect(metrics.scaledKelly).toBe(0);
-            expect(metrics.zeroGrowthFraction).toBeNull();
-        });
-
-        it('defaults the risk-free rate to 4% and sizes against it', async () => {
-            const { computeMetrics } = (await import('@pages/analysis/lab.js'))
-                .__analysisLabTesting;
-            const config = kellyConfig();
-            delete config.model.preferences.riskFreeRate;
-            const metrics = computeMetrics(config);
-            expect(metrics.riskFreeRate).toBeCloseTo(0.04, 10);
-            // FOC: 0.08(1.04−0.14f) = 0.07(1.04+0.16f) → f* ≈ 0.4643
-            expect(metrics.fullKelly).toBeCloseTo(0.4643, 3);
-        });
-
-        it('computes the scenario-implied volatility as a consistency check', async () => {
-            const { computeMetrics } = (await import('@pages/analysis/lab.js'))
-                .__analysisLabTesting;
-            const metrics = computeMetrics(kellyConfig());
-            // mean 0.05; var = 0.5·0.15² + 0.5·0.15² = 0.0225
-            expect(metrics.scenarioVolatility).toBeCloseTo(0.15, 6);
-        });
-
-        it('finds the zero-growth fraction where the exact curve returns to the risk-free rate', async () => {
-            const { computeMetrics } = (await import('@pages/analysis/lab.js'))
-                .__analysisLabTesting;
-            const metrics = computeMetrics(kellyConfig());
-            // (1+0.2f)(1−0.1f) = 1 → f = 5
-            expect(metrics.zeroGrowthFraction).toBeCloseTo(5, 3);
-        });
-
-        it('caps the Kelly fraction when no scenario loses to the risk-free rate', async () => {
-            const { computeMetrics } = (await import('@pages/analysis/lab.js'))
-                .__analysisLabTesting;
-            const metrics = computeMetrics(
-                kellyConfig({
-                    scenarios: [
-                        { id: 'bull', prob: 0.5, precomputedMultiple: 1.2 },
-                        { id: 'base', prob: 0.5, precomputedMultiple: 1.1 },
-                    ],
-                })
-            );
-            expect(metrics.kellyMaxFraction).toBe(Infinity);
-            expect(metrics.fullKelly).toBe(10);
-            expect(metrics.zeroGrowthFraction).toBeNull();
-        });
-
-        it('returns zero Kelly and null metrics when there are no scenarios', async () => {
-            const { computeMetrics } = (await import('@pages/analysis/lab.js'))
-                .__analysisLabTesting;
-            const metrics = computeMetrics(kellyConfig({ scenarios: [] }));
-            expect(metrics.fullKelly).toBe(0);
-            expect(metrics.geometricCagr).toBeNull();
-            expect(metrics.scenarioVolatility).toBeNull();
-            expect(metrics.kellyReturns).toEqual([]);
-        });
-
-        it('handles ruin scenarios without leaving the feasible region', async () => {
-            const {
-                computeGeometricCagr,
-                solveKellyFraction,
-                kellyLogGrowth,
-                kellyGrowthDerivative,
-            } = (await import('@pages/analysis/lab.js')).__analysisLabTesting;
-            expect(computeGeometricCagr([{ prob: 1, ret: -1 }])).toBe(-1);
-            const returns = [
-                { prob: 0.6, ret: 0.4 },
-                { prob: 0.4, ret: -0.5 },
-            ];
-            // FOC: 0.24(1−0.5f) = 0.2(1+0.4f) → f* = 0.2
-            expect(solveKellyFraction(returns, 0)).toBeCloseTo(0.2, 3);
-            expect(kellyLogGrowth(2, returns, 0)).toBe(-Infinity);
-            expect(kellyGrowthDerivative(2, returns, 0)).toBe(-Infinity);
-        });
-
-        it('reports scaled-growth retention, half-edge Kelly, and implied belief', async () => {
-            const { computeMetrics } = (await import('@pages/analysis/lab.js'))
-                .__analysisLabTesting;
-            const metrics = computeMetrics(kellyConfig({ position: { currentWeight: 1.25 } }));
-            // G(1.25)/G(2.5) in log units ≈ 0.764 (half-Kelly keeps ~3/4 of growth)
-            expect(metrics.scaledGrowthRetention).toBeCloseTo(0.764, 2);
-            // mean haircut 0.025 → returns 0.175/-0.125 → f* = 0.05/0.04375
-            expect(metrics.kellyAtHalfEdge).toBeCloseTo(1.1429, 3);
-            // haircut δ with f*(δ) = 1.25 is 0.02288 → belief = 1 - δ/0.05 ≈ 0.542
-            expect(metrics.impliedEdgeBelief).toBeCloseTo(0.542, 2);
-        });
-
-        it('returns null robustness readouts when there is no edge or no position', async () => {
-            const { computeMetrics } = (await import('@pages/analysis/lab.js'))
-                .__analysisLabTesting;
-            const metrics = computeMetrics(
-                kellyConfig({
-                    model: { preferences: { horizon: 1, kellyScale: 0.5, riskFreeRate: 0.06 } },
-                })
-            );
-            expect(metrics.scaledGrowthRetention).toBeNull();
-            expect(metrics.kellyAtHalfEdge).toBeNull();
-            expect(metrics.impliedEdgeBelief).toBeNull();
-        });
-
-        it('estimates drawdown risk at the scaled fraction (Thorp approximation)', async () => {
-            const { computeMetrics } = (await import('@pages/analysis/lab.js'))
-                .__analysisLabTesting;
-            const metrics = computeMetrics(kellyConfig());
-            // c = 0.5, maxDrawdown default 0.3 -> 0.7^(2/0.5 - 1) = 0.7^3
-            expect(metrics.maxDrawdown).toBeCloseTo(0.3, 10);
-            expect(metrics.drawdownTolerance).toBeCloseTo(0.05, 10);
-            expect(metrics.drawdownRiskAtScaled).toBeCloseTo(0.343, 3);
-        });
-
-        it('normalizes riskFreeRate with a 4% default and preserves explicit values', async () => {
-            const { normalizeConfig } = (await import('@pages/analysis/lab.js'))
-                .__analysisLabTesting;
-            const defaulted = normalizeConfig({
-                symbol: 'X',
-                scenarios: [],
-                model: { preferences: {} },
-            });
-            expect(defaulted.model.preferences.riskFreeRate).toBe(0.04);
-            const explicit = normalizeConfig({
-                symbol: 'X',
-                scenarios: [],
-                model: { preferences: { riskFreeRate: 0.03 } },
-            });
-            expect(explicit.model.preferences.riskFreeRate).toBe(0.03);
-        });
+        document.dispatchEvent(
+            new CustomEvent('currencyChangedGlobal', { detail: { currency: 'CNY' } })
+        );
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        expect(mockWhenReady).toHaveBeenCalled();
+        expect(root.querySelector('#verdictStrip').textContent).toContain('¥');
     });
 
-    describe('macroState aggregation', () => {
-        it('groups portfolio scenarios by macroState when all configs use it', async () => {
-            const { aggregateScenarios } = (await import('@pages/analysis/lab.js'))
-                .__analysisLabTesting;
-            const configs = [
+    it('guards normalizeConfig against null values and reports checkPaneViewportFit overflow', async () => {
+        const { root } = await setupLab();
+        const { normalizeConfig, checkPaneViewportFit, computeMetrics } = lab.__analysisLabTesting;
+
+        const norm = normalizeConfig({
+            symbol: 'X',
+            market: { price: 100, eps: -2, pe: null, dividendYield: 1.5 },
+            risk: { volatility: null },
+            scenarios: [
                 {
-                    weight: 0.5,
-                    metrics: {
-                        outcomes: [
-                            { id: 'bull', prob: 0.5, multiple: 2, macroState: 'boom' },
-                            { id: 'bear', prob: 0.5, multiple: 0.5, macroState: 'bust' },
-                        ],
-                    },
+                    id: 'base',
+                    name: 'Base',
+                    prob: 1,
+                    growth: { epsCagr: 0.1 },
+                    valuation: { exitPe: 20 },
                 },
-                {
-                    weight: 0.5,
-                    metrics: {
-                        outcomes: [
-                            { id: 'bull', prob: 0.6, multiple: 1.5, macroState: 'boom' },
-                            { id: 'bear', prob: 0.4, multiple: 0.8, macroState: 'bust' },
-                        ],
-                    },
-                },
-            ];
-            const scenarios = aggregateScenarios(configs, 1);
-            expect(scenarios.map((s) => s.id)).toEqual(['boom', 'bust']);
-            const boom = scenarios.find((s) => s.id === 'boom');
-            expect(boom.precomputedMultiple).toBeCloseTo(0.5 * 2 + 0.5 * 1.5, 6);
-            expect(boom.prob).toBeCloseTo(0.5 * 0.5 + 0.5 * 0.6, 6);
+            ],
         });
+        expect(norm.market.pe).toBeNull();
+        expect(norm.risk.volatility).toBeNull();
+        expect(computeMetrics(norm).expectedMultiple).toBeNull();
 
-        it('applies neutral carry for assets missing a macro state', async () => {
-            const { aggregateScenarios } = (await import('@pages/analysis/lab.js'))
-                .__analysisLabTesting;
-            const configs = [
-                {
-                    weight: 0.5,
-                    metrics: {
-                        outcomes: [
-                            { id: 'bull', prob: 0.5, multiple: 2, macroState: 'boom' },
-                            { id: 'bear', prob: 0.5, multiple: 0.5, macroState: 'bust' },
-                        ],
-                    },
-                },
-                {
-                    weight: 0.5,
-                    metrics: {
-                        outcomes: [{ id: 'bull', prob: 1, multiple: 1.5, macroState: 'boom' }],
-                    },
-                },
-            ];
-            const scenarios = aggregateScenarios(configs, 1);
-            const bust = scenarios.find((s) => s.id === 'bust');
-            // 0.5×0.5 from config A + 0.5×1.5 (mean carry) from config B
-            expect(bust.precomputedMultiple).toBeCloseTo(1.0, 6);
-        });
+        const stage = root.querySelector('.analysis-stage');
+        Object.defineProperty(stage, 'clientHeight', { configurable: true, value: 300 });
+        Object.defineProperty(stage, 'scrollHeight', { configurable: true, value: 300 });
+        expect(checkPaneViewportFit()).toEqual({ section: 'board', overflow: 0 });
 
-        it('falls back to id grouping when any config lacks macroState', async () => {
-            const { aggregateScenarios } = (await import('@pages/analysis/lab.js'))
-                .__analysisLabTesting;
-            const configs = [
-                {
-                    weight: 0.5,
-                    metrics: {
-                        outcomes: [{ id: 'bull', prob: 1, multiple: 2, macroState: 'boom' }],
-                    },
-                },
-                {
-                    weight: 0.5,
-                    metrics: {
-                        outcomes: [{ id: 'bull', prob: 1, multiple: 1.5 }],
-                    },
-                },
-            ];
-            const scenarios = aggregateScenarios(configs, 1);
-            expect(scenarios.map((s) => s.id)).toEqual(['bull']);
-            expect(scenarios[0].precomputedMultiple).toBeCloseTo(1.75, 6);
-        });
+        Object.defineProperty(stage, 'scrollHeight', { configurable: true, value: 340 });
+        expect(checkPaneViewportFit()).toEqual({ section: 'board', overflow: 40 });
     });
 
-    describe('fetchText', () => {
-        it('fetches text successfully', async () => {
-            // Arrange
-            global.fetch = jest.fn().mockResolvedValue({
-                ok: true,
-                text: jest.fn().mockResolvedValue('markdown content'),
-            });
-            const module = await import('@pages/analysis/lab.js');
-            const { fetchText } = module.__analysisLabTesting;
-
-            // Act
-            const text = await fetchText('../docs/thesis/TEST.md');
-
-            // Assert
-            expect(text).toBe('markdown content');
-            expect(global.fetch).toHaveBeenCalledWith(
-                expect.stringContaining('/docs/thesis/TEST.md'),
-                { cache: 'no-store' }
-            );
-        });
-
-        it('throws error when fetch fails', async () => {
-            // Arrange
-            global.fetch = jest.fn().mockResolvedValue({
-                ok: false,
-            });
-            const module = await import('@pages/analysis/lab.js');
-            const { fetchText } = module.__analysisLabTesting;
-
-            // Act & Assert
-            await expect(fetchText('../docs/thesis/TEST.md')).rejects.toThrow(
-                'Failed to load ../docs/thesis/TEST.md'
-            );
-        });
-    });
-
-    describe('extractScenarioTitles and stripWrappingQuotes', () => {
-        let extractScenarioTitles;
-
-        beforeEach(async () => {
-            const module = await import('@pages/analysis/lab.js');
-            extractScenarioTitles = module.__analysisLabTesting.extractScenarioTitles;
-        });
-
-        it('extracts scenario titles from thesis markdown headings', () => {
-            const markdown = `
-### 4.2 Bull Case – “Hypergrowth Bonus”
-### 4.3 Base Case – 'Steady State'
-### 4.4 Bear Case – Collapse
-`;
-            const titles = extractScenarioTitles(markdown);
-            expect(titles).toEqual({
-                bull: 'Hypergrowth Bonus',
-                base: 'Steady State',
-                bear: 'Collapse',
-            });
-        });
-
-        it('strips standard and smart quotes correctly', () => {
-            const markdown = `
-### Bull Case - "Double Quotes"
-### Base Case - 'Single Quotes'
-### Bear Case - “Smart Double Quotes”
-`;
-            const titles = extractScenarioTitles(markdown);
-            expect(titles).toEqual({
-                bull: 'Double Quotes',
-                base: 'Single Quotes',
-                bear: 'Smart Double Quotes',
-            });
-        });
-
-        it('strips smart single quotes correctly', () => {
-            const markdown = '### Bull Case - ‘Smart Single Quotes’';
-            const titles = extractScenarioTitles(markdown);
-            expect(titles).toEqual({ bull: 'Smart Single Quotes' });
-        });
-
-        it('leaves mismatched or missing quotes untouched', () => {
-            const markdown = `
-### Bull Case - "Mismatched'
-### Base Case - No Quotes
-### Bear Case - "
-`;
-            const titles = extractScenarioTitles(markdown);
-            expect(titles).toEqual({
-                bull: '"Mismatched\'',
-                base: 'No Quotes',
-                bear: '"',
-            });
-        });
-
-        it('returns null for empty, missing, or malformed strings', () => {
-            expect(extractScenarioTitles('')).toBeNull();
-            expect(extractScenarioTitles(null)).toBeNull();
-            expect(extractScenarioTitles('### Just Some Heading')).toBeNull();
-        });
-    });
-
-    describe('renderBayesOutput security', () => {
-        it('safely renders scenario names without executing HTML (DOM XSS prevention)', async () => {
-            const { module } = await setupPane();
-            const { renderBayesOutput, state } = module.__analysisLabTesting;
-
-            // Mock bayesEngine with malicious data
-            state.bayesEngine = {
-                priors: [
-                    {
-                        name: '<img src=x onerror=alert(1)> Malicious Name',
-                        prob: 0.5,
-                    },
-                ],
-            };
-
-            const bayesOutput = document.getElementById('bayesOutput');
-            bayesOutput.innerHTML = ''; // Ensure clear
-
-            // Render
-            renderBayesOutput();
-
-            // Verify
-            // The HTML string representation of the output should escape or encode the tags,
-            // or the DOM should not contain actual <img> elements.
-            const imgElements = bayesOutput.querySelectorAll('img');
-            expect(imgElements.length).toBe(0);
-            expect(bayesOutput.textContent).toContain(
-                '<img src=x onerror=alert(1)> Malicious Name'
-            );
-        });
-    });
-
-    describe('normalizeConfig', () => {
-        it('normalizes a basic raw config correctly', async () => {
-            const module = await import('@pages/analysis/lab.js');
-            const { normalizeConfig } = module.__analysisLabTesting;
-            const raw = {
-                symbol: 'TEST',
-                market: { price: '100', eps: '5' },
-                scenarios: [],
-            };
-            const result = normalizeConfig(raw);
-            expect(result.symbol).toBe('TEST');
-            expect(result.market.price).toBe(100);
-            expect(result.market.eps).toBe(5);
-            expect(result.marketValue).toBe(0);
-        });
-
-        it('uses holdingDetails for fallback and calculates marketValue', async () => {
-            const module = await import('@pages/analysis/lab.js');
-            const { normalizeConfig } = module.__analysisLabTesting;
-            const raw = {
-                symbol: 'TEST',
-                market: { price: 50 },
-                scenarios: [],
-            };
-            const holdingDetails = { shares: 10 };
-            const result = normalizeConfig(raw, holdingDetails);
-            expect(result.position.shares).toBe(10);
-            expect(result.marketValue).toBe(500);
-        });
-    });
-
-    describe('buildPortfolioConfig', () => {
-        it('returns null for empty configs or zero total value', async () => {
-            const module = await import('@pages/analysis/lab.js');
-            const { buildPortfolioConfig } = module.__analysisLabTesting;
-            expect(buildPortfolioConfig([])).toBeNull();
-
-            const zeroValueConfig = { marketValue: 0, weight: 0, scenarios: [] };
-            expect(buildPortfolioConfig([zeroValueConfig])).toBeNull();
-        });
-
-        it('builds portfolio config correctly for valid inputs', async () => {
-            const module = await import('@pages/analysis/lab.js');
-            const { buildPortfolioConfig } = module.__analysisLabTesting;
-
-            const cfg1 = {
-                marketValue: 1000,
-                weight: 0.5,
-                scenarios: [],
-                model: {
-                    preferences: { targetCagr: 0.1, kellyScale: 0.5, benchmark: { value: 100 } },
-                },
-                risk: { volatility: 0.2 },
-                market: { price: 100 },
-                position: { shares: 10 },
-                metrics: { outcomes: [{ id: 'base', name: 'Base', prob: 0.5, earningsCagr: 0.1 }] },
-            };
-
-            const cfg2 = {
-                marketValue: 1000,
-                weight: 0.5,
-                scenarios: [],
-                model: {
-                    preferences: { targetCagr: 0.15, kellyScale: 1.0, benchmark: { value: 150 } },
-                },
-                risk: { volatility: 0.4 },
-                market: { price: 50 },
-                position: { shares: 20 },
-                metrics: { outcomes: [{ id: 'base', name: 'Base', prob: 0.5, earningsCagr: 0.2 }] },
-            };
-
-            const portfolio = buildPortfolioConfig([cfg1, cfg2]);
-            expect(portfolio.symbol).toBe('PORT');
-            expect(portfolio.marketValue).toBe(2000);
-            expect(portfolio.model.preferences.targetCagr).toBeCloseTo(0.125);
-            expect(portfolio.model.preferences.kellyScale).toBeCloseTo(0.75);
-        });
-    });
-
-    describe('applyThesisScenarioTitles and config logic', () => {
-        it('tests getSharesOutstanding branches', async () => {
-            const module = await import('@pages/analysis/lab.js');
-            const { getSharesOutstanding } = module.__analysisLabTesting;
-
-            expect(getSharesOutstanding({ market: { basicShares: 100 } })).toBe(100);
-            expect(getSharesOutstanding({ market: { marketCap: 1000, price: 10 } })).toBe(100);
-            expect(getSharesOutstanding({ market: { marketCap: -1000, price: 10 } })).toBeNull();
-            expect(getSharesOutstanding({})).toBeNull();
-        });
-    });
-
-    describe('initAnalysisPane', () => {
-        it('renders pane-local error text when initialization fails', async () => {
-            global.fetch = jest.fn().mockRejectedValue(new Error('Network failure'));
-
-            const { container } = await setupPane(true);
-
-            expect(container.textContent).toContain('Network failure');
-        });
-
-        it('renders the empty state when no tickers are available', async () => {
-            global.fetch = jest.fn().mockResolvedValue({ ok: true, json: async () => ({}) });
-
-            const { container } = await setupPane(true);
-
-            expect(container.textContent).toContain('No tickers loaded');
-        });
-
-        it('does not construct the Monte Carlo worker at init time', async () => {
-            let workerConstructed = false;
-            global.Worker = class {
-                constructor() {
-                    workerConstructed = true;
-                }
-                postMessage() {}
-            };
-
-            const { module } = await setupPane();
-
-            expect(workerConstructed).toBe(false);
-            expect(module.__analysisLabTesting.state.monteCarloWorker).toBeNull();
-        });
-    });
-
-    describe('normalizeConfig internal functions edge cases', () => {
-        it('normalizes legacy manual overrides', async () => {
-            const module = await import('@pages/analysis/lab.js');
-            const { normalizeConfig } = module.__analysisLabTesting;
-
-            const raw = {
-                symbol: 'TEST',
-                market: { price: 100 },
-                scenarios: [],
-                manual: {
-                    horizon: 10,
-                    kellyScale: 0.2,
-                    targetCagr: 0.15,
-                    benchmark: 5,
-                    price: 150,
-                    eps: 10,
-                    volatility: 'invalid',
-                    shares: 'invalid',
-                },
-                position: { shares: 50 },
-                model: {
-                    version: '2.0.0',
-                    engine: { type: 'fermat-pascal-kelly' },
-                    preferences: {
-                        overrides: {
-                            price: undefined,
-                            eps: 20,
-                        },
-                    },
-                },
-            };
-
-            const result = normalizeConfig(raw);
-            expect(result.model.preferences.horizon).toBe(10);
-            expect(result.model.preferences.kellyScale).toBe(0.2);
-            expect(result.model.preferences.targetCagr).toBe(0.15);
-            expect(result.model.preferences.overrides.price).toBe(150);
-            expect(result.model.preferences.overrides.eps).toBe(20);
-            expect(result.model.preferences.overrides.volatility).toBeUndefined();
-            expect(result.position.shares).toBe(50);
-        });
-
-        it('falls back to raw shares if holding details and legacy manual shares are missing', async () => {
-            const module = await import('@pages/analysis/lab.js');
-            const { normalizeConfig } = module.__analysisLabTesting;
-
-            const raw = {
-                symbol: 'TEST',
-                shares: 100,
-                scenarios: [],
-                position: {},
-            };
-
-            const result = normalizeConfig(raw);
-            expect(result.position.shares).toBe(100);
-        });
-
-        it('handles null models in normalizeConfig', async () => {
-            const module = await import('@pages/analysis/lab.js');
-            const { normalizeConfig } = module.__analysisLabTesting;
-
-            const raw = {
-                symbol: 'TEST',
-                model: null,
-                scenarios: [],
-            };
-
-            const result = normalizeConfig(raw);
-            expect(result.model.version).toBe('1.0.0');
-            expect(result.model.preferences.horizon).toBe(5);
-        });
+    it('supports temporary WO6 compatibility shims', async () => {
+        await setupLab();
+        expect(lab.setActiveAnalysisSymbol('ANET')).toBe(true);
+        expect(lab.buildAnalysisSnapshot()).toContain('ANET:');
+        lab.showAnalysisSection('overview');
+        expect(lab.getActiveAnalysisConfig()).toBeNull();
+        expect(lab.buildAnalysisSnapshot()).toContain('Board —');
     });
 });
