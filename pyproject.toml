@@ -51,13 +51,27 @@ also_copy = [
 # MUTANT_UNDER_TEST through os.environ.get at call time and crashes with
 # AttributeError under the patch. Ignored here (can't edit the tests for a
 # tooling-only change); mutants in the modules they cover report as untested.
+# Repo-conformance tests (CSP/skills/doc-refs) read root files outside also_copy,
+# test_iter_tracked_sources_excludes_vendor_and_minified requires .git, and
+# test_deploy_figures_* spawns mutated scripts with cwd=tmp_path where mutmut
+# cannot find pyproject.toml.
 pytest_add_cli_args = [
   "-q",
   "--no-header",
+  "--ignore=tests/python/test_csp_consistency.py",
+  "--ignore=tests/python/test_doc_tool_references.py",
   "--ignore=tests/python/test_fetch_etf_country_allocations.py",
   "--ignore=tests/python/test_scraperapi_https.py",
+  "--ignore=tests/python/test_skills.py",
   "--ignore=tests/python/test_update_vt_hhi.py",
   "--ignore=tests/python/test_update_vt_sectors.py",
+  "--deselect=tests/python/test_check_thinking_comments.py::test_iter_tracked_sources_excludes_vendor_and_minified",
+  "--deselect=tests/python/test_generate_composition_data.py::test_deploy_figures_clean_generation",
+  "--deselect=tests/python/test_generate_composition_data.py::test_deploy_figures_baseline_comparison_parity",
+  "--deselect=tests/python/test_generate_composition_data.py::test_deploy_figures_detects_baseline_drift",
+  "--deselect=tests/python/test_generate_composition_data.py::test_deploy_figures_rejects_partial_baselines",
+  "--deselect=tests/python/test_generate_composition_data.py::test_deploy_figures_propagates_generator_failure",
+  "--deselect=tests/python/test_generate_composition_data.py::test_deploy_figures_propagates_validator_failure",
 ]
 
 [tool.coverage.run]
