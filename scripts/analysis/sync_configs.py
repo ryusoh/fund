@@ -4,12 +4,13 @@ import argparse
 import atexit
 import json
 import logging
+import math
 import shutil
 import sys
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, cast
+from typing import Any, Dict, TypeGuard, cast
 
 try:
     import yfinance as yf
@@ -140,6 +141,35 @@ def maybe_round(value: Any) -> Any:
     return value
 
 
+def _is_finite_number(value: Any) -> TypeGuard[int | float]:
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
+
+
+def normalize_dividend_yield(value: Any, source_unit: str = 'percentage-points') -> Any:
+    """Normalize a source yield into the repository's percentage-point schema."""
+    if source_unit not in {'percentage-points', 'fraction'}:
+        raise ValueError(f"Unsupported dividend yield unit: {source_unit}")
+    if not _is_finite_number(value):
+        return value
+    normalized = float(value) * (100.0 if source_unit == 'fraction' else 1.0)
+    return maybe_round(normalized)
+
+
+def derive_market_eps(market: Dict[str, Any], market_metadata: Dict[str, Any]) -> bool:
+    """Fill an omitted source EPS from positive price and P/E, preserving fresh EPS."""
+    if 'eps' in market_metadata:
+        return False
+    price = market.get('price')
+    pe = market.get('pe')
+    if not _is_finite_number(price) or not _is_finite_number(pe) or price <= 0 or pe <= 0:
+        return False
+    derived_eps = maybe_round(price / pe)
+    if market.get('eps') == derived_eps:
+        return False
+    market['eps'] = derived_eps
+    return True
+
+
 def load_fx_rates() -> Dict[str, float]:
     """Load FX rates from fx_data.json. Returns rates where base is USD."""
     try:
@@ -220,7 +250,9 @@ def slugify(name: Any) -> str:
     return "".join(ch.lower() if ch.isalnum() else "-" for ch in name_str).strip("-") or "scenario"
 
 
-def fetch_market_metadata(symbol: str) -> Dict[str, Any]:  # type: ignore[no-any-return]
+def fetch_market_metadata(
+    symbol: str, dividend_yield_unit: str = 'percentage-points'
+) -> Dict[str, Any]:  # type: ignore[no-any-return]
     if yf is None:
         return {}
     try:
@@ -241,6 +273,8 @@ def fetch_market_metadata(symbol: str) -> Dict[str, Any]:  # type: ignore[no-any
                 current_value = info.get(source)
         else:
             current_value = info.get(source)
+            if target == 'dividendYield':
+                current_value = normalize_dividend_yield(current_value, dividend_yield_unit)
 
         if current_value not in (None, 'None'):
             result_metadata[target] = current_value  # Assigned to new variable
@@ -540,54 +574,226 @@ def ensure_structure(symbol: str, config: dict) -> dict:
     return config
 
 
-def recompute_derived(config: dict) -> bool:
-    """Recompute derived.expectedCagr/expectedMultiple from scenarios + market data.
+GH7_NODES = (
+    -3.7504397177,
+    -2.3667594107,
+    -1.1544053947,
+    0.0,
+    1.1544053947,
+    2.3667594107,
+    3.7504397177,
+)
+GH7_WEIGHTS = (
+    0.0005482689,
+    0.030757124,
+    0.2401231786,
+    0.4571428571,
+    0.2401231786,
+    0.030757124,
+    0.0005482689,
+)
 
-    Ports the lab.js computeMetrics formula (scenario multiple = terminal price /
-    current price; expectedMultiple = probability-weighted multiples; expectedCagr
-    = expectedMultiple ** (1/horizon) - 1) so the JSON snapshot never goes stale.
-    fairValueRange and kelly are judgment inputs and pass through unchanged.
-    Returns True when a value changed.
+
+def solve_gh7_kelly(
+    scenario_returns: list[tuple[float, float]],
+    sigma: Any,
+    risk_free_rate: float = 0.04,
+    cap: float = 1.0,
+) -> float | None:
+    """Solve long-only Kelly over annualized scenario returns with GH-7 shocks."""
+    if not _is_finite_number(sigma) or sigma < 0 or not scenario_returns:
+        return None
+    if not _is_finite_number(risk_free_rate) or 1 + risk_free_rate <= 0:
+        return None
+    if not _is_finite_number(cap) or cap < 0:
+        return None
+
+    probability_total = 0.0
+    for probability, annual_return in scenario_returns:
+        if not _is_finite_number(probability) or not 0 <= probability <= 1:
+            return None
+        if not _is_finite_number(annual_return) or 1 + annual_return <= 0:
+            return None
+        probability_total += float(probability)
+    if not math.isclose(probability_total, 1.0, rel_tol=0.0, abs_tol=1e-9):
+        return None
+    if cap == 0:
+        return 0.0
+
+    sigma_value = float(sigma)
+    states: list[tuple[float, float]] = []
+    try:
+        for probability, annual_return in scenario_returns:
+            if probability == 0:
+                continue
+            if sigma_value == 0:
+                states.append((float(probability), float(annual_return)))
+                continue
+            for node, weight in zip(GH7_NODES, GH7_WEIGHTS, strict=True):
+                shocked_return = (1 + annual_return) * math.exp(
+                    sigma_value * node - 0.5 * sigma_value**2
+                ) - 1
+                if not math.isfinite(shocked_return) or shocked_return <= -1:
+                    return None
+                states.append((probability * weight, shocked_return))
+    except OverflowError:
+        return None
+
+    rate = float(risk_free_rate)
+    hi = float(cap)
+    for _, annual_return in states:
+        if annual_return < rate:
+            hi = min(hi, (1 + rate) / (rate - annual_return) * (1 - 1e-7))
+
+    def derivative(fraction: float) -> float:
+        return sum(
+            probability * (annual_return - rate) / (1 + rate + fraction * (annual_return - rate))
+            for probability, annual_return in states
+        )
+
+    if derivative(0.0) <= 0:
+        return 0.0
+    if derivative(hi) >= 0:
+        return hi
+    lo = 0.0
+    for _ in range(80):
+        midpoint = (lo + hi) / 2
+        if derivative(midpoint) > 0:
+            lo = midpoint
+        else:
+            hi = midpoint
+    return (lo + hi) / 2
+
+
+def _compute_scenario_metrics(
+    config: dict,
+) -> tuple[float, float, list[tuple[float, float]]] | None:
+    """Return unrounded expected wealth and annualized total-return states."""
+    model = config.get('model', {})
+    preferences = model.get('preferences', {}) if isinstance(model, dict) else {}
+    market = config.get('market', {})
+    if not isinstance(preferences, dict) or not isinstance(market, dict):
+        return None
+    overrides = preferences.get('overrides', {})
+    if not isinstance(overrides, dict):
+        return None
+
+    price = overrides.get('price', market.get('price'))
+    eps = overrides.get('eps', market.get('eps'))
+    horizon = preferences.get('horizon')
+    if not _is_finite_number(price) or price <= 0:
+        return None
+    if not _is_finite_number(eps) or eps <= 0:
+        return None
+    if not _is_finite_number(horizon) or horizon <= 0:
+        return None
+    price_value = float(price)
+    eps_value = float(eps)
+    horizon_value = float(horizon)
+
+    raw_dividend = market.get('dividendYield', 0.0)
+    if raw_dividend is None or raw_dividend == '':
+        raw_dividend = 0.0
+    if not _is_finite_number(raw_dividend):
+        return None
+    dividend_rate = min(0.25, max(0.0, float(raw_dividend) / 100.0))
+
+    scenarios = config.get('scenarios') or []
+    active_scenarios = []
+    for scenario in scenarios:
+        if not isinstance(scenario, dict):
+            return None
+        if not str(scenario.get('name', '')).startswith('RETIRED'):
+            active_scenarios.append(scenario)
+    if not active_scenarios:
+        return None
+
+    expected_multiple = 0.0
+    probability_total = 0.0
+    scenario_returns: list[tuple[float, float]] = []
+    for scenario in active_scenarios:
+        growth = scenario.get('growth', {})
+        valuation = scenario.get('valuation', {})
+        if not isinstance(growth, dict) or not isinstance(valuation, dict):
+            return None
+        cagr = growth.get('epsCagr') or 0.0
+        exit_pe = valuation.get('exitPe') or 1.0
+        probability = scenario.get('prob') or 0.0
+        if not _is_finite_number(cagr) or 1 + cagr <= 0:
+            return None
+        if not _is_finite_number(exit_pe) or exit_pe <= 0:
+            return None
+        if not _is_finite_number(probability) or not 0 <= probability <= 1:
+            return None
+        multiple = (
+            eps_value
+            * (1 + cagr) ** horizon_value
+            * exit_pe
+            / price_value
+            * (1 + dividend_rate) ** horizon_value
+        )
+        if not math.isfinite(multiple) or multiple <= 0:
+            return None
+        expected_multiple += probability * multiple
+        probability_total += probability
+        scenario_returns.append((probability, multiple ** (1 / horizon_value) - 1))
+
+    if not math.isclose(probability_total, 1.0, rel_tol=0.0, abs_tol=1e-9):
+        return None
+    expected_cagr = expected_multiple ** (1 / horizon_value) - 1
+    return expected_multiple, expected_cagr, scenario_returns
+
+
+def recompute_derived(config: dict) -> bool:
+    """Recompute Mean-wealth CAGR, expected multiple, and live GH-7 Kelly.
+
+    Scenario terminal values include reinvested dividends. fairValueRange and
+    judgment fields pass through unchanged. Returns True when a value changed.
     """
     derived = config.get('derived')
     if not isinstance(derived, dict):
         derived = {}
-    preferences = config.get('model', {}).get('preferences', {})
-    overrides = preferences.get('overrides', {})
-    market = config.get('market', {})
-    price = overrides.get('price', market.get('price'))
-    eps = overrides.get('eps', market.get('eps'))
-    horizon = preferences.get('horizon')
-    scenarios = config.get('scenarios') or []
+    metrics = _compute_scenario_metrics(config)
+    if metrics is None:
+        expected_multiple = None
+        expected_cagr = None
+        scenario_returns = None
+    else:
+        expected_multiple, expected_cagr, scenario_returns = metrics
 
-    expected_multiple = None
-    expected_cagr = None
-    valid_inputs = (
-        isinstance(price, (int, float))
-        and price > 0
-        and isinstance(eps, (int, float))
-        and eps > 0
-        and isinstance(horizon, (int, float))
-        and horizon > 0
-        and scenarios
-    )
-    if valid_inputs:
-        total = 0.0
-        for scenario in scenarios:
-            growth = scenario.get('growth', {})
-            valuation = scenario.get('valuation', {})
-            cagr = growth.get('epsCagr') or 0.0
-            exit_pe = valuation.get('exitPe') or 1.0
-            prob = scenario.get('prob') or 0.0
-            total += prob * eps * (1 + cagr) ** horizon * exit_pe / price
-        expected_multiple = round(total, 4)
-        expected_cagr = round(total ** (1 / horizon) - 1, 4) if total > 0 else 0.0
+    model = config.get('model', {})
+    preferences = model.get('preferences', {}) if isinstance(model, dict) else {}
+    if not isinstance(preferences, dict):
+        preferences = {}
+    overrides = preferences.get('overrides', {})
+    risk = config.get('risk', {})
+    if not isinstance(risk, dict):
+        risk = {}
+    if not isinstance(overrides, dict):
+        overrides = {}
+    sigma = overrides.get('volatility', risk.get('volatility'))
+    risk_free_rate = preferences.get('riskFreeRate', 0.04)
+    kelly_scale = preferences.get('kellyScale', PREFERENCE_DEFAULTS['kellyScale'])
+
+    full_kelly = None
+    scaled_kelly = None
+    if scenario_returns is not None:
+        solved = solve_gh7_kelly(scenario_returns, sigma, risk_free_rate)
+        if solved is not None and _is_finite_number(kelly_scale) and kelly_scale >= 0:
+            full_kelly = round(solved, 4)
+            scaled_kelly = round(solved * kelly_scale, 4)
+    kelly = {'fullKelly': full_kelly, 'scaledKelly': scaled_kelly}
 
     changed = False
-    for key, value in (('expectedCagr', expected_cagr), ('expectedMultiple', expected_multiple)):
+    rounded_multiple = round(expected_multiple, 4) if expected_multiple is not None else None
+    rounded_cagr = round(expected_cagr, 4) if expected_cagr is not None else None
+    for key, value in (('expectedCagr', rounded_cagr), ('expectedMultiple', rounded_multiple)):
         if key not in derived or derived[key] != value:
             derived[key] = value
             changed = True
+    if derived.get('kelly') != kelly:
+        derived['kelly'] = kelly
+        changed = True
     config['derived'] = derived
     return changed
 
@@ -707,6 +913,9 @@ def main() -> None:
                 if market.get(key) != normalized:
                     market[key] = normalized
                     changed = True
+
+        if derive_market_eps(market, market_metadata):
+            changed = True
 
         ev = market.get('enterpriseValue')
         ebitda = market.get('ebitda')
