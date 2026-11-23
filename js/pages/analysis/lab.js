@@ -1,5 +1,12 @@
 /* global Worker, getComputedStyle */
 import { BayesianEngine, applyParameterPosteriors } from './bayes.js';
+import {
+    DEFAULT_RISK_FREE_RATE as DECISION_RISK_FREE_RATE,
+    KELLY_FRACTION_CAP as DECISION_KELLY_CAP,
+    computeMetrics as computeDecisionMetrics,
+    getEffectiveVolatility as getDecisionEffectiveVolatility,
+    solveGh7Kelly,
+} from './decision.js';
 import { logger } from '../../utils/logger.js';
 import {
     convertValueToCurrency,
@@ -378,17 +385,8 @@ function getEffectivePrice(config) {
     return resolveNumeric(overrides.price, market.price, 0, true);
 }
 
-function getEffectiveEps(config) {
-    const overrides = getOverrides(config);
-    const market = config.market || {};
-    return resolveNumeric(overrides.eps, market.eps, 0, true);
-}
-
 function getEffectiveVolatility(config) {
-    const overrides = getOverrides(config);
-    const market = config.market || {};
-    const risk = config.risk || {};
-    return resolveNumeric(overrides.volatility, risk.volatility ?? market.volatility, 0.35, true);
+    return getDecisionEffectiveVolatility(config);
 }
 
 function extractDirectShares(market) {
@@ -566,9 +564,10 @@ function computePrecomputedScenarioOutcome(
     precomputedMultiple,
     entryEps,
     safeHorizon,
-    fallbackEpsCagr
+    fallbackEpsCagr,
+    price = 0
 ) {
-    const priceCagr = resolvePrecomputedPriceCagr(scenario, precomputedMultiple, safeHorizon);
+    const totalReturnCagr = resolvePrecomputedPriceCagr(scenario, precomputedMultiple, safeHorizon);
     const terminalEps = extractOutcomeNumber(
         scenario.precomputedTerminalEps ?? scenario.terminalEps,
         null
@@ -580,7 +579,15 @@ function computePrecomputedScenarioOutcome(
         safeHorizon,
         fallbackEpsCagr
     );
-    return { ...base, multiple: precomputedMultiple, priceCagr, earningsCagr, terminalEps };
+    return {
+        ...base,
+        multiple: precomputedMultiple,
+        totalReturnCagr,
+        earningsCagr,
+        terminalEps,
+        terminalPrice: null,
+        terminalTotalValue: price > 0 ? precomputedMultiple * price : null,
+    };
 }
 
 function computeDerivedScenarioOutcome(
@@ -591,23 +598,45 @@ function computeDerivedScenarioOutcome(
     horizon,
     safeHorizon,
     entryEps,
-    fallbackEpsCagr
+    fallbackEpsCagr,
+    divRate = 0
 ) {
     const growth = scenario.growth || {};
     const valuation = scenario.valuation || {};
     const epsCagr = extractOutcomeNumber(growth.epsCagr ?? scenario.epsCagr, 0);
     const exitPe = extractOutcomeNumber(valuation.exitPe ?? scenario.exitPe, 1);
+    if (!Number.isFinite(eps) || eps <= 0 || 1 + epsCagr <= 0 || exitPe <= 0) {
+        return {
+            ...base,
+            multiple: 0,
+            totalReturnCagr: null,
+            earningsCagr: fallbackEpsCagr,
+            terminalEps: null,
+            terminalPrice: null,
+            terminalTotalValue: null,
+        };
+    }
+    const safeDivRate = Number.isFinite(divRate) ? Math.min(0.25, Math.max(0, divRate)) : 0;
     const terminalEps = eps * (1 + epsCagr) ** horizon;
     const terminalPrice = terminalEps * exitPe;
-    const multiple = price > 0 ? terminalPrice / price : 0;
-    const priceCagr = multiple > 0 ? multiple ** (1 / safeHorizon) - 1 : 0;
+    const terminalTotalValue = terminalPrice * (1 + safeDivRate) ** horizon;
+    const multiple = price > 0 ? terminalTotalValue / price : 0;
+    const totalReturnCagr = multiple > 0 ? multiple ** (1 / safeHorizon) - 1 : null;
     const earningsCagr = deriveEarningsCagrHelper(
         terminalEps,
         entryEps,
         safeHorizon,
         fallbackEpsCagr
     );
-    return { ...base, multiple, priceCagr, earningsCagr, terminalEps };
+    return {
+        ...base,
+        multiple,
+        totalReturnCagr,
+        earningsCagr,
+        terminalEps,
+        terminalPrice,
+        terminalTotalValue,
+    };
 }
 
 function diffDescriptor(price, entry) {
@@ -619,7 +648,7 @@ function diffDescriptor(price, entry) {
     return `${Math.abs(diff).toFixed(1)}% ${direction} target`;
 }
 
-function computeScenarioOutcome(scenario, { price, eps, horizon }) {
+function computeScenarioOutcome(scenario, { price, eps, horizon, divRate = 0 }) {
     const safeHorizon = horizon > 0 ? horizon : 1;
     const base = computeBaseScenarioOutcome(scenario);
     const entryEps = Number.isFinite(eps) && eps > 0 ? eps : null;
@@ -636,7 +665,8 @@ function computeScenarioOutcome(scenario, { price, eps, horizon }) {
             precomputedMultiple,
             entryEps,
             safeHorizon,
-            fallbackEpsCagr
+            fallbackEpsCagr,
+            price
         );
     }
     return computeDerivedScenarioOutcome(
@@ -647,34 +677,13 @@ function computeScenarioOutcome(scenario, { price, eps, horizon }) {
         horizon,
         safeHorizon,
         entryEps,
-        fallbackEpsCagr
+        fallbackEpsCagr,
+        divRate
     );
 }
 
-const DEFAULT_RISK_FREE_RATE = 0.04;
-const KELLY_FRACTION_CAP = 10;
-
-function getRiskFreeRate(preferences) {
-    const raw = Number(preferences?.riskFreeRate);
-    return Number.isFinite(raw) ? raw : DEFAULT_RISK_FREE_RATE;
-}
-
-function buildKellyReturns(outcomes) {
-    if (!Array.isArray(outcomes)) {
-        return [];
-    }
-    const valid = outcomes.filter(
-        (outcome) => outcome.prob > 0 && Number.isFinite(outcome.priceCagr)
-    );
-    const totalProb = valid.reduce((sum, outcome) => sum + outcome.prob, 0);
-    if (!(totalProb > 0)) {
-        return [];
-    }
-    return valid.map((outcome) => ({
-        prob: outcome.prob / totalProb,
-        ret: outcome.priceCagr,
-    }));
-}
+const DEFAULT_RISK_FREE_RATE = DECISION_RISK_FREE_RATE;
+const KELLY_FRACTION_CAP = DECISION_KELLY_CAP;
 
 function kellyLogGrowth(f, kellyReturns, riskFreeRate) {
     let sum = 0;
@@ -714,28 +723,8 @@ function kellyMaxFraction(kellyReturns, riskFreeRate) {
     return fMax;
 }
 
-function solveKellyFraction(kellyReturns, riskFreeRate) {
-    if (!kellyReturns.length) {
-        return 0;
-    }
-    if (kellyGrowthDerivative(0, kellyReturns, riskFreeRate) <= 0) {
-        return 0;
-    }
-    const fMax = kellyMaxFraction(kellyReturns, riskFreeRate);
-    if (!Number.isFinite(fMax)) {
-        return KELLY_FRACTION_CAP;
-    }
-    let lo = 0;
-    let hi = fMax * (1 - 1e-9);
-    for (let i = 0; i < 80; i++) {
-        const mid = (lo + hi) / 2;
-        if (kellyGrowthDerivative(mid, kellyReturns, riskFreeRate) > 0) {
-            lo = mid;
-        } else {
-            hi = mid;
-        }
-    }
-    return (lo + hi) / 2;
+function solveKellyFraction(kellyReturns, riskFreeRate, sigma = 0) {
+    return solveGh7Kelly(kellyReturns, sigma, riskFreeRate, KELLY_FRACTION_CAP);
 }
 
 function solveZeroGrowthFraction(kellyReturns, riskFreeRate, fullKelly) {
@@ -863,66 +852,38 @@ function computeDrawdownRisk(fullKelly, scaledKelly, maxDrawdown) {
 function computeMetrics(config) {
     const preferences = getPreferences(config);
     const market = config.market || {};
-    const scenarios = Array.isArray(config.scenarios) ? config.scenarios : [];
-    const price = getEffectivePrice(config);
-    const eps = getEffectiveEps(config);
-    const volatility = getEffectiveVolatility(config);
-    const horizonRaw = Number(preferences.horizon ?? 1);
-    const horizon = Number.isFinite(horizonRaw) && horizonRaw > 0 ? horizonRaw : 1;
     const benchmarkDescriptor = getBenchmarkDescriptor(preferences);
-    const benchmark = benchmarkDescriptor.value;
-    const kellyScaleRaw = Number(preferences.kellyScale ?? 0.5);
-    const kellyScale = Number.isFinite(kellyScaleRaw) ? kellyScaleRaw : 0.5;
-    const targetCagrRaw = Number(preferences.targetCagr ?? 0.1);
-    const targetCagr = Number.isFinite(targetCagrRaw) ? targetCagrRaw : 0.1;
-    const exitYear = computeExitYear(config, horizon);
+    const baseMetrics = computeDecisionMetrics(config);
+    const exitYear = computeExitYear(config, baseMetrics.horizon);
     const sharesOutstanding = getSharesOutstanding(config);
-
-    const normalizedScenarios = scenarios.map((scenario) => normalizeScenario(scenario));
-    const outcomes = normalizedScenarios.map((scenario) =>
-        computeScenarioOutcome(scenario, { price, eps, horizon })
+    const kellyReturns = baseMetrics.kellyReturns || [];
+    const maxKellyFraction = kellyMaxFraction(kellyReturns, baseMetrics.riskFreeRate);
+    const zeroGrowthFraction = solveZeroGrowthFraction(
+        kellyReturns,
+        baseMetrics.riskFreeRate,
+        baseMetrics.fullKelly
     );
-    let expectedMultiple = 0;
-    for (let i = 0; i < outcomes.length; i++) {
-        expectedMultiple += outcomes[i].prob * outcomes[i].multiple;
-    }
-    const expectedCagr = expectedMultiple > 0 ? expectedMultiple ** (1 / horizon) - 1 : 0;
-    const edge = expectedCagr - benchmark;
-    const riskFreeRate = getRiskFreeRate(preferences);
-    const kellyReturns = buildKellyReturns(outcomes);
-    const fullKelly = solveKellyFraction(kellyReturns, riskFreeRate);
-    const scaledKelly = fullKelly * kellyScale;
-    const geometricCagr = computeGeometricCagr(kellyReturns);
-    const scenarioVolatility = computeScenarioVolatility(kellyReturns);
-    const maxKellyFraction = kellyMaxFraction(kellyReturns, riskFreeRate);
-    const zeroGrowthFraction = solveZeroGrowthFraction(kellyReturns, riskFreeRate, fullKelly);
     const kellyExtras = computeKellyExtras(
         kellyReturns,
-        riskFreeRate,
-        fullKelly,
-        scaledKelly,
+        baseMetrics.riskFreeRate,
+        baseMetrics.fullKelly ?? 0,
+        baseMetrics.scaledKelly ?? 0,
         resolveCurrentWeight(config)
     );
     const maxDrawdownRaw = Number(preferences.maxDrawdown);
     const maxDrawdown = Number.isFinite(maxDrawdownRaw) ? maxDrawdownRaw : 0.3;
     const drawdownToleranceRaw = Number(preferences.drawdownTolerance);
     const drawdownTolerance = Number.isFinite(drawdownToleranceRaw) ? drawdownToleranceRaw : 0.05;
-    const drawdownRiskAtScaled = computeDrawdownRisk(fullKelly, scaledKelly, maxDrawdown);
-    const expectedTerminalPrice = expectedMultiple * price;
-    const entryPriceForTarget =
-        targetCagr > -1 && price > 0 ? expectedTerminalPrice / (1 + targetCagr) ** horizon : 0;
+    const drawdownRiskAtScaled = computeDrawdownRisk(
+        baseMetrics.fullKelly,
+        baseMetrics.scaledKelly,
+        maxDrawdown
+    );
 
     return {
-        outcomes,
-        expectedMultiple,
-        expectedCagr,
-        geometricCagr,
-        edge,
-        fullKelly,
-        scaledKelly,
-        scenarioVolatility,
-        riskFreeRate,
-        kellyReturns,
+        ...baseMetrics,
+        benchmarkDescriptor,
+        market,
         kellyMaxFraction: maxKellyFraction,
         zeroGrowthFraction,
         scaledGrowthRetention: kellyExtras.scaledGrowthRetention,
@@ -931,17 +892,6 @@ function computeMetrics(config) {
         maxDrawdown,
         drawdownTolerance,
         drawdownRiskAtScaled,
-        expectedTerminalPrice,
-        entryPriceForTarget,
-        price,
-        eps,
-        horizon,
-        benchmark,
-        benchmarkDescriptor,
-        market,
-        volatility,
-        kellyScale,
-        targetCagr,
         exitYear,
         sharesOutstanding,
     };
@@ -1022,7 +972,7 @@ function renderScenarioCards(config) {
 
         card.appendChild(createP(`Prob: ${(outcome.prob * 100).toFixed(1)}%`));
         card.appendChild(createP(`Multiple: ${outcome.multiple.toFixed(2)}x`));
-        card.appendChild(createP(`Price CAGR: ${formatPercent(outcome.priceCagr)}`));
+        card.appendChild(createP(`Total Return CAGR: ${formatPercent(outcome.totalReturnCagr)}`));
         card.appendChild(createP(`Earnings CAGR: ${formatPercent(outcome.earningsCagr)}`));
         card.appendChild(createP(`Implied Annual EPS: ${formatCurrency(terminalEps)}`));
         card.appendChild(createP(`Total Annual Earnings: ${formatCompactCurrency(totalEarnings)}`));
@@ -1087,7 +1037,7 @@ function renderOverviewScenarios(config) {
             [
                 `${(outcome.prob * 100).toFixed(1)}%`,
                 `${outcome.multiple.toFixed(2)}x`,
-                formatPercent(outcome.priceCagr),
+                formatPercent(outcome.totalReturnCagr),
             ].forEach((text) => {
                 const span = document.createElement('span');
                 span.textContent = text;
