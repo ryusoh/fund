@@ -1517,7 +1517,7 @@ def write_pe_outputs(final_output: Dict[str, Any], output_dir: Path = OUTPUT_DIR
         print(f"Saved to {output_dir / 'forward_pe.json'}")
 
 
-def main():
+def main() -> None:
     print("Loading existing PE data for fail-open fallback...")
     existing_pe_data = {}
     pe_file_path = OUTPUT_DIR / "pe_ratio.json"
@@ -1574,10 +1574,11 @@ def main():
         pd.concat(stock_eps_series, axis=1) if stock_eps_series else pd.DataFrame(index=dates)
     )
     print("\nComputing Portfolio PE...")
-    result_dates, result_portfolio_pe = [], []
-    result_ticker_pe = {t: [] for t in all_tickers}
-    result_ticker_weights = {t: [] for t in all_tickers}
-    valid_ticker_mask = {}
+    result_dates: List[str] = []
+    result_portfolio_pe: List[Optional[float]] = []
+    result_ticker_pe: Dict[str, List[Optional[float]]] = {t: [] for t in all_tickers}
+    result_ticker_weights: Dict[str, List[Optional[float]]] = {t: [] for t in all_tickers}
+    valid_ticker_mask: Dict[str, bool] = {}
     for dt in dates:
         mv_map, pe_map = {}, {}
         total_mv = 0.0
@@ -1624,7 +1625,7 @@ def main():
             price_series = prices_df[t_clean].dropna()
             if not price_series.empty:
                 result_ticker_last_prices[t] = round(float(price_series.iloc[-1]), 4)
-    final_output = {
+    final_output: Dict[str, Any] = {
         "dates": result_dates,
         "portfolio_pe": result_portfolio_pe,
         "ticker_pe": {t: v for t, v in result_ticker_pe.items() if t in valid_ticker_mask},
@@ -1642,7 +1643,7 @@ def main():
     if forward_pe:
         # Fail-open: keep the last good msci_pe_ratio if this run's MSCI scrape
         # failed, so VT's frontend-derived forward P/E doesn't disappear.
-        forward_pe = carry_forward_msci_pe_ratio(forward_pe, existing_pe_data)
+        forward_pe = carry_forward_msci_pe_ratio(forward_pe, existing_pe_data) or forward_pe
         warn_if_msci_ratio_stale(forward_pe)
         final_output["forward_pe"] = forward_pe
         print(

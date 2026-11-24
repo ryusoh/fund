@@ -47,7 +47,7 @@ def _assert_parity(py_val: float | None, js_val: float | None, label: str) -> No
     assert abs(py_val - js_val) < 1e-4, f"{label}: py={py_val}, js={js_val}"
 
 
-def test_python_js_math_parity_on_live_and_edge_configs():
+def test_python_js_math_parity_on_live_and_edge_configs() -> None:
     live_symbols = ["AEHR", "ANET", "CBRS", "GOOG", "PDD", "VT"]
     configs: list[dict] = [
         json.loads((ROOT / "data" / "analysis" / f"{sym}.json").read_text(encoding="utf-8"))
