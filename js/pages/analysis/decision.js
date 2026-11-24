@@ -1146,8 +1146,28 @@ export function buildDecisionSnapshot(config, decision, metricsArg = null) {
     };
 }
 
+function resolveBoardWeight(row) {
+    if (isFiniteNumber(row?.decision?.currentWeight)) {
+        return row.decision.currentWeight;
+    }
+    if (isFiniteNumber(row?.config?.weight)) {
+        return row.config.weight;
+    }
+    return 0;
+}
+
 export function buildBoardSnapshot(rows = [], metadata = {}) {
     const sorted = [...rows].sort((a, b) => {
+        const wa = resolveBoardWeight(a);
+        const wb = resolveBoardWeight(b);
+        if (Math.abs(wb - wa) > 1e-12) {
+            return wb - wa;
+        }
+        const ta = isFiniteNumber(a?.decision?.targetWeight) ? a.decision.targetWeight : -1;
+        const tb = isFiniteNumber(b?.decision?.targetWeight) ? b.decision.targetWeight : -1;
+        if (Math.abs(tb - ta) > 1e-12) {
+            return tb - ta;
+        }
         const pa = a?.decision?.sortPriority ?? 99;
         const pb = b?.decision?.sortPriority ?? 99;
         if (pa !== pb) {

@@ -194,9 +194,13 @@ describe('decision engine (WO3)', () => {
         expect(board.residualTargetCashLabel).toBe('Residual Target Cash');
         expect(board.totalCurrentWeight).toBeCloseTo(1.0, 3);
         expect(board.residualTargetCash).toBeCloseTo(1 - board.totalRecommendedWeight, 6);
-        // Urgency sort: CBRS (0) -> ANET/PDD (2) -> AEHR/GOOG (3) -> VT (5)
-        expect(board.rows[0].symbol).toBe('CBRS');
-        expect(board.rows[board.rows.length - 1].symbol).toBe('VT');
+        // Ranked by portfolio weight descending (with equal-weight ties broken by targetWeight / priority)
+        const weights = board.rows.map((r) => r.decision.currentWeight);
+        for (let i = 1; i < weights.length; i++) {
+            expect(weights[i]).toBeLessThanOrEqual(weights[i - 1]);
+        }
+        expect(board.rows[0].symbol).toBe('ANET');
+        expect(board.rows[board.rows.length - 1].decision.currentWeight).toBe(0);
     });
 
     it('downgrades Deep Value to BUY when synthetic price clears strongBuy but Geo < targetCagr', () => {

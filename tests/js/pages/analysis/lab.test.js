@@ -117,17 +117,27 @@ describe('analysis lab 2-view controller (WO5)', () => {
 
         const rows = Array.from(root.querySelectorAll('.decision-board .board-row')).slice(1);
         expect(rows).toHaveLength(6);
-        const symbolsInOrder = rows.map((r) => r.querySelector('.board-ticker').textContent);
-        expect(symbolsInOrder[0]).toBe('CBRS');
+        const weightsInOrder = rows.map(
+            (r) =>
+                lab.__analysisLabTesting.state.configs.find(
+                    (c) => c.symbol === r.querySelector('.board-ticker').textContent
+                ).weight
+        );
+        for (let i = 1; i < weightsInOrder.length; i++) {
+            expect(weightsInOrder[i]).toBeLessThanOrEqual(weightsInOrder[i - 1]);
+        }
 
+        const rowBySym = Object.fromEntries(
+            rows.map((r) => [r.querySelector('.board-ticker').textContent, r])
+        );
         const verdictBySym = Object.fromEntries(
-            rows.map((r) => [
-                r.querySelector('.board-ticker').textContent,
+            Object.entries(rowBySym).map(([sym, r]) => [
+                sym,
                 r.querySelector('.board-verdict').textContent,
             ])
         );
         expect(verdictBySym.CBRS).toBe('AVOID');
-        expect(rows[0].querySelector('.val-spark-na').textContent).toBe('n/a');
+        expect(rowBySym.CBRS.querySelector('.val-spark-na').textContent).toBe('n/a');
         expect(verdictBySym.VT).toBe('HOLD');
         expect(verdictBySym.AEHR).toBe('WATCH');
         expect(verdictBySym.GOOG).toMatch(/^\+\d+\.\d%$/);
