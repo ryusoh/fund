@@ -122,6 +122,14 @@
     text-overflow: ellipsis;
 }
 
+.analysis-pane .board-cell:first-child {
+    text-align: left;
+}
+
+.analysis-pane .board-cell:not(:first-child) {
+    text-align: right;
+}
+
 .analysis-pane .board-ticker {
     font-weight: 700;
     color: var(--text-color);
@@ -133,12 +141,10 @@
 
 .analysis-pane .board-mean {
     font-variant-numeric: tabular-nums;
-    text-align: right;
 }
 
 .analysis-pane .board-probs {
     color: var(--muted-text);
-    text-align: right;
     font-size: 10px;
 }
 
@@ -151,6 +157,7 @@
 .analysis-pane .mini-bullet {
     display: flex;
     align-items: center;
+    justify-content: flex-end;
     gap: 6px;
     font-size: 10px;
 }
