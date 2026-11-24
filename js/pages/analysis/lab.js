@@ -21,7 +21,6 @@ import {
 import { getSelectedCurrency, whenTransactionDataReady } from '../../transactions/state.js';
 
 let paneRoot = null;
-let contextEl = null;
 let decisionBoardEl = null;
 let boardBudgetFooterEl = null;
 let verdictStripEl = null;
@@ -46,7 +45,6 @@ const LATEST_FX_DATE = '9999-12-31';
 const ANALYSIS_SECTIONS = ['board', 'ticker'];
 
 const PANE_MARKUP = `
-    <div class="pane-context" id="paneContext"></div>
     <div class="analysis-stage" tabindex="0">
         <div class="output-grid">
             <section data-analysis-section="board" class="decision-board-section">
@@ -411,7 +409,6 @@ function buildPaneDom(rootEl) {
 function resolvePaneElements(rootEl) {
     paneRoot = rootEl;
     syncPaneChartColors();
-    contextEl = rootEl.querySelector('#paneContext');
     decisionBoardEl = rootEl.querySelector('#decisionBoard');
     boardBudgetFooterEl = rootEl.querySelector('#boardBudgetFooter');
     verdictStripEl = rootEl.querySelector('#verdictStrip');
@@ -429,47 +426,6 @@ function makeEl(tag, className, textContent = null) {
         el.textContent = textContent;
     }
     return el;
-}
-
-function createContextPill(label, isActive) {
-    const pill = makeEl('span', `context-pill${isActive ? ' is-active' : ''}`, label);
-    if (isActive) {
-        pill.setAttribute('aria-current', 'page');
-    }
-    return pill;
-}
-
-function renderContextStrip() {
-    if (!contextEl) {
-        return;
-    }
-    contextEl.replaceChildren();
-
-    const strip = makeEl('div', 'context-strip');
-    strip.appendChild(createContextPill('PORT', state.activeSection === 'board'));
-    state.configs.forEach((cfg) => {
-        const isCurrent = state.activeSection === 'ticker' && state.activeSymbol === cfg.symbol;
-        strip.appendChild(createContextPill(cfg.symbol, isCurrent));
-    });
-
-    const activeCfg =
-        state.activeSection === 'ticker'
-            ? state.configs.find((c) => c.symbol === state.activeSymbol)
-            : null;
-    let metaText = 'BOARD';
-    if (activeCfg) {
-        const horizonLabel =
-            state.horizonMode === 'full' ? `FULL ${activeCfg.metrics?.horizon || 5}Y` : '2Y';
-        const asOf = activeCfg.priceAsOf ? String(activeCfg.priceAsOf).slice(0, 10) : 'n/a';
-        metaText = `${horizonLabel} · ${asOf} (${activeCfg.priceSource || 'snapshot'})`;
-    } else if (state.configs.length > 0) {
-        const firstDate = state.configs[0].priceAsOf
-            ? String(state.configs[0].priceAsOf).slice(0, 10)
-            : 'n/a';
-        metaText = `BOARD · ${firstDate}`;
-    }
-
-    contextEl.append(strip, makeEl('span', 'context-meta', metaText));
 }
 
 function createValuationSpark(decision, price) {
@@ -812,7 +768,6 @@ export function checkPaneViewportFit() {
 export function showDecisionBoard() {
     state.activeSymbol = 'PORT';
     toggleSectionVisibility('board');
-    renderContextStrip();
     const board = renderDecisionBoard();
     checkPaneViewportFit();
     return board;
@@ -829,7 +784,6 @@ export function showTickerDecision(symbol, { horizonMode = '2y' } = {}) {
     state.activeSymbol = config.symbol;
     state.horizonMode = horizonMode === 'full' ? 'full' : '2y';
     toggleSectionVisibility('ticker');
-    renderContextStrip();
     renderTickerDecision(config);
     checkPaneViewportFit();
     return buildDecisionSnapshot(config, config.decision, config.metrics);
@@ -897,7 +851,6 @@ export const __analysisLabTesting = {
     getEffectiveVolatility,
     renderDecisionBoard,
     renderTickerDecision,
-    renderContextStrip,
     syncPaneChartColors,
     checkPaneViewportFit,
     PANE_CHART_COLORS,

@@ -138,13 +138,17 @@ describe('analysis lab 2-view controller (WO5)', () => {
         expect(boardSection.classList.contains('is-hidden')).toBe(true);
         expect(tickerSection.classList.contains('is-hidden')).toBe(false);
 
+        expect(root.querySelector('#paneContext')).toBeNull();
+        expect(root.querySelector('.pane-context')).toBeNull();
         expect(root.querySelector('#verdictStrip').textContent).toContain('GOOG · Alphabet');
         expect(root.querySelector('#sizingBullet').textContent).toContain('SIZE');
         expect(root.querySelector('#riskFooter').textContent).toContain('Rev 2026-11-30');
-        expect(root.querySelector('#paneContext').textContent).toContain('2Y ·');
+        expect(mockCtx.fillText.mock.calls.map((c) => c[0])).toContain('+2Y');
 
+        mockCtx.fillText.mockClear();
         lab.showTickerDecision('GOOG', { horizonMode: 'full' });
-        expect(root.querySelector('#paneContext').textContent).toContain('FULL 10Y');
+        expect(lab.__analysisLabTesting.state.horizonMode).toBe('full');
+        expect(mockCtx.fillText.mock.calls.map((c) => c[0])).toContain('+10Y');
 
         expect(lab.showTickerDecision('UNKNOWN')).toBeNull();
         const boardSnap = lab.showDecisionBoard();

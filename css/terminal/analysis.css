@@ -31,50 +31,6 @@
     min-height: 0;
 }
 
-/* Compact read-only context strip (24px budget) */
-.analysis-pane .pane-context {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 12px;
-    height: 24px;
-    line-height: 24px;
-    box-sizing: border-box;
-    flex-shrink: 0;
-    padding: 0 16px;
-    border-bottom: 1px solid var(--border-color);
-    font-size: 11px;
-    text-transform: uppercase;
-    overflow: hidden;
-    white-space: nowrap;
-}
-
-.analysis-pane .context-strip {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 10px;
-    overflow: hidden;
-}
-
-.analysis-pane .context-pill {
-    color: var(--muted-text);
-    white-space: nowrap;
-}
-
-.analysis-pane .context-pill.is-active {
-    color: var(--primary-color);
-    font-weight: 700;
-    box-shadow: inset 0 -2px 0 var(--primary-color);
-}
-
-.analysis-pane .context-meta {
-    margin-left: auto;
-    color: var(--muted-text);
-    font-size: 10px;
-    white-space: nowrap;
-}
-
 /* Stage — height-constrained flex body (8px top, 10px bottom padding) */
 .analysis-pane .analysis-stage {
     padding: 8px 16px 10px;
