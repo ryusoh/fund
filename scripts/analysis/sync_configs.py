@@ -347,6 +347,35 @@ def fetch_market_metadata(
     return result_metadata  # Returned new variable
 
 
+def _normalize_belief_state(belief_state: dict[str, Any]) -> dict[str, Any]:
+    known_keys = {
+        'probability',
+        'confidence',
+        'evidence_for',
+        'evidence_against',
+        'open_questions',
+        'as_of',
+        'thesis_intact_probability',
+    }
+    normalized: dict[str, Any] = {
+        'probability': float(belief_state.get('probability', 0.5) or 0.5),
+        'confidence': float(belief_state.get('confidence', 0.5) or 0.5),
+        'evidence_for': list(belief_state.get('evidence_for', [])),
+        'evidence_against': list(belief_state.get('evidence_against', [])),
+        'open_questions': list(belief_state.get('open_questions', [])),
+        'as_of': str(belief_state.get('as_of', datetime.now(timezone.utc).isoformat())),
+    }
+    if (
+        'thesis_intact_probability' in belief_state
+        and belief_state['thesis_intact_probability'] is not None
+    ):
+        normalized['thesis_intact_probability'] = float(belief_state['thesis_intact_probability'])
+    for key, value in belief_state.items():
+        if key not in known_keys and value is not None:
+            normalized[key] = value
+    return normalized
+
+
 def ensure_structure(symbol: str, config: dict) -> dict:
     config = dict(config)
     config['symbol'] = symbol
@@ -558,22 +587,7 @@ def ensure_structure(symbol: str, config: dict) -> dict:
 
     belief_state = config.get('belief_state')
     if isinstance(belief_state, dict):
-        normalized_belief: dict[str, Any] = {
-            'probability': float(belief_state.get('probability', 0.5) or 0.5),
-            'confidence': float(belief_state.get('confidence', 0.5) or 0.5),
-            'evidence_for': list(belief_state.get('evidence_for', [])),
-            'evidence_against': list(belief_state.get('evidence_against', [])),
-            'open_questions': list(belief_state.get('open_questions', [])),
-            'as_of': str(belief_state.get('as_of', datetime.now(timezone.utc).isoformat())),
-        }
-        if (
-            'thesis_intact_probability' in belief_state
-            and belief_state['thesis_intact_probability'] is not None
-        ):
-            normalized_belief['thesis_intact_probability'] = float(
-                belief_state['thesis_intact_probability']
-            )
-        config['belief_state'] = normalized_belief
+        config['belief_state'] = _normalize_belief_state(belief_state)
 
     if 'predictions' in config and isinstance(config['predictions'], list):
         config['predictions'] = config['predictions']

@@ -137,7 +137,6 @@ export class TableGlassEffect {
         const target = this.table || this.container;
 
         // Observe size changes on the table (content) instead of just the container
-        // eslint-disable-next-line no-undef
         this.resizeObserver = new ResizeObserver(() => this.resize());
         this.resizeObserver.observe(target);
 
@@ -150,7 +149,6 @@ export class TableGlassEffect {
 
             // MutationObserver catches class attribute changes (hidden toggle)
             // that ResizeObserver misses on display:none → visible transitions.
-            // eslint-disable-next-line no-undef
             this._contentBlockObserver = new MutationObserver(() => {
                 if (!contentBlock.classList.contains('hidden')) {
                     this.resize();
@@ -189,7 +187,6 @@ export class TableGlassEffect {
         // When data refreshes, rows are replaced, making cached row references stale.
         const tbody = this.container.querySelector('tbody');
         if (tbody) {
-            // eslint-disable-next-line no-undef
             this.mutationObserver = new MutationObserver(() => this.resize());
             this.mutationObserver.observe(tbody, { childList: true });
         }

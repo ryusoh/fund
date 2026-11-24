@@ -171,7 +171,6 @@ function initDonutRefraction() {
     };
 
     sync();
-    // eslint-disable-next-line no-undef
     const geometryObserver = new ResizeObserver(() => {
         requestAnimationFrame(sync);
         window.setTimeout(sync, 400); // again after the chart's resize animation settles

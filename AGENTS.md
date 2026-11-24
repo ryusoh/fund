@@ -54,9 +54,10 @@ The user, other agents, and background sessions edit this tree concurrently.
 ## Quality bar for every change
 
 1. **The CI gate is `make precommit-fix`** (format + lint + JS/Python tests +
-   `.pre-commit-config.yaml` hooks, whose eslint runs `--max-warnings=0`).
-   `make verify` adds mypy, bandit, and sync-check but skips the hooks, so it
-   is no substitute. Open a PR only on a green gate, with
+   `.pre-commit-config.yaml` hooks: `eslint --max-warnings=0`, `mypy` on
+   `scripts/` and `tests/python/`, `xenon`, `dependency-cruiser`).
+   `make verify` adds `venv` `mypy` + `tsc`, `bandit`, and `sync-check` without
+   running the hooks, so it is no substitute. Open a PR only on a green gate, with
    `git status --porcelain` clean afterwards (commit any reformat). A red gate
    on an unchanged tree stays red — change something before rerunning
    (`python3 -m scripts.agents.gate_guard snapshot`, then `check <hash>`).
@@ -76,8 +77,8 @@ The user, other agents, and background sessions edit this tree concurrently.
    tree, push; on revision, amend and `git push --force-with-lease`. A goal
    the repo already satisfies is a no-op, not a PR. Format only the files you
    touched: repo-wide formatter runs rewrite unrelated files, including
-   `eslint-suppressions.json` (the complexity ratchet — suppressions only
-   shrink, via `npx eslint --prune-suppressions`).
+   `eslint-suppressions.json` (the `complexity ≤ 20` ratchet — new JS functions
+   must stay ≤ 20; suppressions only shrink via `npx eslint --prune-suppressions`).
 8. **Behaviour changes ship a test** that fails before and passes after: CI's
    diff-coverage gate requires 90% of added executable lines covered.
    Refactors, typing, CSS, and docs need none. Only a human can apply the
@@ -133,6 +134,8 @@ visual is a draft marked "visual review required".
 | Dev server (serves repo root at :8000)  | `make serve`                                            |
 | Headless screenshot (visual verify)     | `make screenshot URL=/terminal/`                        |
 | Page smoke (console/CSP errors)         | `make smoke`                                            |
+| Analysis pane layout gate (headless)    | `make analysis-layout-check`                            |
+| Install Chromium for headless gates     | `make ensure-playwright`                                |
 | Run TWRR data pipeline locally          | `make twrr-refresh`                                     |
 | Validate regenerated TWRR data (gate)   | `make twrr-validate`                                    |
 | Regenerate AVIF/WebP background tiers   | `make images`                                           |

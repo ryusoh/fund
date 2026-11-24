@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import json
 import math
 from pathlib import Path
@@ -103,15 +104,15 @@ def _reference_gh_kelly(
     order: int,
     risk_free_rate: float = 0.04,
 ) -> float:
-    nodes, weights = np.polynomial.hermite_e.hermegauss(order)
-    weights = weights / math.sqrt(2 * math.pi)
+    nodes, raw_weights = np.polynomial.hermite_e.hermegauss(order)
+    scaled_weights = raw_weights / math.sqrt(2 * math.pi)
     states = [
         (
             probability * float(weight),
             (1 + annual_return) * math.exp(sigma * float(node) - 0.5 * sigma**2) - 1,
         )
         for probability, annual_return in scenario_returns
-        for node, weight in zip(nodes, weights, strict=True)
+        for node, weight in zip(nodes, scaled_weights, strict=True)
     ]
     return _reference_kelly(states, risk_free_rate=risk_free_rate)
 
@@ -169,13 +170,39 @@ def test_stale_values_are_corrected_and_judgment_fields_preserved():
 @pytest.mark.parametrize("intact_prob", [None, 0.0, 0.85])
 def test_ensure_structure_preserves_optional_thesis_intact_probability(intact_prob):
     config = _config()
+    config["belief_state"]["custom_judgment_note"] = "keep-me"
     if intact_prob is not None:
         config["belief_state"]["thesis_intact_probability"] = intact_prob
     normalized = sync_configs.ensure_structure("TEST", config)
+    assert normalized["belief_state"]["custom_judgment_note"] == "keep-me"
     if intact_prob is None:
         assert "thesis_intact_probability" not in normalized["belief_state"]
     else:
         assert normalized["belief_state"]["thesis_intact_probability"] == pytest.approx(intact_prob)
+
+
+def test_live_configs_round_trip_through_ensure_structure_without_key_loss():
+    analysis_dir = ROOT / "data" / "analysis"
+    live_paths = [
+        p for p in sorted(analysis_dir.glob("[A-Z]*.json")) if not p.name.endswith(".history.json")
+    ]
+    assert len(live_paths) >= 6
+    for path in live_paths:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+        symbol = str(raw["symbol"])
+        normalized = sync_configs.ensure_structure(symbol, copy.deepcopy(raw))
+        assert set(raw.keys()).issubset(
+            set(normalized.keys())
+        ), f"top-level key dropped in {symbol}"
+        for section in ("belief_state", "derived", "position", "model"):
+            if isinstance(raw.get(section), dict):
+                assert set(raw[section].keys()).issubset(
+                    set(normalized[section].keys())
+                ), f"{section} key dropped in {symbol}"
+        for idx, scenario in enumerate(raw.get("scenarios", [])):
+            assert set(scenario.keys()).issubset(
+                set(normalized["scenarios"][idx].keys())
+            ), f"scenario[{idx}] key dropped in {symbol}"
 
 
 def test_etf_eps_is_derived_when_fresh_metadata_omits_it():

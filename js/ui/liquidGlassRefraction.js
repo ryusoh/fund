@@ -368,7 +368,6 @@ export class LiquidGlassRefraction {
         this._buildFilter();
 
         this._rafPending = false;
-        // eslint-disable-next-line no-undef
         this.resizeObserver = new ResizeObserver(() => {
             if (this._resizeDebounceTimer) {
                 clearTimeout(this._resizeDebounceTimer);

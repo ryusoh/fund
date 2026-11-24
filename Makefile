@@ -17,7 +17,7 @@ else
 endif
 PIP := $(PY) -m pip
 
-.PHONY: help install-dev hooks precommit precommit-fix perms check-perms lint depcheck fmt fmt-check lint-fix markdownlint-fix type sec test test-js test-tz verify sync-check thinking-check bot-pr-check js-lint js-test vendor-fetch vendor-verify vendor-clean verify-calendar-build serve screenshot smoke analysis-layout-check fund fix check completion update-hooks twrr-refresh twrr-validate deploy-worker ci-parity mutate-js mutate-py mutate-ratchet-update images _fmt-black _fmt-prettier _lintfix-eslint _lintfix-stylelint _lintfix-markdown _lintfix-ruff _pytest
+.PHONY: help install-dev hooks precommit precommit-fix perms check-perms lint depcheck fmt fmt-check lint-fix markdownlint-fix type sec test test-js test-tz verify sync-check thinking-check bot-pr-check js-lint js-test vendor-fetch vendor-verify vendor-clean verify-calendar-build serve screenshot smoke analysis-layout-check ensure-playwright fund fix check completion update-hooks twrr-refresh twrr-validate deploy-worker ci-parity mutate-js mutate-py mutate-ratchet-update images _fmt-black _fmt-prettier _lintfix-eslint _lintfix-stylelint _lintfix-markdown _lintfix-ruff _pytest
 
 PYTHON_BIN := $(PY)
 TWRR_STEPS := scripts/twrr/step01_load_transactions.py \
@@ -65,6 +65,8 @@ help:
 	@echo "  serve         Start dev server"
 	@echo "  screenshot    Headless PNG of a page (URL=/terminal/) for visual checks"
 	@echo "  smoke         Headless load of all pages; fails on pageerrors/console errors"
+	@echo "  analysis-layout-check Headless 1280x580 viewport-fit gate for analysis pane"
+	@echo "  ensure-playwright Install Playwright Chromium binary for headless gates"
 	@echo "  images        Regenerate AVIF/WebP tiers for CSS background JPEGs"
 	@echo "  fund          Show CLI help"
 	@echo "  deploy-worker Deploy Cloudflare Worker"

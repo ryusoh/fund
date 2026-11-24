@@ -612,7 +612,6 @@ function observeTableForStackAlignment(tbody) {
     if (dayStackObserver || typeof ResizeObserver === 'undefined') {
         return;
     }
-    // eslint-disable-next-line no-undef
     dayStackObserver = new ResizeObserver(() => alignDayChangeStacks());
     dayStackObserver.observe(tbody);
 }

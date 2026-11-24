@@ -30,23 +30,29 @@ Replace or extend the doc's action-items section with:
 1. **Preamble for the implementer:** one work order at a time; `Find` strings
    are unique anchors (report mismatches rather than improvising); line
    numbers may drift; exact format/lint commands; `data/` is pipeline output;
-   commit locally after each item and leave pushing to the user.
+   update each work order's `- **Status:**` line in the doc and commit locally
+   after each item, leaving pushing to the user.
 2. **Numbered work orders**, ranked by impact, each tagged:
     - `[trivial]` — markup, attribute, or deletion only (include paste-ready
       snippets)
     - `[low]` — small, localized logic change with verified anchor and tests
     - `[design]` — new module, complex renderer, or architectural refactor,
-      fully specified inline (contracts, algorithms, DOM/data shapes, and test
-      cases) so implementation needs no further design work
+      fully specified inline (contracts, algorithms, DOM/data shapes, helper
+      decomposition keeping every JS function at ESLint `complexity ≤ 20`, and
+      test cases) so implementation needs no further design work
     - `[visual]` — requires human visual review afterward (`make screenshot`)
     - `[skip]` — blocked on external input / unresolved human decision /
       explicitly deferred out of scope (never used to punt design work)
 
-    Each executable order specifies **File**, **Find** (exact unique anchor),
-    **Change** (complete spec or paste-ready snippet), **Verify** (scoped
-    commands like `npx jest tests/js/pages/<page>` or `npx stylelint <file>`),
-    and a one-line **Guardrail** for any verified trap (fallback path,
-    execution order, hidden measurement, or data-unit quirk).
+    Each executable order specifies **Status** (`Pending`), **File**, **Find**
+    (exact unique anchor), **Change** (complete spec or paste-ready snippet),
+    **Verify** (scoped fast gates covering every touched language: include
+    `npx eslint --max-warnings=0 <file>` + `npx jest <test>` for JS,
+    `npx stylelint <file>` for CSS, and `venv/bin/ruff check <file> && venv/bin/mypy <file> && venv/bin/pytest <test>`
+    for Python), and a one-line **Guardrail** for any verified trap (fallback
+    path, execution order, `sync_configs.ensure_structure` schema preservation
+    when adding fields to `data/analysis/<SYM>.json`, hidden measurement, or
+    data-unit quirk).
 
 ## Finish
 

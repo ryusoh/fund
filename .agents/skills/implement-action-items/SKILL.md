@@ -25,21 +25,27 @@ verified work order. Pushing stays with the user.
    author fixes work orders, not you.
 3. **Change.** Make exactly the stated change and nothing else.
 4. **Verify.** Run the item's Verify commands plus the preamble's
-   format/lint commands, covering every file type you touched (a markdownlint
-   MD040/MD038 error has broken CI here while JS/CSS were green;
-   `make precommit-fix` is the CI-identical gate). Check that the verification
-   could actually go red on the unfixed state — e.g. a layout assertion must
-   first confirm the element is constrained, or `scroll == client` passes
-   vacuously. On failure, apply the item's fallback once if it has one;
-   otherwise undo your edit (confirm with `git diff <file>` that every hunk is
-   yours), record the failure, and move on.
-5. **Update doc status & commit that item alone.** Record a concise
+   format/lint commands, covering every file type you touched (including
+   `npx eslint --max-warnings=0` on JS and `venv/bin/mypy` on touched
+   `scripts/` or `tests/python/` files; `make precommit-fix` is the CI-identical
+   gate). Run lint/type/test checks **before** `prettier --write` or `black`,
+   and re-read target lines after any formatter run before editing again
+   (formatters wrap lines on disk and invalidate exact-match edit anchors).
+   Check that the verification could actually go red on the unfixed state — e.g.
+   a layout assertion must first confirm the element is constrained, or
+   `scroll == client` passes vacuously. On failure, apply the item's fallback
+   once if it has one; otherwise undo your edit (confirm with `git diff <file>`
+   that every hunk is yours), record the failure, and move on.
+5. **Update doc status & commit that item alone.** Set or update
    `- **Status (<YYYY-MM-DD>):** **Complete** ...` (or **Skipped** / **Failed**)
-   line under that work order in the action-items doc, then
-   `git add <the files you changed and the action-items doc>`; use a
-   Conventional Commits subject (`type(scope): summary`) with the work-order
-   number in the body. Each item gets its own new commit — leave earlier
-   commits and the remote as they are.
+   under that work order in the action-items doc inside the same commit (omit
+   self-referential commit hashes; the commit body carries the WO number). Stage
+   explicit file paths (`git add <files> <doc>` — avoid wildcards over
+   partially gitignored directories like `data/analysis/*.json`, which hit
+   gitignored `theme_timeline.json` and exit 1); use a Conventional Commits
+   subject (`type(scope): summary`) with the work-order number in the body.
+   Each item gets its own new commit — leave earlier commits and the remote as
+   they are.
 
 ## Final report
 
