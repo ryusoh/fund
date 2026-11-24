@@ -82,6 +82,20 @@ def test_check_text_ignores_open_trees_and_flow_arrows() -> None:
     assert fixed == raw
 
 
+def test_check_text_skips_side_by_side_boxes() -> None:
+    """Side-by-side multi-box layouts are skipped instead of merging across the gap."""
+    raw = (
+        '```text\n'
+        '┌───────┐   ┌───────┐\n'
+        '│ left  │   │ right │\n'
+        '└───────┘   └───────┘\n'
+        '```\n'
+    )
+    fixed, violations = check_text(raw, Path('side_by_side.md'))
+    assert violations == []
+    assert fixed == raw
+
+
 def test_main_check_and_fix_cli(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """CLI exits 1 on misaligned boxes, rewrites on --fix, and exits 0 afterwards."""
     md = tmp_path / 'diagram.md'

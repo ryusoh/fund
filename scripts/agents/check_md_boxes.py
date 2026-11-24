@@ -41,6 +41,7 @@ FENCE_OPEN_RE = re.compile(r'^(\s*)(`{3,}|~{3,})(.*)$')
 TOP_BORDER_RE = re.compile(r'^(\s*)┌([─┬┴┼]+)┐(.*)$')
 MID_BORDER_RE = re.compile(r'^(\s*)├([─┬┴┼]+)┤(.*)$')
 BOT_BORDER_RE = re.compile(r'^(\s*)└([─┬┴┼]+)┘(.*)$')
+BOX_BORDER_CHARS = set('┌┐└┘├┤│')
 
 
 @dataclass(frozen=True)
@@ -91,6 +92,8 @@ def _parse_border_row(
     if not match:
         return None
     indent, interior, trailing = match.groups()
+    if any(ch in BOX_BORDER_CHARS for ch in trailing):
+        return None
     return BoxRow(
         index=index,
         line_no=line_no,
