@@ -20,6 +20,8 @@ const mockCtx = {
     fill: jest.fn(),
     stroke: jest.fn(),
     fillRect: jest.fn(),
+    rect: jest.fn(),
+    roundRect: jest.fn(),
     setLineDash: jest.fn(),
     fillText: jest.fn(),
     measureText: jest.fn((t) => ({ width: String(t).length * 6 })),
@@ -169,6 +171,8 @@ describe('analysis lab 2-view controller (WO5)', () => {
         const snap2y = lab.showTickerDecision('goog', { horizonMode: '2y' });
         expect(snap2y.symbol).toBe('GOOG');
         expect(snap2y.text).toContain('Mean ');
+        expect(snap2y.text).toContain('Scenarios');
+        expect(snap2y.text).toContain('Sizing:');
         expect(lab.getActiveAnalysisConfig().symbol).toBe('GOOG');
 
         const boardSection = root.querySelector('[data-analysis-section="board"]');
@@ -181,6 +185,9 @@ describe('analysis lab 2-view controller (WO5)', () => {
         expect(root.querySelector('#verdictStrip')).toBeNull();
         expect(root.querySelector('#riskFooter')).toBeNull();
         expect(root.querySelector('#sizingBullet').textContent).toContain('SIZE');
+        expect(root.querySelector('#sizingBullet .bullet-readout').textContent).toMatch(
+            /^\d+\.\d%→(?:\d+\.\d%|n\/a)$/
+        );
         expect(mockCtx.fillText.mock.calls.map((c) => c[0])).toContain('+2Y');
 
         mockCtx.fillText.mockClear();
@@ -254,7 +261,10 @@ describe('analysis lab 2-view controller (WO5)', () => {
         );
         await new Promise((resolve) => setTimeout(resolve, 0));
         expect(mockWhenReady).toHaveBeenCalled();
-        expect(root.querySelector('#sizingBullet').textContent).toContain('¥');
+        expect(root.querySelector('#sizingBullet .bullet-readout').textContent).toMatch(
+            /^\d+\.\d%→(?:\d+\.\d%|n\/a)$/
+        );
+        expect(lab.showTickerDecision('GOOG').text).toContain('¥');
         expect(mockCtx.fillText.mock.calls.some((c) => String(c[0]).includes('¥'))).toBe(true);
     });
 

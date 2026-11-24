@@ -13,7 +13,11 @@ import {
 } from '../../transactions/utils.js';
 import { getSelectedCurrency } from '../../transactions/state.js';
 
-import { _drawXAxisBaseline, _drawXAxisTickLabel } from '../../transactions/chart/core.js';
+import {
+    _drawXAxisBaseline,
+    _drawXAxisTickLabel,
+    drawEndValue,
+} from '../../transactions/chart/core.js';
 import { formatCrosshairDateLabel, getMonoFontFamily } from '../../transactions/chart/helpers.js';
 import {
     drawCrosshairLine,
@@ -23,7 +27,7 @@ import {
 
 export const CHART_FONT_SIZE = 10;
 export const CHART_FONT_FAMILY = `${CHART_FONT_SIZE}px ${getMonoFontFamily()}`;
-export const DEFAULT_CHART_PADDING = { top: 16, right: 168, bottom: 24, left: 54 };
+export const DEFAULT_CHART_PADDING = { top: 16, right: 16, bottom: 24, left: 54 };
 export const UNIT_BREAK_LABEL = 'PRICE → TOTAL-RETURN VALUE';
 
 const LATEST_FX_DATE = '9999-12-31';
@@ -395,12 +399,6 @@ function computeYDomain(todayPrice, pastPoints, futureCurves, scenarioRays) {
     };
 }
 
-function shortScenarioName(name) {
-    const text = String(name || '').trim();
-    const head = text.split(/[\s–-]+/)[0];
-    return head || 'Case';
-}
-
 function formatEdgePrice(usdValue) {
     if (!Number.isFinite(usdValue)) {
         return 'n/a';
@@ -412,16 +410,28 @@ function formatEdgePrice(usdValue) {
     return formatInSelectedCurrency(converted);
 }
 
+function formatEdgeLabel(ray) {
+    const endStr = formatEdgePrice(ray.endValue);
+    const tvStr = formatEdgePrice(ray.terminalTotalValue);
+    if (!Number.isFinite(ray.terminalTotalValue) || endStr === tvStr) {
+        return endStr;
+    }
+    return `${endStr}→${tvStr}`;
+}
+
 function packRightEdgeLabels(scenarioRays, yScale, plotTop, plotBottom) {
     const items = scenarioRays
         .map((ray) => {
             const targetY = yScale(ray.endValue);
-            const label = `${shortScenarioName(ray.name)} ${Math.round(ray.prob * 100)}% ${formatEdgePrice(ray.endValue)} →TV ${formatCompactPriceValue(ray.terminalTotalValue)}`;
+            const isBase = String(ray.id || ray.name || '')
+                .toLowerCase()
+                .startsWith('base');
             return {
                 id: ray.id,
+                isBase,
                 targetY,
                 y: clamp(targetY, plotTop + 6, plotBottom - 6),
-                label,
+                label: formatEdgeLabel(ray),
                 endValue: ray.endValue,
                 terminalTotalValue: ray.terminalTotalValue,
             };
@@ -991,13 +1001,33 @@ function paintCurvesAndRays(ctx, geometry, colors) {
         );
     });
 
+    const axisPadding = { left: geometry.plotLeft, top: geometry.plotTop };
+    const plotWidth = geometry.plotRight - geometry.plotLeft;
+    const plotHeight = plotBottom - plotTop;
+    const isMobile = typeof window !== 'undefined' ? window.innerWidth <= 768 : false;
+    const drawnBounds = [];
+    const orderedLabels = [...rightLabels].sort((a, b) => Number(b.isBase) - Number(a.isBase));
+
     ctx.save();
-    ctx.font = CHART_FONT_FAMILY;
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = colors.line || '#c9d1d9';
-    rightLabels.forEach((item) => {
-        ctx.fillText(item.label, geometry.plotRight + 6, item.y);
+    orderedLabels.forEach((item) => {
+        const color = item.isBase ? colors.blue || '#64b5f6' : colors.line || '#c9d1d9';
+        const bounds = drawEndValue(
+            ctx,
+            geometry.plotRight,
+            item.targetY,
+            item.label,
+            color,
+            isMobile,
+            axisPadding,
+            plotWidth,
+            plotHeight,
+            (v) => v,
+            true,
+            drawnBounds
+        );
+        if (bounds) {
+            drawnBounds.push(bounds);
+        }
     });
     ctx.restore();
 }

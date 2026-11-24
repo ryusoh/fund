@@ -1112,16 +1112,107 @@ function orNull(value) {
     return value === undefined ? null : value;
 }
 
-export function buildDecisionSnapshot(config, decision, metricsArg = null) {
+function defaultFormatPrice(value) {
+    if (!isFiniteNumber(value)) {
+        return 'n/a';
+    }
+    const sign = value < 0 ? '-' : '';
+    const abs = Math.abs(value);
+    if (abs >= 1000) {
+        return `${sign}$${(abs / 1000).toFixed(2)}k`;
+    }
+    if (abs >= 100) {
+        return `${sign}$${Math.round(abs)}`;
+    }
+    return `${sign}$${abs.toFixed(2)}`;
+}
+
+function shortOutcomeLabel(out) {
+    const raw = String(out?.name || out?.id || 'Case').trim();
+    return raw.split(/[\s–-]+/)[0] || 'Case';
+}
+
+function formatOutcomeRange(out, formatPrice) {
+    const pFinite = isFiniteNumber(out?.terminalPrice);
+    const tvFinite = isFiniteNumber(out?.terminalTotalValue);
+    if (pFinite && tvFinite) {
+        const pStr = formatPrice(out.terminalPrice);
+        const tvStr = formatPrice(out.terminalTotalValue);
+        return pStr === tvStr ? pStr : `${pStr}→${tvStr}`;
+    }
+    if (tvFinite) {
+        return formatPrice(out.terminalTotalValue);
+    }
+    return pFinite ? formatPrice(out.terminalPrice) : 'n/a';
+}
+
+function formatSnapshotScenarios(metrics, dec, formatPrice) {
+    const outcomes = Array.isArray(metrics?.outcomes) ? metrics.outcomes : [];
+    if (outcomes.length === 0) {
+        return '';
+    }
+    const items = outcomes.map((out) => {
+        const probPct = isFiniteNumber(out?.prob) ? `${Math.round(out.prob * 100)}%` : '';
+        const range = formatOutcomeRange(out, formatPrice);
+        return `${shortOutcomeLabel(out)} ${probPct} ${range}`.trim();
+    });
+    const confBit = isFiniteNumber(dec?.confidencePct) ? `c${Math.round(dec.confidencePct)}%` : '';
+    const metaParts = [dec?.scenarioSplit || '', confBit].filter(Boolean).join(' ');
+    const header = metaParts ? `Scenarios (${metaParts})` : 'Scenarios';
+    return `${header}: ${items.join(' | ')}`;
+}
+
+function formatHalfKellySummary(metrics) {
+    if (isFiniteNumber(metrics?.fullKelly) && metrics.fullKelly >= 1 - 1e-6) {
+        return '½K ≥50% (cap)';
+    }
+    if (isFiniteNumber(metrics?.scaledKelly)) {
+        return `½K ${(metrics.scaledKelly * 100).toFixed(0)}%`;
+    }
+    return '½K n/a';
+}
+
+function formatSnapshotSizing(metrics, dec, deltaUsdFormatted) {
+    const wCurrStr = isFiniteNumber(dec?.currentWeight)
+        ? `${(dec.currentWeight * 100).toFixed(1)}%`
+        : '0.0%';
+    let sizingCore;
+    if (dec?.kellyUnavailable) {
+        const capStr = isFiniteNumber(dec?.maxWeight)
+            ? `${(dec.maxWeight * 100).toFixed(0)}%`
+            : '30%';
+        sizingCore = `${wCurrStr} / cap ${capStr} · Kelly n/a`;
+    } else {
+        const wRecStr = isFiniteNumber(dec?.targetWeight)
+            ? `${(dec.targetWeight * 100).toFixed(1)}%`
+            : 'n/a';
+        const delta = isFiniteNumber(dec?.weightDelta) ? dec.weightDelta : 0;
+        const usdBit = deltaUsdFormatted ? ` · ${deltaUsdFormatted}` : '';
+        sizingCore = `${wCurrStr} / ${wRecStr} target (${formatSignedDeltaPct(delta)}${usdBit}) · ${formatHalfKellySummary(metrics)}`;
+    }
+    const geoBit = isFiniteNumber(metrics?.geometricCagr)
+        ? ` · Geo ${(metrics.geometricCagr * 100).toFixed(1)}%`
+        : '';
+    const revBit = dec?.reviewDate ? ` · Rev ${dec.reviewDate}` : '';
+    return `Sizing: ${sizingCore}${geoBit}${revBit}`;
+}
+
+export function buildDecisionSnapshot(config, decision, metricsArg = null, options = {}) {
     const cfg = config || {};
     const metrics = metricsArg || cfg.metrics || {};
     const dec = decision || {};
+    const formatPrice =
+        typeof options.formatPrice === 'function' ? options.formatPrice : defaultFormatPrice;
     const meanStr = isFiniteNumber(metrics.expectedCagr)
         ? `${(metrics.expectedCagr * 100).toFixed(1)}%`
         : 'n/a';
     const triggerStr = formatTriggerSummary(dec.nextTrigger);
     const symbol = cfg.symbol || dec.symbol || '';
     const verdict = dec.verdictDisplay || dec.verdictLabel || 'HOLD';
+    const headline = `${symbol}: ${verdict} · Mean ${meanStr} · ${triggerStr}`;
+    const scenariosLine = formatSnapshotScenarios(metrics, dec, formatPrice);
+    const sizingLine = formatSnapshotSizing(metrics, dec, options.deltaUsdFormatted || null);
+    const text = [headline, scenariosLine, sizingLine].filter(Boolean).join('\n');
     return {
         symbol,
         name: cfg.name || symbol,
@@ -1142,7 +1233,7 @@ export function buildDecisionSnapshot(config, decision, metricsArg = null) {
         confidencePct: orNull(dec.confidencePct),
         reviewDate: orNull(dec.reviewDate),
         hasFlag: Boolean(dec.hasFlag),
-        text: `${symbol}: ${verdict} · Mean ${meanStr} · ${triggerStr}`,
+        text,
     };
 }
 

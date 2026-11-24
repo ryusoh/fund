@@ -14,6 +14,7 @@ import { isLocalhost } from '../../utils/host.js';
 import { logger } from '../../utils/logger.js';
 import {
     convertValueToCurrency,
+    formatCurrency as formatInSelectedCurrency,
     formatCurrencyCompact as formatCompactInSelectedCurrency,
 } from '../../transactions/utils.js';
 import { getSelectedCurrency, whenTransactionDataReady } from '../../transactions/state.js';
@@ -129,6 +130,17 @@ function formatCompactCurrency(value) {
     return formatCompactInSelectedCurrency(
         convertValueToCurrency(value, LATEST_FX_DATE, getSelectedCurrency())
     );
+}
+
+function formatSnapshotPrice(usdValue) {
+    if (!Number.isFinite(usdValue)) {
+        return 'n/a';
+    }
+    const converted = convertValueToCurrency(usdValue, LATEST_FX_DATE, getSelectedCurrency());
+    if (Math.abs(converted) >= 100) {
+        return formatCompactInSelectedCurrency(Math.round(converted));
+    }
+    return formatInSelectedCurrency(converted);
 }
 
 function formatSignedPercent(value, decimals = 1) {
@@ -556,7 +568,7 @@ function renderDecisionBoard() {
     return board;
 }
 
-function renderSizingBullet(decision, metrics) {
+function renderSizingBullet(decision) {
     if (!sizingBulletEl) {
         return;
     }
@@ -591,24 +603,8 @@ function renderSizingBullet(decision, metrics) {
         track.appendChild(targetTick);
     }
 
-    let readoutText;
-    if (decision.kellyUnavailable) {
-        readoutText = `${formatPlainPercent(wCurr)} / cap ${formatPlainPercent(wMax, 0)} · Kelly n/a`;
-    } else {
-        const delta = decision.weightDelta ?? 0;
-        const deltaUsd = state.portfolioTotalValue > 0 ? delta * state.portfolioTotalValue : null;
-        const usdBit =
-            deltaUsd !== null
-                ? ` · ${deltaUsd >= 0 ? '+' : '-'}${formatCompactCurrency(Math.abs(deltaUsd))}`
-                : '';
-        const halfKellyBit =
-            metrics?.fullKelly >= 1 - 1e-6
-                ? '½K ≥50% (cap)'
-                : `½K ${formatPlainPercent(metrics?.scaledKelly, 0)}`;
-        readoutText =
-            `${formatPlainPercent(wCurr)} / ${formatPlainPercent(wRec)} target ` +
-            `(${formatSignedPercent(delta)}${usdBit}) · ${halfKellyBit}`;
-    }
+    const wRecText = !decision.kellyUnavailable && wRec !== null ? formatPlainPercent(wRec) : 'n/a';
+    const readoutText = `${formatPlainPercent(wCurr)}→${wRecText}`;
 
     sizingBulletEl.append(
         makeEl('span', 'bullet-label', 'SIZE'),
@@ -654,7 +650,7 @@ function renderTickerDecision(config) {
             }));
         }
     }
-    renderSizingBullet(config.decision, config.metrics);
+    renderSizingBullet(config.decision);
 }
 
 function toggleSectionVisibility(target) {
@@ -713,7 +709,21 @@ export function showTickerDecision(symbol, { horizonMode = '2y' } = {}) {
     toggleSectionVisibility('ticker');
     renderTickerDecision(config);
     checkPaneViewportFit();
-    return buildDecisionSnapshot(config, config.decision, config.metrics);
+    const delta = config.decision?.weightDelta;
+    const deltaUsd =
+        !config.decision?.kellyUnavailable &&
+        state.portfolioTotalValue > 0 &&
+        Number.isFinite(delta)
+            ? delta * state.portfolioTotalValue
+            : null;
+    const deltaUsdFormatted =
+        deltaUsd !== null
+            ? `${deltaUsd >= 0 ? '+' : '-'}${formatCompactCurrency(Math.abs(deltaUsd))}`
+            : null;
+    return buildDecisionSnapshot(config, config.decision, config.metrics, {
+        deltaUsdFormatted,
+        formatPrice: formatSnapshotPrice,
+    });
 }
 
 export function getAnalysisSymbols() {

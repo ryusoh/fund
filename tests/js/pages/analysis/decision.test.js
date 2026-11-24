@@ -181,6 +181,8 @@ describe('decision engine (WO3)', () => {
             decisions.GOOG.metrics
         );
         expect(googSnap.text).toContain('Mean ');
+        expect(googSnap.text).toContain('Scenarios (');
+        expect(googSnap.text).toContain('Sizing: ');
         expect(googSnap.text).not.toContain('Expected CAGR');
 
         const board = buildBoardSnapshot(rows, {

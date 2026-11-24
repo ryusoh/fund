@@ -36,6 +36,8 @@ function makeStubCanvas(width = 672, height = 192) {
         fill: jest.fn(),
         stroke: jest.fn(),
         fillRect: jest.fn(),
+        rect: jest.fn((...args) => ops.push(['rect', ...args])),
+        roundRect: jest.fn((...args) => ops.push(['roundRect', ...args])),
         setLineDash: jest.fn(),
         fillText: jest.fn((text, x, y) => ops.push(['fillText', text, x, y])),
         measureText: jest.fn((text) => ({ width: String(text).length * 6 })),
@@ -177,7 +179,8 @@ describe('decisionChart (WO4)', () => {
 
         const bullRay = geoFull.scenarioRays.find((r) => r.id.startsWith('bull'));
         expect(geoFull.yMax).toBeGreaterThanOrEqual(bullRay.terminalTotalValue);
-        expect(geoFull.rightLabels.every((item) => item.label.includes('→TV'))).toBe(true);
+        expect(geoFull.rightLabels.every((item) => item.label.startsWith('$'))).toBe(true);
+        expect(geoFull.rightLabels.every((item) => !item.label.includes('→TV'))).toBe(true);
 
         // Log-ratio symmetry: equal multiplicative factors produce equal pixel intervals
         const p = geoFull.todayPrice;
@@ -268,7 +271,9 @@ describe('decisionChart (WO4)', () => {
         const drawnTexts = canvas.ops.filter((op) => op[0] === 'fillText').map((op) => op[1]);
         expect(drawnTexts.some((t) => t.includes('PRICE BASIS UNVERIFIED'))).toBe(true);
         expect(drawnTexts.some((t) => t.includes('PRICE → TOTAL-RETURN VALUE'))).toBe(true);
-        expect(drawnTexts.some((t) => t.includes('→TV'))).toBe(true);
+        expect(drawnTexts.some((t) => t.startsWith('$') && t.includes('→'))).toBe(true);
+        expect(drawnTexts.some((t) => t.includes('→TV'))).toBe(false);
+        expect(canvas.ops.some((op) => op[0] === 'rect' || op[0] === 'roundRect')).toBe(true);
         expect(canvas.attrs['aria-label']).toContain('Mean-wealth CAGR');
     });
 
