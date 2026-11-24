@@ -435,7 +435,9 @@ function createValuationSpark(decision, price) {
     const trigLabel = Number.isFinite(triggerPct) ? formatSignedPercent(triggerPct) : 'n/a';
 
     if (!bands || !(price > 0) || decision.gate1Broken) {
-        wrap.appendChild(makeEl('span', 'val-spark-na', 'suppressed'));
+        const naEl = makeEl('span', 'val-spark-na', 'n/a');
+        naEl.title = 'Valuation bands suppressed';
+        wrap.appendChild(naEl);
         return wrap;
     }
 

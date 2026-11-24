@@ -127,6 +127,7 @@ describe('analysis lab 2-view controller (WO5)', () => {
             ])
         );
         expect(verdictBySym.CBRS).toBe('AVOID');
+        expect(rows[0].querySelector('.val-spark-na').textContent).toBe('n/a');
         expect(verdictBySym.VT).toBe('HOLD');
         expect(verdictBySym.AEHR).toBe('WATCH');
         expect(verdictBySym.GOOG).toMatch(/^\+\d+\.\d%$/);
