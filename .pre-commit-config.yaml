@@ -30,6 +30,15 @@ repos:
             exclude: ^data/.*\.(csv|html|json|txt)$
           - id: detect-private-key
 
+    - repo: local
+      hooks:
+          - id: md-box-align
+            name: md-box-align (Unicode box diagrams in Markdown)
+            entry: bash -lc 'PY=venv/bin/python; [ -x "$PY" ] || PY=python3; "$PY" -m scripts.agents.check_md_boxes --fix "$@"' --
+            language: system
+            files: '\.md$'
+            pass_filenames: true
+
     - repo: https://github.com/DavidAnson/markdownlint-cli2
       rev: v0.22.0
       hooks:

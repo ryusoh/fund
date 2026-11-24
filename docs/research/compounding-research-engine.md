@@ -45,7 +45,7 @@ artifacts behind.**
             ┌─────────────────────────────────────────────────────┐
             │              DISTILL (Anki plane)                   │
             │  LLM authors anki_cards.jsonl → validator →         │
-            │  density gate → confirm pass → AnkiConnect → 金融    │
+            │  density gate → confirm pass → AnkiConnect → 金融   │
             └──────────────┬──────────────────────────────────────┘
                            ▼
             ┌─────────────────────────────────────────────────────┐

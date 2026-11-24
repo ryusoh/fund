@@ -133,6 +133,7 @@ _lintfix-stylelint:
 	npx --yes stylelint "**/*.css" --fix || true
 
 _lintfix-markdown:
+	$(PY) -m scripts.agents.check_md_boxes --fix
 	npm exec -- markdownlint-cli2 --fix "**/*.md" "#**/node_modules/**" "#venv/**" "#.qwen/**" "#.claude/**"
 
 _lintfix-ruff:
@@ -151,6 +152,7 @@ lint: js-lint depcheck
 	$(PY) -m xenon --max-average C --max-modules F --max-absolute F scripts tests
 	npx --yes stylelint "**/*.css"
 	npm exec -- markdownlint-cli2 "**/*.md" "#**/node_modules/**" "#venv/**" "#.qwen/**" "#.claude/**"
+	$(PY) -m scripts.agents.check_md_boxes
 
 depcheck:
 	@# Dependency-structure gate (docs/agentic-quality-gates.md §3): no cycles,
@@ -193,6 +195,7 @@ lint-fix:
 	npx --yes stylelint "**/*.css" --fix || true
 
 markdownlint-fix:
+	$(PY) -m scripts.agents.check_md_boxes --fix
 	npm exec -- markdownlint-cli2 --fix "**/*.md" "#**/node_modules/**" "#venv/**" "#.qwen/**" "#.claude/**"
 
 js-test:
