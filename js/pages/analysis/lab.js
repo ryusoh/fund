@@ -475,6 +475,46 @@ function createMiniSizingBullet(decision) {
     return wrap;
 }
 
+const BOARD_VERDICT_LABELS = {
+    HOLD_AT_CAP: 'HOLD',
+    HOLD_AT_TARGET: 'HOLD',
+    HOLD: 'HOLD',
+    HOLD_RICH: 'HOLD',
+    HOLD_DATA: 'HOLD',
+    WATCH: 'WATCH',
+    WATCH_DATA: 'WATCH',
+    PASS: 'PASS',
+    SELL_TRIM: 'SELL',
+    AVOID: 'AVOID',
+    AVOID_BROKEN: 'AVOID',
+    EXIT_BROKEN: 'EXIT',
+};
+
+function formatBoardVerdict(decision) {
+    const code = decision?.verdictCode;
+    if (code && BOARD_VERDICT_LABELS[code]) {
+        return BOARD_VERDICT_LABELS[code];
+    }
+    if (code === 'TRIM_RICH') {
+        const wRich = decision.richTargetWeight ?? decision.targetWeight;
+        const delta = Number.isFinite(wRich) ? wRich - (decision.currentWeight || 0) : null;
+        return Number.isFinite(delta) ? formatSignedPercent(delta) : 'TRIM';
+    }
+    if (
+        code === 'STRONG_BUY_INITIATE' ||
+        code === 'BUY_INITIATE' ||
+        code === 'STRONG_BUY_ADD' ||
+        code === 'ADD' ||
+        code === 'TRIM_TO_CAP' ||
+        code === 'TRIM_OVER_KELLY'
+    ) {
+        if (Number.isFinite(decision.weightDelta)) {
+            return formatSignedPercent(decision.weightDelta);
+        }
+    }
+    return decision?.verdictDisplay || decision?.verdictLabel || 'HOLD';
+}
+
 function renderDecisionBoard() {
     const board = buildBoardSnapshot(
         state.configs.map((cfg) => ({ symbol: cfg.symbol, config: cfg, decision: cfg.decision })),
@@ -502,8 +542,11 @@ function renderDecisionBoard() {
         const verdictCell = makeEl(
             'span',
             `board-cell board-verdict tone-${decision.verdictTone}`,
-            decision.verdictDisplay
+            formatBoardVerdict(decision)
         );
+        if (decision.verdictDisplay) {
+            verdictCell.title = decision.verdictDisplay;
+        }
         const sparkCell = makeEl('span', 'board-cell board-val-cell');
         sparkCell.appendChild(createValuationSpark(decision, config.metrics?.price));
         const meanCell = makeEl(
@@ -851,6 +894,7 @@ export const __analysisLabTesting = {
     getEffectiveVolatility,
     renderDecisionBoard,
     renderTickerDecision,
+    formatBoardVerdict,
     syncPaneChartColors,
     checkPaneViewportFit,
     PANE_CHART_COLORS,

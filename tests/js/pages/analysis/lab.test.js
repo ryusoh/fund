@@ -120,6 +120,35 @@ describe('analysis lab 2-view controller (WO5)', () => {
         const symbolsInOrder = rows.map((r) => r.querySelector('.board-ticker').textContent);
         expect(symbolsInOrder[0]).toBe('CBRS');
 
+        const verdictBySym = Object.fromEntries(
+            rows.map((r) => [
+                r.querySelector('.board-ticker').textContent,
+                r.querySelector('.board-verdict').textContent,
+            ])
+        );
+        expect(verdictBySym.CBRS).toBe('AVOID');
+        expect(verdictBySym.VT).toBe('HOLD');
+        expect(verdictBySym.AEHR).toBe('WATCH');
+        expect(verdictBySym.GOOG).toMatch(/^\+\d+\.\d%$/);
+        expect(verdictBySym.ANET).toMatch(/^-\d+\.\d%$/);
+        expect(verdictBySym.PDD).toMatch(/^-\d+\.\d%$/);
+
+        const { formatBoardVerdict } = lab.__analysisLabTesting;
+        expect(
+            formatBoardVerdict({
+                verdictCode: 'TRIM_RICH',
+                currentWeight: 0.2,
+                targetWeight: 0.25,
+                richTargetWeight: 0.12,
+            })
+        ).toBe('-8.0%');
+        expect(formatBoardVerdict({ verdictCode: 'BUY_INITIATE', weightDelta: 0.1 })).toBe(
+            '+10.0%'
+        );
+        expect(formatBoardVerdict({ verdictCode: 'EXIT_BROKEN' })).toBe('EXIT');
+        expect(formatBoardVerdict({ verdictCode: 'SELL_TRIM' })).toBe('SELL');
+        expect(formatBoardVerdict({ verdictCode: 'PASS' })).toBe('PASS');
+
         const footerText = root.querySelector('#boardBudgetFooter').textContent;
         expect(footerText).toContain('Residual Target Cash');
         expect(footerText).not.toContain('THESIS PROB UNMIGRATED');

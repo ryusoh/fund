@@ -95,7 +95,7 @@
 .analysis-pane .board-row {
     display: grid;
     grid-template-columns:
-        42px minmax(180px, 1.7fr) minmax(88px, 1fr) 44px minmax(84px, 1fr)
+        42px 58px minmax(116px, 1.25fr) 44px minmax(112px, 1.25fr)
         minmax(112px, 1.05fr);
     align-items: center;
     gap: 5px;
