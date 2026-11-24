@@ -218,59 +218,7 @@
     border-bottom: none;
 }
 
-/* View 2: Single-Ticker 3-Layer Decision Chart */
-.analysis-pane .verdict-strip {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    height: 26px;
-    line-height: 26px;
-    flex-shrink: 0;
-    font-size: 10px;
-    white-space: nowrap;
-    overflow: hidden;
-}
-
-.analysis-pane .verdict-identity {
-    font-weight: 700;
-    color: var(--text-color);
-    flex-shrink: 0;
-}
-
-.analysis-pane .verdict-badge {
-    font-weight: 700;
-    padding: 0 5px;
-    border: 1px solid currentColor;
-    border-radius: 3px;
-    line-height: 1.4;
-    flex-shrink: 0;
-}
-
-.analysis-pane .verdict-metric {
-    color: var(--text-color);
-    font-variant-numeric: tabular-nums;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.analysis-pane .verdict-probs {
-    color: var(--muted-text);
-    font-size: 9.5px;
-    margin-left: auto;
-    flex-shrink: 0;
-}
-
-.analysis-pane .flag-pill {
-    font-size: 9px;
-    font-weight: 700;
-    padding: 0 4px;
-    border: 1px solid var(--primary-color);
-    border-radius: 2px;
-    color: var(--primary-color);
-    line-height: 1.45;
-    flex-shrink: 0;
-}
-
+/* View 2: Single-Ticker Decision Chart + Sizing Bullet */
 .analysis-pane .decision-chart-wrap {
     flex: 1 1 0;
     min-height: 120px;
@@ -284,7 +232,7 @@
     display: block;
 }
 
-/* Layer 3: Sizing Bullet (22px) + Risk Footer (20px) */
+/* Sizing Bullet (22px) */
 .analysis-pane .sizing-bullet {
     display: flex;
     align-items: center;
@@ -296,8 +244,7 @@
     overflow: hidden;
 }
 
-.analysis-pane .bullet-label,
-.analysis-pane .risk-label {
+.analysis-pane .bullet-label {
     font-size: 10px;
     color: var(--muted-text);
     text-transform: uppercase;
@@ -368,30 +315,6 @@
 .analysis-pane .bullet-readout {
     color: var(--text-color);
     font-variant-numeric: tabular-nums;
-    flex-shrink: 0;
-}
-
-.analysis-pane .risk-footer {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    height: 20px;
-    flex-shrink: 0;
-    font-size: 9.5px;
-    color: var(--muted-text);
-    white-space: nowrap;
-    overflow: hidden;
-}
-
-.analysis-pane .risk-digest {
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.analysis-pane .risk-hint {
-    margin-left: auto;
-    color: var(--muted-text);
-    font-size: 9.5px;
     flex-shrink: 0;
 }
 

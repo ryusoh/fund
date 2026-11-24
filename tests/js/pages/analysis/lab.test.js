@@ -178,9 +178,9 @@ describe('analysis lab 2-view controller (WO5)', () => {
 
         expect(root.querySelector('#paneContext')).toBeNull();
         expect(root.querySelector('.pane-context')).toBeNull();
-        expect(root.querySelector('#verdictStrip').textContent).toContain('GOOG · Alphabet');
+        expect(root.querySelector('#verdictStrip')).toBeNull();
+        expect(root.querySelector('#riskFooter')).toBeNull();
         expect(root.querySelector('#sizingBullet').textContent).toContain('SIZE');
-        expect(root.querySelector('#riskFooter').textContent).toContain('Rev 2026-11-30');
         expect(mockCtx.fillText.mock.calls.map((c) => c[0])).toContain('+2Y');
 
         mockCtx.fillText.mockClear();
@@ -254,7 +254,8 @@ describe('analysis lab 2-view controller (WO5)', () => {
         );
         await new Promise((resolve) => setTimeout(resolve, 0));
         expect(mockWhenReady).toHaveBeenCalled();
-        expect(root.querySelector('#verdictStrip').textContent).toContain('¥');
+        expect(root.querySelector('#sizingBullet').textContent).toContain('¥');
+        expect(mockCtx.fillText.mock.calls.some((c) => String(c[0]).includes('¥'))).toBe(true);
     });
 
     it('guards normalizeConfig against null values and reports checkPaneViewportFit overflow', async () => {

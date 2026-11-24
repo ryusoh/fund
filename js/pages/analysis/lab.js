@@ -1,5 +1,4 @@
 /* global getComputedStyle */
-import { computeBrierScore } from './bayes.js';
 import {
     DEFAULT_RISK_FREE_RATE,
     buildBoardSnapshot,
@@ -15,17 +14,14 @@ import { isLocalhost } from '../../utils/host.js';
 import { logger } from '../../utils/logger.js';
 import {
     convertValueToCurrency,
-    formatCurrency as formatInSelectedCurrency,
     formatCurrencyCompact as formatCompactInSelectedCurrency,
 } from '../../transactions/utils.js';
 import { getSelectedCurrency, whenTransactionDataReady } from '../../transactions/state.js';
 
 let paneRoot = null;
 let decisionBoardEl = null;
-let verdictStripEl = null;
 let decisionChartCanvas = null;
 let sizingBulletEl = null;
-let riskFooterEl = null;
 let detachChartInteractions = null;
 
 const state = {
@@ -58,7 +54,6 @@ const PANE_MARKUP = `
                 data-analysis-section="ticker"
                 class="decision-ticker-section is-hidden"
             >
-                <div class="verdict-strip" id="verdictStrip"></div>
                 <div class="decision-chart-wrap">
                     <canvas
                         id="decisionChartCanvas"
@@ -68,7 +63,6 @@ const PANE_MARKUP = `
                     ></canvas>
                 </div>
                 <div class="sizing-bullet" id="sizingBullet"></div>
-                <div class="risk-footer" id="riskFooter"></div>
             </section>
         </div>
     </div>
@@ -126,15 +120,6 @@ export async function fetchJson(path) {
         throw new Error(`Failed to load ${path}`);
     }
     return response.json();
-}
-
-function formatCurrency(value) {
-    if (!Number.isFinite(value)) {
-        return 'n/a';
-    }
-    return formatInSelectedCurrency(
-        convertValueToCurrency(value, LATEST_FX_DATE, getSelectedCurrency())
-    );
 }
 
 function formatCompactCurrency(value) {
@@ -408,10 +393,8 @@ function resolvePaneElements(rootEl) {
     paneRoot = rootEl;
     syncPaneChartColors();
     decisionBoardEl = rootEl.querySelector('#decisionBoard');
-    verdictStripEl = rootEl.querySelector('#verdictStrip');
     decisionChartCanvas = rootEl.querySelector('#decisionChartCanvas');
     sizingBulletEl = rootEl.querySelector('#sizingBullet');
-    riskFooterEl = rootEl.querySelector('#riskFooter');
 }
 
 function makeEl(tag, className, textContent = null) {
@@ -573,48 +556,6 @@ function renderDecisionBoard() {
     return board;
 }
 
-function formatStripPrice(value) {
-    if (!Number.isFinite(value)) {
-        return 'n/a';
-    }
-    if (Math.abs(value) >= 100) {
-        return formatCompactCurrency(Math.round(value));
-    }
-    return formatCurrency(value);
-}
-
-function renderVerdictStrip(config, decision, metrics) {
-    if (!verdictStripEl) {
-        return;
-    }
-    verdictStripEl.replaceChildren();
-    const identity = makeEl('span', 'verdict-identity', `${config.symbol} · ${config.name}`);
-    const badge = makeEl(
-        'span',
-        `verdict-badge tone-${decision.verdictTone}`,
-        decision.verdictDisplay
-    );
-    const meanText = `Mean ${formatPlainPercent(metrics?.expectedCagr)}`;
-    const trigText = decision.nextTrigger
-        ? `${decision.nextTrigger.label} ${formatStripPrice(decision.nextTrigger.price)} (${formatSignedPercent(decision.nextTrigger.distancePct)})`
-        : 'Trigger n/a';
-    const probsText = `${decision.scenarioSplit}${decision.confidencePct !== null ? ` c${decision.confidencePct}%` : ''}`;
-
-    verdictStripEl.append(
-        identity,
-        badge,
-        makeEl('span', 'verdict-metric', `${meanText} · ${trigText}`),
-        makeEl('span', 'verdict-probs', probsText)
-    );
-
-    decision.tickerWarnings.forEach((warn) => {
-        verdictStripEl.appendChild(makeEl('span', 'flag-pill', `⚑ ${warn}`));
-    });
-    if (decision.flagsStale) {
-        verdictStripEl.appendChild(makeEl('span', 'flag-pill', '⚑ FLAGS STALE'));
-    }
-}
-
 function renderSizingBullet(decision, metrics) {
     if (!sizingBulletEl) {
         return;
@@ -676,47 +617,6 @@ function renderSizingBullet(decision, metrics) {
     );
 }
 
-function renderRiskFooter(config, decision, metrics) {
-    if (!riskFooterEl) {
-        return;
-    }
-    riskFooterEl.replaceChildren();
-
-    const outcomes = metrics?.outcomes || [];
-    const bearOutcome = outcomes.find((o) =>
-        String(o.id || o.name || '')
-            .toLowerCase()
-            .startsWith('bear')
-    );
-    const bearStr =
-        bearOutcome && Number.isFinite(bearOutcome.totalReturnCagr)
-            ? `${formatSignedPercent(bearOutcome.totalReturnCagr)}/yr`
-            : 'n/a';
-    const geoStr = formatPlainPercent(metrics?.geometricCagr);
-    const low52 = toFiniteNumber(config.market?.fiftyTwoWeekLow);
-    const high52 = toFiniteNumber(config.market?.fiftyTwoWeekHigh);
-    const rangeStr =
-        low52 !== null && high52 !== null
-            ? `${formatStripPrice(low52)}–${formatStripPrice(high52)}`
-            : 'n/a';
-
-    const predictions = Array.isArray(config.predictions) ? config.predictions : [];
-    const brier = computeBrierScore(predictions);
-    const predStr = brier
-        ? `${brier.count}/${predictions.length} (${brier.brierScore.toFixed(2)})`
-        : `0/${predictions.length} (n/a)`;
-    const revStr = decision.reviewDate || 'TBD';
-
-    const digest = `Bear ${bearStr} · Geo ${geoStr} · 52w ${rangeStr} · Pred ${predStr} · Rev ${revStr}`;
-    const hint = 'full | an | close';
-
-    riskFooterEl.append(
-        makeEl('span', 'risk-label', 'RISK'),
-        makeEl('span', 'risk-digest', digest),
-        makeEl('span', 'risk-hint', hint)
-    );
-}
-
 function currentChartPayload() {
     const config = state.configs.find((c) => c.symbol === state.activeSymbol);
     if (!config) {
@@ -735,7 +635,6 @@ function renderTickerDecision(config) {
     if (!config) {
         return;
     }
-    renderVerdictStrip(config, config.decision, config.metrics);
     if (decisionChartCanvas) {
         renderDecisionChart(
             decisionChartCanvas,
@@ -756,7 +655,6 @@ function renderTickerDecision(config) {
         }
     }
     renderSizingBullet(config.decision, config.metrics);
-    renderRiskFooter(config, config.decision, config.metrics);
 }
 
 function toggleSectionVisibility(target) {

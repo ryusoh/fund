@@ -60,7 +60,6 @@ async function measureStage(page) {
             return null;
         }
         const boardRows = document.querySelectorAll('.decision-board .board-row').length;
-        const verdictStrip = document.querySelector('#verdictStrip');
         const sizingBullet = document.querySelector('#sizingBullet');
         const canvas = document.querySelector('#decisionChartCanvas');
         const isVisible = (el) => {
@@ -75,7 +74,6 @@ async function measureStage(page) {
             client: stage.clientHeight,
             scroll: stage.scrollHeight,
             boardRows,
-            verdictVisible: isVisible(verdictStrip),
             sizingVisible: isVisible(sizingBullet),
             canvasWidth: canvas ? canvas.width : 0,
             canvasHeight: canvas ? canvas.height : 0,
@@ -122,7 +120,7 @@ async function main() {
                 await page.waitForSelector('.decision-board .board-row', { timeout: 15000 });
             } else {
                 await page.waitForSelector(
-                    '[data-analysis-section="ticker"]:not(.is-hidden) #verdictStrip',
+                    '[data-analysis-section="ticker"]:not(.is-hidden) #sizingBullet',
                     { timeout: 15000 }
                 );
             }
@@ -141,7 +139,7 @@ async function main() {
                     throw new Error(`board did not render completely after '${cmd}'`);
                 }
             } else {
-                if (!m.verdictVisible || !m.sizingVisible) {
+                if (!m.sizingVisible) {
                     throw new Error(`ticker decision chrome missing after '${cmd}'`);
                 }
                 if (!(m.canvasWidth > 0 && m.canvasHeight > 0)) {
