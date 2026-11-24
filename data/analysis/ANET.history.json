@@ -1,6 +1,6 @@
 {
     "symbol": "ANET",
-    "asOf": "2026-11-23T19:29:50.077348+00:00",
+    "asOf": "2026-11-24T19:06:00.935708+00:00",
     "priceBasis": "rawClose",
     "priceBasisVerified": true,
     "epsPointInTimeCertified": false,
@@ -423,7 +423,7 @@
         },
         {
             "d": "2026-11-23",
-            "c": 179.575
+            "c": 167.24
         }
     ],
     "eps": [

@@ -3,7 +3,7 @@
     "name": "Alphabet",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-11-23T19:29:50.557025+00:00",
+        "asOf": "2026-11-24T19:06:01.418533+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -28,29 +28,29 @@
         }
     },
     "market": {
-        "forwardEps": 15.2974,
-        "pe": 14.6909,
-        "forwardPe": 18.3907,
+        "forwardEps": 15.295,
+        "pe": 14.3948,
+        "forwardPe": 18.0229,
         "beta": 1.226,
-        "marketCap": 3458670788608.0,
-        "enterpriseValue": 3148871892992.0,
+        "marketCap": 3388964077568.0,
+        "enterpriseValue": 3339797921792.0,
         "ebitda": 185515999232.0,
-        "dividendYield": 0.33,
+        "dividendYield": 0.31,
         "currency": "USD",
         "fiftyTwoWeekHigh": 404.47,
         "fiftyTwoWeekLow": 262.27,
-        "marketDataUpdatedAt": "2026-11-23T19:29:50.451467+00:00",
-        "evToEbitda": 16.9736,
+        "marketDataUpdatedAt": "2026-11-24T19:06:01.324573+00:00",
+        "evToEbitda": 18.0027,
         "eps": 19.15,
-        "price": 281.33,
-        "fiftyDayAverage": 319.274,
-        "twoHundredDayAverage": 334.8329,
-        "averageVolume": 20551606.0,
-        "averageDailyVolume10Day": 22902870.0,
-        "pegRatio": 0.93
+        "price": 275.66,
+        "fiftyDayAverage": 317.9504,
+        "twoHundredDayAverage": 334.615,
+        "averageVolume": 20793365.0,
+        "averageDailyVolume10Day": 23691190.0,
+        "pegRatio": 0.99
     },
     "risk": {
-        "volatility": 0.3306,
+        "volatility": 0.3289,
         "estimateSource": "historical",
         "correlations": null
     },
@@ -113,12 +113,12 @@
         }
     ],
     "derived": {
-        "expectedCagr": 0.1296,
-        "expectedMultiple": 3.3838,
+        "expectedCagr": 0.1317,
+        "expectedMultiple": 3.4465,
         "fairValueRange": null,
         "kelly": {
-            "fullKelly": 0.6403,
-            "scaledKelly": 0.3202
+            "fullKelly": 0.6638,
+            "scaledKelly": 0.3319
         }
     },
     "industry_thesis": "docs/thesis/industry/cloud-ai-ecosystem.md",

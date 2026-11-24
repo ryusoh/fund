@@ -3,7 +3,7 @@
     "name": "Pinduoduo",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-11-23T19:29:50.850910+00:00",
+        "asOf": "2026-11-24T19:06:01.688351+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -28,29 +28,29 @@
         }
     },
     "market": {
-        "forwardEps": 12.5748,
-        "pe": 9.6058,
-        "forwardPe": 6.9285,
+        "forwardEps": 12.5886,
+        "pe": 9.5695,
+        "forwardPe": 6.8948,
         "beta": -0.079,
-        "marketCap": 124013420544.0,
-        "enterpriseValue": 56293736042.58,
-        "ebitda": 15812103871.71,
+        "marketCap": 123543691264.0,
+        "enterpriseValue": 55812809724.8,
+        "ebitda": 15814718306.88,
         "currency": "USD",
         "fiftyTwoWeekHigh": 125.36,
         "fiftyTwoWeekLow": 71.94,
-        "marketDataUpdatedAt": "2026-11-23T19:29:50.760561+00:00",
-        "evToEbitda": 3.5602,
+        "marketDataUpdatedAt": "2026-11-24T19:06:01.593525+00:00",
+        "evToEbitda": 3.5292,
         "eps": 9.07,
-        "price": 87.125,
-        "fiftyDayAverage": 79.5254,
-        "twoHundredDayAverage": 89.267,
-        "averageVolume": 6603014.0,
-        "averageDailyVolume10Day": 8627730.0,
-        "pegRatio": 0.73,
+        "price": 86.795,
+        "fiftyDayAverage": 79.6806,
+        "twoHundredDayAverage": 89.1766,
+        "averageVolume": 6589781.0,
+        "averageDailyVolume10Day": 9254710.0,
+        "pegRatio": 1.04,
         "dividendYield": 0.0
     },
     "risk": {
-        "volatility": 0.3499,
+        "volatility": 0.3492,
         "estimateSource": "historical",
         "correlations": null
     },
@@ -113,12 +113,12 @@
         }
     ],
     "derived": {
-        "expectedCagr": 0.0724,
-        "expectedMultiple": 1.418,
+        "expectedCagr": 0.0732,
+        "expectedMultiple": 1.4234,
         "fairValueRange": null,
         "kelly": {
-            "fullKelly": 0.0749,
-            "scaledKelly": 0.0375
+            "fullKelly": 0.0808,
+            "scaledKelly": 0.0404
         }
     },
     "belief_state": {
