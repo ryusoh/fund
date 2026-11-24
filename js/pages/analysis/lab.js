@@ -22,7 +22,6 @@ import { getSelectedCurrency, whenTransactionDataReady } from '../../transaction
 let paneRoot = null;
 let decisionBoardEl = null;
 let decisionChartCanvas = null;
-let sizingBulletEl = null;
 let detachChartInteractions = null;
 
 const state = {
@@ -63,7 +62,6 @@ const PANE_MARKUP = `
                         aria-label="Ticker valuation corridor and decision chart"
                     ></canvas>
                 </div>
-                <div class="sizing-bullet" id="sizingBullet"></div>
             </section>
         </div>
     </div>
@@ -406,7 +404,6 @@ function resolvePaneElements(rootEl) {
     syncPaneChartColors();
     decisionBoardEl = rootEl.querySelector('#decisionBoard');
     decisionChartCanvas = rootEl.querySelector('#decisionChartCanvas');
-    sizingBulletEl = rootEl.querySelector('#sizingBullet');
 }
 
 function makeEl(tag, className, textContent = null) {
@@ -568,51 +565,6 @@ function renderDecisionBoard() {
     return board;
 }
 
-function renderSizingBullet(decision) {
-    if (!sizingBulletEl) {
-        return;
-    }
-    sizingBulletEl.replaceChildren();
-
-    const wCurr = decision.currentWeight || 0;
-    const wMax = decision.maxWeight || 0.3;
-    const wRec = decision.targetWeight;
-    const scaleMax = Math.max(wMax * 1.25, wCurr * 1.15, 0.1);
-
-    const track = makeEl('div', 'bullet-track');
-    if (!decision.kellyUnavailable && wRec !== null) {
-        const recZone = makeEl('span', 'bullet-zone-rec');
-        recZone.style.width = `${Math.min(100, (wRec / scaleMax) * 100).toFixed(1)}%`;
-        const roomZone = makeEl('span', 'bullet-zone-room');
-        roomZone.style.left = `${Math.min(100, (wRec / scaleMax) * 100).toFixed(1)}%`;
-        roomZone.style.width = `${Math.max(0, Math.min(100, (wMax / scaleMax) * 100) - Math.min(100, (wRec / scaleMax) * 100)).toFixed(1)}%`;
-        const overZone = makeEl('span', 'bullet-zone-over');
-        overZone.style.left = `${Math.min(100, (wMax / scaleMax) * 100).toFixed(1)}%`;
-        track.append(recZone, roomZone, overZone);
-    }
-
-    const bar = makeEl('span', `bullet-bar tone-${decision.verdictTone}`);
-    bar.style.width = `${Math.min(100, (wCurr / scaleMax) * 100).toFixed(1)}%`;
-    const capLine = makeEl('span', 'bullet-cap');
-    capLine.style.left = `${Math.min(100, (wMax / scaleMax) * 100).toFixed(1)}%`;
-    track.append(bar, capLine);
-
-    if (!decision.kellyUnavailable && wRec !== null) {
-        const targetTick = makeEl('span', 'bullet-target');
-        targetTick.style.left = `${Math.min(100, (wRec / scaleMax) * 100).toFixed(1)}%`;
-        track.appendChild(targetTick);
-    }
-
-    const wRecText = !decision.kellyUnavailable && wRec !== null ? formatPlainPercent(wRec) : 'n/a';
-    const readoutText = `${formatPlainPercent(wCurr)}→${wRecText}`;
-
-    sizingBulletEl.append(
-        makeEl('span', 'bullet-label', 'SIZE'),
-        track,
-        makeEl('span', 'bullet-readout', readoutText)
-    );
-}
-
 function currentChartPayload() {
     const config = state.configs.find((c) => c.symbol === state.activeSymbol);
     if (!config) {
@@ -650,7 +602,6 @@ function renderTickerDecision(config) {
             }));
         }
     }
-    renderSizingBullet(config.decision);
 }
 
 function toggleSectionVisibility(target) {

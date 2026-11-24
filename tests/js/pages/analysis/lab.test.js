@@ -184,10 +184,7 @@ describe('analysis lab 2-view controller (WO5)', () => {
         expect(root.querySelector('.pane-context')).toBeNull();
         expect(root.querySelector('#verdictStrip')).toBeNull();
         expect(root.querySelector('#riskFooter')).toBeNull();
-        expect(root.querySelector('#sizingBullet').textContent).toContain('SIZE');
-        expect(root.querySelector('#sizingBullet .bullet-readout').textContent).toMatch(
-            /^\d+\.\d%→(?:\d+\.\d%|n\/a)$/
-        );
+        expect(root.querySelector('#sizingBullet')).toBeNull();
         expect(mockCtx.fillText.mock.calls.map((c) => c[0])).toContain('+2Y');
 
         mockCtx.fillText.mockClear();
@@ -252,7 +249,7 @@ describe('analysis lab 2-view controller (WO5)', () => {
     });
 
     it('gates currencyChangedGlobal re-rendering on whenTransactionDataReady and updates both views', async () => {
-        const { root } = await setupLab();
+        await setupLab();
         lab.showTickerDecision('GOOG');
         mockSelectedCurrency = 'CNY';
 
@@ -261,9 +258,6 @@ describe('analysis lab 2-view controller (WO5)', () => {
         );
         await new Promise((resolve) => setTimeout(resolve, 0));
         expect(mockWhenReady).toHaveBeenCalled();
-        expect(root.querySelector('#sizingBullet .bullet-readout').textContent).toMatch(
-            /^\d+\.\d%→(?:\d+\.\d%|n\/a)$/
-        );
         expect(lab.showTickerDecision('GOOG').text).toContain('¥');
         expect(mockCtx.fillText.mock.calls.some((c) => String(c[0]).includes('¥'))).toBe(true);
     });

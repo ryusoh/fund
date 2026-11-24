@@ -218,7 +218,7 @@
     border-bottom: none;
 }
 
-/* View 2: Single-Ticker Decision Chart + Sizing Bullet */
+/* View 2: Single-Ticker Decision Chart */
 .analysis-pane .decision-chart-wrap {
     flex: 1 1 0;
     min-height: 120px;
@@ -232,92 +232,6 @@
     display: block;
     touch-action: none;
     filter: drop-shadow(0 12px 18px rgba(11, 15, 30, 0.75));
-}
-
-/* Sizing Bullet (22px) */
-.analysis-pane .sizing-bullet {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    height: 22px;
-    flex-shrink: 0;
-    font-size: 11px;
-    white-space: nowrap;
-    overflow: hidden;
-}
-
-.analysis-pane .bullet-label {
-    font-size: 10px;
-    color: var(--muted-text);
-    text-transform: uppercase;
-    letter-spacing: 0.6px;
-    width: 34px;
-    flex-shrink: 0;
-}
-
-.analysis-pane .bullet-track {
-    position: relative;
-    flex: 1 1 auto;
-    min-width: 120px;
-    height: 10px;
-    background: rgba(255, 255, 255, 0.06);
-    border-radius: 2px;
-    overflow: hidden;
-}
-
-.analysis-pane .bullet-zone-rec {
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    background: rgba(52, 168, 83, 0.14);
-}
-
-.analysis-pane .bullet-zone-room {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    background: rgba(255, 255, 255, 0.05);
-}
-
-.analysis-pane .bullet-zone-over {
-    position: absolute;
-    right: 0;
-    top: 0;
-    bottom: 0;
-    background: rgba(234, 67, 53, 0.14);
-}
-
-.analysis-pane .bullet-bar {
-    position: absolute;
-    left: 0;
-    top: 2px;
-    bottom: 2px;
-    background: currentColor;
-    border-radius: 1px;
-}
-
-.analysis-pane .bullet-target {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background: var(--text-color);
-    transform: translateX(-50%);
-}
-
-.analysis-pane .bullet-cap {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 0;
-    border-left: 1px dashed var(--primary-color);
-}
-
-.analysis-pane .bullet-readout {
-    color: var(--text-color);
-    font-variant-numeric: tabular-nums;
-    flex-shrink: 0;
 }
 
 /* Scrollbar — subtle, matches the terminal (css/terminal/base.css) */

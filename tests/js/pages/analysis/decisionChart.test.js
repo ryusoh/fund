@@ -339,6 +339,12 @@ describe('decisionChart (WO4)', () => {
         renderDecisionChart(canvas, { config: goog, history, decision, metrics }, {}, futureHit);
         expect(canvas.ctx.setLineDash).toHaveBeenCalledWith([4, 4]);
         expect(canvas.ctx.arc).toHaveBeenCalled();
+        const drawnTexts = canvas.ops
+            .filter((op) => op[0] === 'fillText')
+            .map((op) => String(op[1]));
+        expect(drawnTexts.some((t) => t.includes('Thesis×EPS') || t.includes('Forward '))).toBe(
+            false
+        );
 
         const externalUpdates = [];
         setCrosshairExternalUpdate((snap) => externalUpdates.push(snap));

@@ -60,21 +60,12 @@ async function measureStage(page) {
             return null;
         }
         const boardRows = document.querySelectorAll('.decision-board .board-row').length;
-        const sizingBullet = document.querySelector('#sizingBullet');
         const canvas = document.querySelector('#decisionChartCanvas');
-        const isVisible = (el) => {
-            if (!el) {
-                return false;
-            }
-            const rect = el.getBoundingClientRect();
-            return rect.width > 0 && rect.height > 0 && el.textContent.trim().length > 0;
-        };
         return {
             section: visible ? visible.dataset.analysisSection : null,
             client: stage.clientHeight,
             scroll: stage.scrollHeight,
             boardRows,
-            sizingVisible: isVisible(sizingBullet),
             canvasWidth: canvas ? canvas.width : 0,
             canvasHeight: canvas ? canvas.height : 0,
         };
@@ -120,7 +111,7 @@ async function main() {
                 await page.waitForSelector('.decision-board .board-row', { timeout: 15000 });
             } else {
                 await page.waitForSelector(
-                    '[data-analysis-section="ticker"]:not(.is-hidden) #sizingBullet',
+                    '[data-analysis-section="ticker"]:not(.is-hidden) #decisionChartCanvas',
                     { timeout: 15000 }
                 );
             }
@@ -138,15 +129,10 @@ async function main() {
                 if (m.boardRows < 7) {
                     throw new Error(`board did not render completely after '${cmd}'`);
                 }
-            } else {
-                if (!m.sizingVisible) {
-                    throw new Error(`ticker decision chrome missing after '${cmd}'`);
-                }
-                if (!(m.canvasWidth > 0 && m.canvasHeight > 0)) {
-                    throw new Error(
-                        `decision canvas backing store is empty (${m.canvasWidth}x${m.canvasHeight}) after '${cmd}'`
-                    );
-                }
+            } else if (!(m.canvasWidth > 0 && m.canvasHeight > 0)) {
+                throw new Error(
+                    `decision canvas backing store is empty (${m.canvasWidth}x${m.canvasHeight}) after '${cmd}'`
+                );
             }
             const overflow = m.scroll - m.client;
             results.push({ label, cmd, ...m, overflow });

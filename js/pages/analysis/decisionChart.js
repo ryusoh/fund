@@ -27,7 +27,7 @@ import {
 
 export const CHART_FONT_SIZE = 10;
 export const CHART_FONT_FAMILY = `${CHART_FONT_SIZE}px ${getMonoFontFamily()}`;
-export const DEFAULT_CHART_PADDING = { top: 16, right: 16, bottom: 24, left: 54 };
+export const DEFAULT_CHART_PADDING = { top: 12, right: 16, bottom: 24, left: 54 };
 export const UNIT_BREAK_LABEL = 'PRICE → TOTAL-RETURN VALUE';
 
 const LATEST_FX_DATE = '9999-12-31';
@@ -902,28 +902,24 @@ function paintAxesAndGrid(ctx, geometry, colors) {
     ctx.restore();
 }
 
-function paintHeaders(ctx, geometry, colors) {
-    const { plotLeft, xToday, futureYears, hasDividends, mode, priceBasisVerified } = geometry;
+function paintStatusNotice(ctx, geometry, colors) {
+    const { plotLeft, mode, priceBasisVerified } = geometry;
+    const warnings = [];
+    if (mode === 'thesis-broken') {
+        warnings.push('Thesis broken');
+    }
+    if (!priceBasisVerified) {
+        warnings.push('⚑ PRICE BASIS UNVERIFIED');
+    }
+    if (warnings.length === 0) {
+        return;
+    }
     ctx.save();
     ctx.font = CHART_FONT_FAMILY;
     ctx.textBaseline = 'top';
-    ctx.fillStyle = colors.muted || '#8b949e';
-
-    let leftHeader = 'Current bands';
-    if (mode === 'eps-corridor') {
-        leftHeader = 'Thesis×EPS · cached';
-    } else if (mode === 'thesis-broken') {
-        leftHeader = 'Thesis broken';
-    }
-    if (!priceBasisVerified) {
-        leftHeader += ' · ⚑ PRICE BASIS UNVERIFIED';
-    }
     ctx.textAlign = 'left';
-    ctx.fillText(leftHeader, plotLeft + 4, 2);
-
-    const fLabel = Number.isInteger(futureYears) ? `${futureYears}Y` : `${futureYears.toFixed(1)}Y`;
-    const divSuffix = hasDividends ? ' (div. reinvested)' : '';
-    ctx.fillText(`Forward ${fLabel} total value${divSuffix}`, xToday + 6, 2);
+    ctx.fillStyle = mode === 'thesis-broken' ? colors.red || '#ea4335' : colors.muted || '#8b949e';
+    ctx.fillText(warnings.join(' · '), plotLeft + 4, 2);
     ctx.restore();
 }
 
@@ -1248,7 +1244,7 @@ export function renderDecisionChart(canvas, payload, colors = {}, crosshairHit =
 
     paintZoneBands(ctx, geometry, colors);
     paintAxesAndGrid(ctx, geometry, colors);
-    paintHeaders(ctx, geometry, colors);
+    paintStatusNotice(ctx, geometry, colors);
     paintCurvesAndRays(ctx, geometry, colors);
     paintTodayAndHistory(ctx, geometry, colors);
     paintCrosshair(ctx, geometry, crosshairHit, colors);
