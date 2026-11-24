@@ -69,7 +69,7 @@ const PANE_MARKUP = `
 `;
 
 const PANE_CHART_COLORS = {
-    grid: 'rgba(109, 121, 155, 0.35)',
+    grid: 'rgba(255, 255, 255, 0.08)',
     line: '#c9d1d9',
     muted: '#8b949e',
     gold: '#f0b90b',

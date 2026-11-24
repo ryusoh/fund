@@ -1,4 +1,5 @@
 import { setAnalysisAutocompleteSymbols } from '../autocomplete.js';
+import { updateCrosshairUI } from '../../chart/interaction.js';
 
 let labModulePromise = null;
 let paneInitialized = false;
@@ -65,6 +66,7 @@ async function handleBoardSubcommand(lab, appendMessage) {
     const visibleSection = getVisibleAnalysisSection();
     if (visibleSection && lab.getActiveAnalysisConfig() === null) {
         visibleSection.classList.add('is-hidden');
+        updateCrosshairUI(null, null);
         appendMessage('Hidden valuation board.');
         return;
     }
@@ -86,6 +88,7 @@ async function handleTickerSubcommand(lab, rawSymbol, horizonMode, appendMessage
             : '2y';
     if (visibleSection && activeCfg?.symbol === symbol && activeHorizon === horizonMode) {
         visibleSection.classList.add('is-hidden');
+        updateCrosshairUI(null, null);
         appendMessage(`Hidden ${symbol} valuation chart.`);
         return;
     }

@@ -4,10 +4,12 @@ import {
     CHART_FONT_SIZE,
     attachDecisionChartInteractions,
     buildDecisionChartGeometry,
+    buildValuationCrosshairSnapshot,
     computeLogTicks,
     renderDecisionChart,
     resolveCrosshairHit,
 } from '../../../../js/pages/analysis/decisionChart.js';
+import { setCrosshairExternalUpdate } from '../../../../js/transactions/chart/interaction.js';
 import { computeMetrics, evaluateTickerDecision } from '../../../../js/pages/analysis/decision.js';
 
 const ROOT = path.resolve(process.cwd());
@@ -298,5 +300,63 @@ describe('decisionChart (WO4)', () => {
         detach1();
         detach2();
         expect(liveCanvas.listeners.get('pointermove').size).toBe(0);
+    });
+
+    it('uses unified dashed crosshair, dots, and updates external terminal crosshair overlay on hover/leave', () => {
+        const goog = loadJson('data/analysis/GOOG.json');
+        const history = loadJson('data/analysis/GOOG.history.json');
+        const metrics = computeMetrics(goog);
+        const decision = evaluateTickerDecision(goog, metrics, {
+            currentWeight: 0.2,
+            nowMs: NOW_MS,
+        });
+        const geo = buildDecisionChartGeometry({
+            config: goog,
+            history,
+            decision,
+            metrics,
+            horizonMode: '2y',
+            width: 672,
+            height: 226,
+        });
+
+        const pastHit = resolveCrosshairHit(geo.plotLeft + 25, geo);
+        const pastSnap = buildValuationCrosshairSnapshot(pastHit, geo, goog, {});
+        expect(pastSnap.chartKey).toBe('valuation');
+        expect(pastSnap.series.map((s) => s.label)).toEqual(['GOOG', 'Zone']);
+
+        const futureHit = resolveCrosshairHit(geo.xToday + 40, geo);
+        const futureSnap = buildValuationCrosshairSnapshot(futureHit, geo, goog, {});
+        expect(futureSnap.dateLabel).toContain('Y');
+        expect(futureSnap.series.map((s) => s.label)).toEqual(['Bull', 'Base', 'Bear', 'Buy ≤']);
+
+        const canvas = makeStubCanvas(672, 226);
+        renderDecisionChart(canvas, { config: goog, history, decision, metrics }, {}, futureHit);
+        expect(canvas.ctx.setLineDash).toHaveBeenCalledWith([4, 4]);
+        expect(canvas.ctx.arc).toHaveBeenCalled();
+
+        const externalUpdates = [];
+        setCrosshairExternalUpdate((snap) => externalUpdates.push(snap));
+        const origRaf = global.requestAnimationFrame;
+        global.requestAnimationFrame = (cb) => {
+            cb();
+            return 1;
+        };
+        try {
+            const detach = attachDecisionChartInteractions(canvas, () => ({
+                payload: { config: goog, history, decision, metrics },
+                colors: {},
+            }));
+            const onMove = Array.from(canvas.listeners.get('pointermove'))[0];
+            const onLeave = Array.from(canvas.listeners.get('pointerleave'))[0];
+            onMove({ clientX: geo.xToday + 40 });
+            expect(externalUpdates[externalUpdates.length - 1].chartKey).toBe('valuation');
+            onLeave();
+            expect(externalUpdates[externalUpdates.length - 1]).toBeNull();
+            detach();
+        } finally {
+            setCrosshairExternalUpdate(null);
+            global.requestAnimationFrame = origRaf;
+        }
     });
 });

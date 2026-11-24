@@ -13,9 +13,17 @@ import {
 } from '../../transactions/utils.js';
 import { getSelectedCurrency } from '../../transactions/state.js';
 
+import { _drawXAxisBaseline, _drawXAxisTickLabel } from '../../transactions/chart/core.js';
+import { formatCrosshairDateLabel, getMonoFontFamily } from '../../transactions/chart/helpers.js';
+import {
+    drawCrosshairLine,
+    drawCrosshairPoint,
+    updateCrosshairUI,
+} from '../../transactions/chart/interaction.js';
+
 export const CHART_FONT_SIZE = 10;
-export const CHART_FONT_FAMILY = `${CHART_FONT_SIZE}px "JetBrains Mono", monospace`;
-export const DEFAULT_CHART_PADDING = { top: 16, right: 168, bottom: 22, left: 54 };
+export const CHART_FONT_FAMILY = `${CHART_FONT_SIZE}px ${getMonoFontFamily()}`;
+export const DEFAULT_CHART_PADDING = { top: 16, right: 168, bottom: 24, left: 54 };
 export const UNIT_BREAK_LABEL = 'PRICE → TOTAL-RETURN VALUE';
 
 const LATEST_FX_DATE = '9999-12-31';
@@ -834,6 +842,7 @@ function paintAxesAndGrid(ctx, geometry, colors) {
     const {
         plotLeft,
         plotRight,
+        plotTop,
         plotBottom,
         yTicks,
         xToday,
@@ -841,9 +850,14 @@ function paintAxesAndGrid(ctx, geometry, colors) {
         futureYears,
         hasScaleBreak,
     } = geometry;
+    const plotWidth = plotRight - plotLeft;
+    const plotHeight = plotBottom - plotTop;
+    const isMobile = typeof window !== 'undefined' ? window.innerWidth <= 768 : false;
+    const monoFont = getMonoFontFamily();
+
     ctx.save();
     ctx.font = CHART_FONT_FAMILY;
-    ctx.strokeStyle = colors.grid || 'rgba(109, 121, 155, 0.25)';
+    ctx.strokeStyle = colors.grid || 'rgba(255, 255, 255, 0.08)';
     ctx.fillStyle = colors.muted || '#8b949e';
     ctx.lineWidth = 1;
 
@@ -855,18 +869,25 @@ function paintAxesAndGrid(ctx, geometry, colors) {
         ctx.lineTo(plotRight, tick.y);
         ctx.stroke();
         ctx.fillStyle = tick.isAnchor ? colors.gold || '#f0b90b' : colors.muted || '#8b949e';
-        ctx.fillText(formatCompactPriceValue(tick.value), plotLeft - 6, tick.y);
+        ctx.fillText(formatCompactPriceValue(tick.value), plotLeft - (isMobile ? 8 : 10), tick.y);
     });
 
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    ctx.fillStyle = colors.muted || '#8b949e';
-    ctx.fillText(`-${pastYears}Y`, plotLeft + 12, plotBottom + 5);
-    ctx.fillText('TODAY', xToday, plotBottom + 5);
+    const axisPadding = { left: plotLeft, top: plotTop };
     const futureLabel = `+${Number.isInteger(futureYears) ? futureYears : futureYears.toFixed(1)}Y`;
-    ctx.fillText(futureLabel, plotRight - 14, plotBottom + 5);
+    const xTicks = [
+        { label: `-${pastYears}Y`, x: plotLeft },
+        { label: 'TODAY', x: xToday },
+        { label: futureLabel, x: plotRight },
+    ];
+    _drawXAxisBaseline(ctx, axisPadding, plotWidth, plotHeight, isMobile, monoFont);
+    ctx.font = CHART_FONT_FAMILY;
+    ctx.fillStyle = colors.muted || '#8b949e';
+    xTicks.forEach((tick, idx) => {
+        _drawXAxisTickLabel(ctx, tick, idx, tick.x, xTicks, axisPadding, plotHeight, isMobile);
+    });
     if (hasScaleBreak) {
-        ctx.fillText('// compressed', (plotLeft + xToday) / 2, plotBottom + 5);
+        ctx.textAlign = 'center';
+        ctx.fillText('// compressed', (plotLeft + xToday) / 2, plotBottom + (isMobile ? 8 : 10));
     }
     ctx.restore();
 }
@@ -1024,7 +1045,7 @@ function paintTodayAndHistory(ctx, geometry, colors) {
     }
 
     ctx.save();
-    ctx.font = '9px "JetBrains Mono", monospace';
+    ctx.font = `9px ${getMonoFontFamily()}`;
     ctx.fillStyle = colors.muted || '#8b949e';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
@@ -1032,36 +1053,117 @@ function paintTodayAndHistory(ctx, geometry, colors) {
     ctx.restore();
 }
 
+const ZONE_COLOR_KEYS = {
+    DEEP: 'green',
+    BUY: 'green',
+    FAIR: 'gold',
+    RICH: 'gold',
+    SELL: 'red',
+    'THESIS BROKEN': 'red',
+};
+
+function resolvePastDateLabel(dateStr) {
+    const ms = parseUtcDayMs(dateStr);
+    if (ms !== null) {
+        return formatCrosshairDateLabel(ms) || dateStr;
+    }
+    return dateStr || '';
+}
+
+function buildPastCrosshairSnapshot(crosshairHit, geometry, symbol, colors) {
+    const lineColor =
+        geometry.mode === 'thesis-broken' ? colors.red || '#ea4335' : colors.line || '#c9d1d9';
+    const zoneColorKey = ZONE_COLOR_KEYS[crosshairHit.zoneLabel] || 'muted';
+    const zoneColor = colors[zoneColorKey] || colors.muted || '#8b949e';
+    return {
+        dateLabel: resolvePastDateLabel(crosshairHit.date),
+        chartKey: 'valuation',
+        series: [
+            {
+                key: 'price',
+                label: symbol,
+                color: lineColor,
+                formatted: formatPriceValue(crosshairHit.close),
+            },
+            {
+                key: 'zone',
+                label: 'Zone',
+                color: zoneColor,
+                formatted: crosshairHit.zoneLabel || 'n/a',
+            },
+        ],
+    };
+}
+
+function buildFutureCrosshairSnapshot(crosshairHit, colors) {
+    const futureLabel = `+${crosshairHit.yearsAhead.toFixed(1)}Y${crosshairHit.hasDividends ? ' · TR' : ''}`;
+    const series = [];
+    const specs = [
+        ['bull', 'Bull', colors.line || '#c9d1d9', crosshairHit.bullValue],
+        ['base', 'Base', colors.blue || '#64b5f6', crosshairHit.baseValue],
+        ['bear', 'Bear', colors.line || '#c9d1d9', crosshairHit.bearValue],
+        ['buy', 'Buy ≤', colors.green || '#34a853', crosshairHit.buyEntryValue],
+    ];
+    for (const [key, label, color, value] of specs) {
+        if (isFinitePositive(value)) {
+            series.push({ key, label, color, formatted: formatPriceValue(value) });
+        }
+    }
+    if (series.length === 0) {
+        series.push({
+            key: 'broken',
+            label: 'Status',
+            color: colors.red || '#ea4335',
+            formatted: 'THESIS BROKEN',
+        });
+    }
+    return {
+        dateLabel: futureLabel,
+        chartKey: 'valuation',
+        series,
+    };
+}
+
+export function buildValuationCrosshairSnapshot(crosshairHit, geometry, config, colors = {}) {
+    if (!crosshairHit || !geometry) {
+        return null;
+    }
+    const symbol = config?.symbol || 'Price';
+    if (crosshairHit.side === 'past') {
+        return buildPastCrosshairSnapshot(crosshairHit, geometry, symbol, colors);
+    }
+    return buildFutureCrosshairSnapshot(crosshairHit, colors);
+}
+
 function paintCrosshair(ctx, geometry, crosshairHit, colors) {
     if (!crosshairHit) {
         return;
     }
-    const { plotTop, plotBottom, plotLeft, plotRight } = geometry;
+    const { plotTop, plotBottom, plotLeft, plotRight, yScale, mode } = geometry;
     const cx = clamp(crosshairHit.x, plotLeft, plotRight);
+    drawCrosshairLine(
+        ctx,
+        { chartBounds: { top: plotTop, bottom: plotBottom, left: plotLeft, right: plotRight } },
+        cx
+    );
+
     ctx.save();
-    ctx.strokeStyle = colors.gold || '#f0b90b';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(cx, plotTop);
-    ctx.lineTo(cx, plotBottom);
-    ctx.stroke();
-
-    const text =
-        crosshairHit.side === 'past'
-            ? `${crosshairHit.date} · ${formatPriceValue(crosshairHit.close)} · ${crosshairHit.zoneLabel}`
-            : `+${crosshairHit.yearsAhead.toFixed(1)}y · Base ${formatPriceValue(crosshairHit.baseValue)} · Buy ${formatPriceValue(crosshairHit.buyEntryValue)}`;
-
-    ctx.font = CHART_FONT_FAMILY;
-    const textWidth = ctx.measureText ? ctx.measureText(text).width : text.length * 6;
-    const boxW = textWidth + 10;
-    const boxX = clamp(cx + 6, plotLeft + 2, plotRight - boxW - 2);
-    const boxY = plotTop + 4;
-    ctx.fillStyle = 'rgba(13, 17, 23, 0.85)';
-    ctx.fillRect(boxX, boxY, boxW, 16);
-    ctx.fillStyle = colors.line || '#c9d1d9';
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(text, boxX + 5, boxY + 8);
+    if (crosshairHit.side === 'past') {
+        const y = clamp(crosshairHit.y, plotTop, plotBottom);
+        const color = mode === 'thesis-broken' ? colors.red || '#ea4335' : colors.line || '#c9d1d9';
+        drawCrosshairPoint(ctx, cx, y, color);
+    } else if (mode !== 'thesis-broken') {
+        const rays = [
+            { val: crosshairHit.bullValue, color: colors.line || '#c9d1d9' },
+            { val: crosshairHit.baseValue, color: colors.blue || '#64b5f6' },
+            { val: crosshairHit.bearValue, color: colors.line || '#c9d1d9' },
+        ];
+        rays.forEach(({ val, color }) => {
+            if (isFinitePositive(val)) {
+                drawCrosshairPoint(ctx, cx, clamp(yScale(val), plotTop, plotBottom), color);
+            }
+        });
+    }
     ctx.restore();
 }
 
@@ -1145,9 +1247,10 @@ export function attachDecisionChartInteractions(canvas, getRenderArgs) {
     const redraw = (hit = activeHit) => {
         const args = typeof getRenderArgs === 'function' ? getRenderArgs() : null;
         if (!args || !args.payload) {
-            return;
+            return null;
         }
         lastGeometry = renderDecisionChart(canvas, args.payload, args.colors || {}, hit);
+        return args;
     };
 
     const onPointerMove = (event) => {
@@ -1159,11 +1262,21 @@ export function attachDecisionChartInteractions(canvas, getRenderArgs) {
             rafId = null;
             const rect = canvas.getBoundingClientRect();
             const pointerX = Number.isFinite(clientX) ? clientX - rect.left : NaN;
+            let args = typeof getRenderArgs === 'function' ? getRenderArgs() : null;
             if (!lastGeometry) {
-                redraw(null);
+                args = redraw(null);
             }
             activeHit = resolveCrosshairHit(pointerX, lastGeometry);
             redraw(activeHit);
+            updateCrosshairUI(
+                buildValuationCrosshairSnapshot(
+                    activeHit,
+                    lastGeometry,
+                    args?.payload?.config,
+                    args?.colors || {}
+                ),
+                null
+            );
         });
     };
 
@@ -1174,6 +1287,7 @@ export function attachDecisionChartInteractions(canvas, getRenderArgs) {
         }
         activeHit = null;
         redraw(null);
+        updateCrosshairUI(null, null);
     };
 
     canvas.addEventListener('pointermove', onPointerMove);
@@ -1201,6 +1315,7 @@ export function attachDecisionChartInteractions(canvas, getRenderArgs) {
         if (canvas._decisionChartDetach === detach) {
             delete canvas._decisionChartDetach;
         }
+        updateCrosshairUI(null, null);
     };
 
     canvas._decisionChartDetach = detach;

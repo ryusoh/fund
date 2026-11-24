@@ -178,7 +178,7 @@ function drawCrosshairRangeBackground(ctx, layout, startX, endX) {
     ctx.restore();
 }
 
-function drawCrosshairLine(ctx, layout, x) {
+export function drawCrosshairLine(ctx, layout, x) {
     ctx.save();
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.28)';
     ctx.setLineDash([4, 4]);
@@ -188,6 +188,19 @@ function drawCrosshairLine(ctx, layout, x) {
     ctx.lineTo(x, layout.chartBounds.bottom);
     ctx.stroke();
     ctx.restore();
+}
+
+export function drawCrosshairPoint(ctx, x, y, color, radius = 4) {
+    if (!Number.isFinite(x) || !Number.isFinite(y)) {
+        return;
+    }
+    ctx.beginPath();
+    ctx.fillStyle = color || '#ffffff';
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
+    ctx.lineWidth = 1.5;
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
 }
 
 function enhanceCompositionHoldings(
@@ -363,15 +376,7 @@ function processCompositionCrosshair(ctx, layout, time, x, hasHover, seriesSnaps
 function processStandardCrosshairPoint(ctx, series, layout, value, x) {
     const yScale = typeof series.yScale === 'function' ? series.yScale : layout.yScale;
     const y = yScale(value);
-    if (Number.isFinite(y)) {
-        ctx.beginPath();
-        ctx.fillStyle = series.color || '#ffffff';
-        ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
-        ctx.lineWidth = 1.5;
-        ctx.arc(x, y, 4, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-    }
+    drawCrosshairPoint(ctx, x, y, series.color);
 }
 
 function processStandardCrosshair(ctx, layout, time, x, hasHover, seriesSnapshot) {
