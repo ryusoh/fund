@@ -399,36 +399,46 @@ Volatility-Blended Discrete Kelly** solver.
 
 - **Return and CAGR definitions (normative):** For scenario $i$, distinguish
   terminal price from terminal total value:
-    $$ P_{i,T}=\text{eps}(1+g_i)^T\text{exitPe}_i,\qquad
-    TV_{i,T}=P_{i,T}(1+d)^T,\qquad M_i=TV_{i,T}/P_0,\qquad r_i=M_i^{1/T}-1.$$
+
+    $$
+    P_{i,T}=\text{eps}(1+g_i)^T\text{exitPe}_i,\qquad
+    TV_{i,T}=P_{i,T}(1+d)^T,\qquad M_i=TV_{i,T}/P_0,\qquad r_i=M_i^{1/T}-1.
+    $$
+
     Then $E[TV_T]=\sum_i p_iTV_{i,T}$ and
-    $$\text{Mean-wealth CAGR}=(\sum_i p_iM_i)^{1/T}-1,\qquad
-    \text{Geo}=\exp\bigl((1/T)\sum_i p_i\ln M_i\bigr)-1.$$
+
+    $$
+    \text{Mean-wealth CAGR}=(\sum_i p_iM_i)^{1/T}-1,\qquad
+    \text{Geo}=\exp\bigl((1/T)\sum_i p_i\ln M_i\bigr)-1.
+    $$
+
     Mean-wealth CAGR is the CAGR of probability-weighted terminal wealth, not the
     probability-weighted mean of scenario CAGRs. `Geo` is the annualized
     probability-weighted geometric mean of scenario multiples, **not necessarily a
     median**. The compact UI label is `Mean`; the schema field remains
     `expectedCagr` for compatibility.
-    $$
+
 - **Live Kelly math (single source of truth in Python & JS):** Expand each
   annualized total-return CAGR $r_i$ using annual volatility $\sigma$
   (`risk.volatility`) and 7 probabilists' Gauss–Hermite nodes/weights
   $(z_k,w_k)$:
-    $$ 1+R_{i,k}=(1+r_i)\exp\bigl(\sigma z_k-\tfrac{1}{2}\sigma^2\bigr),
-    \quad p_{i,k}=p_iw_k.$$
+
+    $$
+    1+R_{i,k}=(1+r_i)\exp\bigl(\sigma z_k-\tfrac{1}{2}\sigma^2\bigr),
+    \quad p_{i,k}=p_iw_k.
+    $$
+
     Solve the represented discrete log-utility problem
-    $f^*=\arg\max_{f\in[0,1]}\sum_{i,k}p_{i,k}\ln(1+r_f+f(R_{i,k}-r_f))$
+    $f^{\ast}=\arg\max_{f\in[0,1]}\sum_{i,k}p_{i,k}\ln(1+r_f+f(R_{i,k}-r_f))$
     by monotone bisection (`KELLY_FRACTION_CAP = 1.0`), reducing to the discrete
     scenario solver when $\sigma=0$. Start the feasible upper bound at `cap` and
     tighten it only for states with $R_{i,k}<r_f$; an all-winning state set has no
     extra bound. Missing, non-finite, or negative volatility returns `null` Kelly
     metrics rather than silently becoming zero volatility. Finite GH-7 quadrature
     approximates the continuous unit-mean construction; it does not exactly
-    preserve terminal wealth. Set $f_{\text{scaled}}=\text{kellyScale}\cdot f^*$
+    preserve terminal wealth. Set $f_{\text{scaled}}=\text{kellyScale}\cdot f^{\ast}$
     (`½K`) and never read stale `derived.kelly` or `position.maxKellyWeight` as
     overrides.
-
-    $$
 
 1. **Gate 1 — Thesis & Data Validity Gate (Value-Trap Override):**
     - Set `gate1Broken = true` and trigger `AVOID · THESIS BROKEN` (if
@@ -468,10 +478,14 @@ Volatility-Blended Discrete Kelly** solver.
    ($r_{\text{bench}}$), `riskFreeRate` ($r_f=0.04$), and `strongCagr`
    ($r_{\text{strong}}=r_{\text{tgt}}+0.05$), define entry-value boundaries at
    time offset $t$ years from today:
-   $$V(r,t)=\frac{E[TV_T]}{(1+r)^{T-t}},\qquad 0\le t\le T.$$
-   At $t=0$, $V(r_{\text{tgt}},0)$ is `entryPriceForTarget` and
-   $V(r_f,0)$ is the risk-free floor. At $t=T$, every curve validly equals
-   $E[TV_T]$; do not reject the terminal point.
+
+    $$
+    V(r,t)=\frac{E[TV_T]}{(1+r)^{T-t}},\qquad 0\le t\le T.
+    $$
+
+    At $t=0$, $V(r_{\text{tgt}},0)$ is `entryPriceForTarget` and
+    $V(r_f,0)$ is the risk-free floor. At $t=T$, every curve validly equals
+    $E[TV_T]$; do not reject the terminal point.
     - **Deep Value (`DEEP_VALUE`):** $P_0\le V(r_{\text{strong}},0)$ **and**
       $\text{Geo}\ge r_{\text{tgt}}$. If the price clears the strong threshold
       but Geo does not clear the target, classify as `BUY`, not `STRONG BUY`.
@@ -490,6 +504,7 @@ Volatility-Blended Discrete Kelly** solver.
       Buy/Fair boundary, **not the geometrically nearest band edge**. Compute
       `nearBoundary = abs(triggerDistancePct) < 0.02` from that selected
       trigger. Gate 1 broken has `nextTrigger = null`.
+
 3. **Gate 3 — Sizing Synthesis (Proportional Constantinides Deadband):**
    Let $w_{\text{rec}}=\min(f_{\text{scaled}},w_{\max})$, proportional deadband
    $\delta=\max(0.005,0.10w_{\max})$ (so `0.5%` on `AEHR`'s `5%` cap, `2.5%`
