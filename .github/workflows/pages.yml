@@ -21,7 +21,7 @@ jobs:
             FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
         environment:
             name: github-pages
-            url: ${{ steps.deployment.outputs.page_url || steps.deployment-retry.outputs.page_url }}
+            url: ${{ steps.deployment.outputs.page_url || steps.deployment-retry.outputs.page_url || steps.deployment-retry-2.outputs.page_url }}
         steps:
             - name: Checkout
               uses: actions/checkout@v7
@@ -60,7 +60,23 @@ jobs:
 
             # The Pages backend intermittently rejects deployments with
             # "Deployment failed, try again later." — a fresh attempt clears it.
+            # Two attempts back to back are occasionally both rejected, so wait
+            # before the third attempt to let the backend recover.
+            - name: Wait before retrying deploy
+              if: steps.deployment.outcome == 'failure'
+              run: sleep 30
+
             - name: Retry deploy once
               id: deployment-retry
               if: steps.deployment.outcome == 'failure'
+              uses: actions/deploy-pages@v5
+              continue-on-error: true
+
+            - name: Wait before final retry
+              if: steps.deployment.outcome == 'failure' && steps.deployment-retry.outcome == 'failure'
+              run: sleep 60
+
+            - name: Retry deploy again
+              id: deployment-retry-2
+              if: steps.deployment.outcome == 'failure' && steps.deployment-retry.outcome == 'failure'
               uses: actions/deploy-pages@v5
