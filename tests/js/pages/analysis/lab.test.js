@@ -160,10 +160,8 @@ describe('analysis lab 2-view controller (WO5)', () => {
         expect(formatBoardVerdict({ verdictCode: 'SELL_TRIM' })).toBe('SELL');
         expect(formatBoardVerdict({ verdictCode: 'PASS' })).toBe('PASS');
 
-        const footerText = root.querySelector('#boardBudgetFooter').textContent;
-        expect(footerText).toContain('Residual Target Cash');
-        expect(footerText).not.toContain('THESIS PROB UNMIGRATED');
-        expect(footerText).toContain('FLAGS STALE');
+        expect(root.querySelector('#boardBudgetFooter')).toBeNull();
+        expect(root.querySelector('.board-budget-footer')).toBeNull();
     });
 
     it('switches to 3-layer ticker Decision Chart and supports 2y/full horizon switching', async () => {

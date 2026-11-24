@@ -60,7 +60,6 @@ async function measureStage(page) {
             return null;
         }
         const boardRows = document.querySelectorAll('.decision-board .board-row').length;
-        const budgetFooter = document.querySelector('#boardBudgetFooter');
         const verdictStrip = document.querySelector('#verdictStrip');
         const sizingBullet = document.querySelector('#sizingBullet');
         const canvas = document.querySelector('#decisionChartCanvas');
@@ -76,7 +75,6 @@ async function measureStage(page) {
             client: stage.clientHeight,
             scroll: stage.scrollHeight,
             boardRows,
-            budgetFooterVisible: isVisible(budgetFooter),
             verdictVisible: isVisible(verdictStrip),
             sizingVisible: isVisible(sizingBullet),
             canvasWidth: canvas ? canvas.width : 0,
@@ -139,7 +137,7 @@ async function main() {
                 );
             }
             if (expectedSection === 'board') {
-                if (m.boardRows < 7 || !m.budgetFooterVisible) {
+                if (m.boardRows < 7) {
                     throw new Error(`board did not render completely after '${cmd}'`);
                 }
             } else {

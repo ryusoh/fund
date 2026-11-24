@@ -214,24 +214,8 @@
     transform: translateX(-50%);
 }
 
-.analysis-pane .board-budget-footer {
-    display: flex;
-    align-items: center;
-    flex-wrap: nowrap;
-    gap: 5px;
-    min-height: 22px;
-    flex-shrink: 0;
-    padding-top: 4px;
-    border-top: 1px solid var(--border-color);
-    font-size: 9.5px;
-    color: var(--muted-text);
-    white-space: nowrap;
-    overflow: hidden;
-}
-
-.analysis-pane .budget-summary {
-    overflow: hidden;
-    text-overflow: ellipsis;
+.analysis-pane .decision-board .board-row:last-child {
+    border-bottom: none;
 }
 
 /* View 2: Single-Ticker 3-Layer Decision Chart */

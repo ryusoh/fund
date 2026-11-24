@@ -22,7 +22,6 @@ import { getSelectedCurrency, whenTransactionDataReady } from '../../transaction
 
 let paneRoot = null;
 let decisionBoardEl = null;
-let boardBudgetFooterEl = null;
 let verdictStripEl = null;
 let decisionChartCanvas = null;
 let sizingBulletEl = null;
@@ -54,7 +53,6 @@ const PANE_MARKUP = `
                     role="table"
                     aria-label="Portfolio decision board"
                 ></div>
-                <div class="board-budget-footer" id="boardBudgetFooter"></div>
             </section>
             <section
                 data-analysis-section="ticker"
@@ -410,7 +408,6 @@ function resolvePaneElements(rootEl) {
     paneRoot = rootEl;
     syncPaneChartColors();
     decisionBoardEl = rootEl.querySelector('#decisionBoard');
-    boardBudgetFooterEl = rootEl.querySelector('#boardBudgetFooter');
     verdictStripEl = rootEl.querySelector('#verdictStrip');
     decisionChartCanvas = rootEl.querySelector('#decisionChartCanvas');
     sizingBulletEl = rootEl.querySelector('#sizingBullet');
@@ -522,7 +519,7 @@ function renderDecisionBoard() {
         state.configs.map((cfg) => ({ symbol: cfg.symbol, config: cfg, decision: cfg.decision })),
         { flagsGeneratedAt: state.eventFlags?.generatedAt || null, nowMs: state.lastNowMs }
     );
-    if (!decisionBoardEl || !boardBudgetFooterEl) {
+    if (!decisionBoardEl) {
         return board;
     }
 
@@ -571,19 +568,6 @@ function renderDecisionBoard() {
             rowEl.appendChild(c);
         });
         decisionBoardEl.appendChild(rowEl);
-    });
-
-    boardBudgetFooterEl.replaceChildren();
-    const summaryText =
-        `Σw_curr ${formatPlainPercent(board.totalCurrentWeight)} · ` +
-        `Σw_rec ${formatPlainPercent(board.totalRecommendedWeight)} · ` +
-        `Residual Target Cash ${formatPlainPercent(board.residualTargetCash)}`;
-    const summaryEl = makeEl('span', 'budget-summary', summaryText);
-    summaryEl.title =
-        'Residual target cash is 100% - Σw_rec (not actual cash; includes watchlist).';
-    boardBudgetFooterEl.appendChild(summaryEl);
-    board.warnings.forEach((warning) => {
-        boardBudgetFooterEl.appendChild(makeEl('span', 'flag-pill', `⚑ ${warning}`));
     });
 
     return board;

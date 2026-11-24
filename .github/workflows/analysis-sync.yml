@@ -26,10 +26,13 @@ jobs:
               with:
                   python-version: '3.11'
             - name: Install dependencies
-              run: pip install yfinance
+              run: pip install yfinance httpx
             - name: Run sync script
+              env:
+                  SEC_USER_AGENT: ${{ vars.SEC_USER_AGENT }}
               run: |
                   python -m scripts.analysis.sync_configs
+                  python3 scripts/analysis/event_scanner.py --json-out data/analysis/event_flags.json
             - name: Commit changes
               id: autocommit
               run: |
