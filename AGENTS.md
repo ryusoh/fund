@@ -233,7 +233,8 @@ doc before touching the area.
 - **Analysis Decision Chart pane** → `docs/analysis-decision-chart-design.md`.
   The terminal `plot valuation` (`p val`) command has a 2-view toggle grammar
   (`plot valuation` → Decision Board; `plot valuation <ticker> [all]` → Decision
-  Chart; repeat to hide).
+  Chart; repeat to hide; while open, `<ticker>` switches tickers and `all`
+  expands the active ticker's time span).
   JS (`js/pages/analysis/decision.js`) and Python (`scripts/analysis/sync_configs.py`)
   must maintain GH-7 quadrature parity for Kelly sizing and Total Return
   compounding; scenario `terminalPrice` stays price-only while

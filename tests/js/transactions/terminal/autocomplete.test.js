@@ -192,5 +192,20 @@ describe('autocomplete.js', () => {
             autocompleteCommand(input);
             expect(autocompleteState.matches).toEqual([]);
         });
+
+        test('should autocomplete standalone tickers and all when valuation pane is open', () => {
+            document.body.innerHTML = '<section id="analysisSection"></section>';
+            setAnalysisAutocompleteSymbols(['AEHR', 'ANET', 'CBRS', 'GOOG', 'PDD', 'VT']);
+
+            input.value = 'go';
+            autocompleteCommand(input);
+            expect(input.value).toBe('GOOG ');
+
+            input.value = 'anet a';
+            autocompleteCommand(input);
+            expect(input.value).toBe('ANET all ');
+
+            document.body.innerHTML = '';
+        });
     });
 });

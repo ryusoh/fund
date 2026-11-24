@@ -111,6 +111,39 @@ async function handleTickerSubcommand(lab, rawSymbol, horizonMode, appendMessage
     );
 }
 
+export async function handleActiveValuationShortcut(cmdLower, args, { appendMessage }) {
+    const visibleSection = getVisibleAnalysisSection();
+    if (!visibleSection || !cmdLower) {
+        return false;
+    }
+
+    const lab = await loadLabModule();
+    if (cmdLower === 'all' && args.length === 0) {
+        const activeCfg = lab.getActiveAnalysisConfig();
+        if (!activeCfg?.symbol) {
+            return false;
+        }
+        const snapshot = lab.showTickerDecision(activeCfg.symbol, { horizonMode: 'full' });
+        if (snapshot) {
+            appendMessage(snapshot.text);
+        }
+        return true;
+    }
+
+    const upper = cmdLower.toUpperCase();
+    if (!lab.getAnalysisSymbols().includes(upper)) {
+        return false;
+    }
+    const flag = args[0] ? String(args[0]).trim().toLowerCase() : '';
+    if (flag && flag !== 'all') {
+        appendMessage(`Unknown valuation option: ${args[0]}\n${USAGE_LINE}`);
+        return true;
+    }
+    const horizonMode = flag === 'all' ? 'full' : '2y';
+    await handleTickerSubcommand(lab, upper, horizonMode, appendMessage);
+    return true;
+}
+
 export async function handleAnalysisCommand(args, { appendMessage }) {
     const first = args[0] ? String(args[0]).trim() : '';
     const flag = args[1] ? String(args[1]).trim().toLowerCase() : '';

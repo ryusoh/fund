@@ -1,6 +1,7 @@
 import { handleHelpCommand } from './handlers/help.js';
 import { handleStatsCommand } from './handlers/stats.js';
 import { handlePlotCommand } from './handlers/plot.js';
+import { handleActiveValuationShortcut } from './handlers/analysis.js';
 import { handleTransactionCommand, handleDefaultCommand } from './handlers/transaction.js';
 import {
     handleAllCommand,
@@ -75,8 +76,16 @@ export async function executeCommand(command, context) {
     const handler = Object.prototype.hasOwnProperty.call(commandMap, cmdLower)
         ? commandMap[cmdLower]
         : undefined;
-    if (handler) {
+    if (
+        cmdLower === 'all' &&
+        args.length === 0 &&
+        (await handleActiveValuationShortcut(cmdLower, args, enhancedContext))
+    ) {
+        // Handled as valuation horizon expansion while a ticker chart is active.
+    } else if (handler) {
         await handler(args, enhancedContext);
+    } else if (await handleActiveValuationShortcut(cmdLower, args, enhancedContext)) {
+        // Handled as a contextual valuation ticker switch while the pane is open.
     } else {
         await handleDefaultCommand(command, enhancedContext);
     }

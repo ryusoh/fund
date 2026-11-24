@@ -33,13 +33,14 @@ function paneHtml() {
 
 describe('handleAnalysisCommand (via plot valuation / p val)', () => {
     let handleAnalysisCommand;
+    let handleActiveValuationShortcut;
     let handlePlotCommand;
     let getAnalysisAutocompleteSymbols;
     let appendMessage;
 
     beforeEach(() => {
         jest.isolateModules(() => {
-            ({ handleAnalysisCommand } = require(HANDLER_PATH));
+            ({ handleAnalysisCommand, handleActiveValuationShortcut } = require(HANDLER_PATH));
             ({ handlePlotCommand } = require(PLOT_HANDLER_PATH));
             ({ getAnalysisAutocompleteSymbols } = require(AUTOCOMPLETE_PATH));
         });
@@ -154,6 +155,33 @@ describe('handleAnalysisCommand (via plot valuation / p val)', () => {
         document.body.innerHTML = '';
         await handleAnalysisCommand([], { appendMessage });
         expect(appendMessage).toHaveBeenCalledWith('Valuation pane is not available on this page.');
+    });
+
+    it('supports contextual ticker and all shortcuts while the valuation pane is open', async () => {
+        // Hidden pane -> shortcuts do not intercept
+        expect(await handleActiveValuationShortcut('anet', [], { appendMessage })).toBe(false);
+        expect(await handleActiveValuationShortcut('all', [], { appendMessage })).toBe(false);
+
+        // Open board via plot valuation
+        await handlePlotCommand(['valuation'], { appendMessage });
+
+        // `all` on the board does not intercept (only applies on a ticker chart)
+        expect(await handleActiveValuationShortcut('all', [], { appendMessage })).toBe(false);
+
+        // Typing `anet` switches to ANET valuation chart
+        labModule.showTickerDecision.mockReturnValue({
+            text: 'ANET: TRIM (-25.3%) · Mean 11.5% · Buy < $174.0 (-2.2%)',
+        });
+        expect(await handleActiveValuationShortcut('anet', [], { appendMessage })).toBe(true);
+        expect(labModule.showTickerDecision).toHaveBeenCalledWith('ANET', { horizonMode: '2y' });
+
+        // Typing `all` on ANET valuation chart expands horizon to full
+        labModule.getActiveAnalysisConfig.mockReturnValue({ symbol: 'ANET' });
+        expect(await handleActiveValuationShortcut('all', [], { appendMessage })).toBe(true);
+        expect(labModule.showTickerDecision).toHaveBeenCalledWith('ANET', { horizonMode: 'full' });
+
+        // Unknown word while open falls through
+        expect(await handleActiveValuationShortcut('zzzz', [], { appendMessage })).toBe(false);
     });
 
     it('verifies real export contract on @pages/analysis/lab.js', () => {

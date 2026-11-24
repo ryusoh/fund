@@ -69,6 +69,19 @@ function getStatsMatches(parts) {
         : STATS_SUBCOMMANDS;
 }
 
+function isValuationPaneVisible() {
+    if (typeof document === 'undefined') {
+        return false;
+    }
+    const section = document.getElementById('analysisSection');
+    return Boolean(section && !section.classList.contains('is-hidden'));
+}
+
+function isStandaloneValuationTicker(token) {
+    const lower = String(token || '').toLowerCase();
+    return analysisTickerSymbols.some((sym) => sym.toLowerCase() === lower);
+}
+
 function isPlotValuationSubcommand(parts) {
     return (
         (parts[0] === 'plot' || parts[0] === 'p') &&
@@ -118,15 +131,25 @@ function getSubcommandMatches(parts) {
     if (parts[0] === 'help' || parts[0] === 'h') {
         return getHelpMatches(parts);
     }
+    if (isValuationPaneVisible() && parts.length === 2 && isStandaloneValuationTicker(parts[0])) {
+        const flagPrefix = parts[1] ? parts[1].toLowerCase() : '';
+        return flagPrefix
+            ? VALUATION_HORIZON_FLAGS.filter((flag) => flag.startsWith(flagPrefix))
+            : VALUATION_HORIZON_FLAGS;
+    }
     return null;
 }
 
 function getCommandMatches(searchPrefix) {
-    return (
-        searchPrefix
-            ? COMMAND_ALIASES.filter((cmd) => cmd.startsWith(searchPrefix))
-            : COMMAND_ALIASES
-    ).filter((cmd, index, arr) => arr.indexOf(cmd) === index);
+    const base = searchPrefix
+        ? COMMAND_ALIASES.filter((cmd) => cmd.startsWith(searchPrefix))
+        : COMMAND_ALIASES;
+    const extra = isValuationPaneVisible()
+        ? searchPrefix
+            ? analysisTickerSymbols.filter((sym) => sym.toLowerCase().startsWith(searchPrefix))
+            : analysisTickerSymbols
+        : [];
+    return [...base, ...extra].filter((cmd, index, arr) => arr.indexOf(cmd) === index);
 }
 
 function updateAutocompleteState(currentPrefixKey, matches, trimmedValue) {
@@ -160,6 +183,8 @@ function applyAutocomplete(input, matches, hasSpace, parts) {
         input.value = `${parts[0]} ${parts[1]} ${resolveCanonicalTicker(parts[2])} ${completed}${suffix}`;
     } else if (hasSpace && isPlotValuationSubcommand(parts)) {
         input.value = `${parts[0]} ${parts[1]} ${completed}${suffix}`;
+    } else if (hasSpace && isValuationPaneVisible() && isStandaloneValuationTicker(parts[0])) {
+        input.value = `${resolveCanonicalTicker(parts[0])} ${completed}${suffix}`;
     } else if (hasSpace && ['stats', 's', 'plot', 'p', 'help', 'h'].includes(parts[0])) {
         input.value = `${parts[0]} ${completed}${suffix}`;
     } else {
