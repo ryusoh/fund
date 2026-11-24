@@ -69,7 +69,7 @@ describe('handleAnalysisCommand', () => {
             expect.stringContaining('Residual Target Cash 31.1%')
         );
         expect(appendMessage).toHaveBeenCalledWith(
-            expect.stringContaining('Usage: analysis | analysis <TICKER> [full] | analysis close')
+            expect.stringContaining('Usage: analysis | analysis <TICKER> [all] | analysis close')
         );
     });
 
@@ -80,7 +80,7 @@ describe('handleAnalysisCommand', () => {
         expect(labModule.initAnalysisPane).toHaveBeenCalledTimes(1);
     });
 
-    it('opens a single ticker in default 2y mode and full horizon mode', async () => {
+    it('opens a single ticker in default 2y mode and all-horizon mode', async () => {
         labModule.showTickerDecision.mockReturnValue({
             text: 'GOOG: ADD (+5.3% to cap) · Mean 13.7% · Fair > $306.2 (+11.4%)',
         });
@@ -91,7 +91,7 @@ describe('handleAnalysisCommand', () => {
             'GOOG: ADD (+5.3% to cap) · Mean 13.7% · Fair > $306.2 (+11.4%)'
         );
 
-        await handleAnalysisCommand(['goog', 'FULL'], { appendMessage });
+        await handleAnalysisCommand(['goog', 'ALL'], { appendMessage });
         expect(labModule.showTickerDecision).toHaveBeenCalledWith('GOOG', { horizonMode: 'full' });
     });
 

@@ -10,7 +10,7 @@ function loadLabModule() {
     return labModulePromise;
 }
 
-const USAGE_LINE = 'Usage: analysis | analysis <TICKER> [full] | analysis close';
+const USAGE_LINE = 'Usage: analysis | analysis <TICKER> [all] | analysis close';
 
 async function openAnalysisPane(lab) {
     const section = document.getElementById('analysisSection');
@@ -82,12 +82,12 @@ export async function handleAnalysisCommand(args, { appendMessage }) {
     }
 
     const flag = args[1] ? String(args[1]).trim().toLowerCase() : '';
-    if (flag && flag !== 'full') {
+    if (flag && flag !== 'all') {
         appendMessage(`Unknown analysis option: ${args[1]}\n${USAGE_LINE}`);
         return;
     }
 
-    const horizonMode = flag === 'full' ? 'full' : '2y';
+    const horizonMode = flag === 'all' ? 'full' : '2y';
     const symbol = first.toUpperCase();
     const snapshot = lab.showTickerDecision(symbol, { horizonMode });
     if (snapshot) {

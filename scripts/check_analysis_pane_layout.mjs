@@ -161,7 +161,7 @@ async function main() {
 
         await visit('board', 'analysis', 'board');
         await visit('goog-2y', 'analysis goog', 'ticker');
-        await visit('goog-full', 'analysis goog full', 'ticker');
+        await visit('goog-all', 'analysis goog all', 'ticker');
         await visit('anet-2y', 'analysis anet', 'ticker');
         await visit('pdd-2y', 'analysis pdd', 'ticker');
         await visit('vt-2y', 'analysis vt', 'ticker');

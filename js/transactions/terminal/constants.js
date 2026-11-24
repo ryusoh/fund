@@ -79,4 +79,4 @@ export const HELP_SUBCOMMANDS = ['filter'];
 
 export const ANALYSIS_SUBCOMMANDS = ['close'];
 
-export const ANALYSIS_HORIZON_FLAGS = ['full'];
+export const ANALYSIS_HORIZON_FLAGS = ['all'];

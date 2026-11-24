@@ -164,7 +164,7 @@ describe('autocomplete.js', () => {
             expect(autocompleteState.matches).toEqual(constants.HELP_SUBCOMMANDS);
         });
 
-        test('should autocomplete analysis tickers, close, and full horizon flag', () => {
+        test('should autocomplete analysis tickers, close, and all horizon flag', () => {
             setAnalysisAutocompleteSymbols(['AEHR', 'ANET', 'CBRS', 'GOOG', 'PDD', 'VT']);
 
             input.value = 'an go';
@@ -176,11 +176,11 @@ describe('autocomplete.js', () => {
             expect(autocompleteState.matches).toEqual(['CBRS', 'close']);
             expect(input.value).toBe('an CBRS');
 
-            input.value = 'an ANET f';
+            input.value = 'an ANET a';
             autocompleteCommand(input);
-            expect(input.value).toBe('an ANET full ');
+            expect(input.value).toBe('an ANET all ');
 
-            input.value = 'an close f';
+            input.value = 'an close a';
             autocompleteCommand(input);
             expect(autocompleteState.matches).toEqual([]);
         });

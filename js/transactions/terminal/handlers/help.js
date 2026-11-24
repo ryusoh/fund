@@ -22,8 +22,8 @@ export function handleHelpCommand(args, { appendMessage }) {
             '                                 plot marketcap abs, plot concentration, plot pe, plot fx\n' +
             '  analysis (an)      - Decision Board & Single-Ticker Valuation Chart\n' +
             '                       Use "analysis" or "an" for the 6-ticker Decision Board\n' +
-            '                       Commands: analysis, an <TICKER> [full], an close\n' +
-            '                       Examples: analysis, an GOOG, an GOOG full, an close\n' +
+            '                       Commands: analysis, an <TICKER> [all], an close\n' +
+            '                       Examples: analysis, an GOOG, an GOOG all, an close\n' +
             '  transaction (t)    - Toggle the transaction table visibility\n' +
             '  zoom (z)           - Toggle terminal zoom (expand to take over chart area)\n' +
             '  summary            - Show summary of the currently active chart\n' +

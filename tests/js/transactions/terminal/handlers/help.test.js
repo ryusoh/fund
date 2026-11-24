@@ -16,7 +16,7 @@ describe('handleHelpCommand', () => {
         expect(appendMessage).toHaveBeenCalledWith(expect.stringContaining('Available commands:'));
         expect(appendMessage).toHaveBeenCalledWith(expect.stringContaining('stats (s)'));
         expect(appendMessage).toHaveBeenCalledWith(expect.stringContaining('plot (p)'));
-        expect(appendMessage).toHaveBeenCalledWith(expect.stringContaining('an <TICKER> [full]'));
+        expect(appendMessage).toHaveBeenCalledWith(expect.stringContaining('an <TICKER> [all]'));
         expect(appendMessage).toHaveBeenCalledWith(expect.stringContaining('an close'));
         expect(appendMessage).not.toHaveBeenCalledWith(expect.stringContaining('Monte Carlo'));
     });
