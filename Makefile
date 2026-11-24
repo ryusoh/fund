@@ -134,6 +134,7 @@ _lintfix-stylelint:
 
 _lintfix-markdown:
 	$(PY) -m scripts.agents.check_md_boxes --fix
+	$(PY) -m scripts.agents.check_md_latex --fix
 	npm exec -- markdownlint-cli2 --fix "**/*.md" "#**/node_modules/**" "#venv/**" "#.qwen/**" "#.claude/**"
 
 _lintfix-ruff:
@@ -153,6 +154,7 @@ lint: js-lint depcheck
 	npx --yes stylelint "**/*.css"
 	npm exec -- markdownlint-cli2 "**/*.md" "#**/node_modules/**" "#venv/**" "#.qwen/**" "#.claude/**"
 	$(PY) -m scripts.agents.check_md_boxes
+	$(PY) -m scripts.agents.check_md_latex
 
 depcheck:
 	@# Dependency-structure gate (docs/agentic-quality-gates.md §3): no cycles,
@@ -196,6 +198,7 @@ lint-fix:
 
 markdownlint-fix:
 	$(PY) -m scripts.agents.check_md_boxes --fix
+	$(PY) -m scripts.agents.check_md_latex --fix
 	npm exec -- markdownlint-cli2 --fix "**/*.md" "#**/node_modules/**" "#venv/**" "#.qwen/**" "#.claude/**"
 
 js-test:

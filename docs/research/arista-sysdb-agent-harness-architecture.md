@@ -69,7 +69,10 @@ SysDB is an in-memory, real-time, object-oriented state engine that holds the en
 - **Hierarchical Mount Tree**: SysDB organizes all system state into a strongly typed directory-like tree (e.g., `/sys/intf/eth1/status`, `/sys/routing/bgp/peers`).
 - **Mount Ownership**: Each software component (called an **Agent**) "mounts" specific paths in the tree. An agent has read access to paths it subscribes to, and exclusive write ownership over paths it manages.
 - **Zero Tacit State (Stateless Agents)**: EOS agents contain **no persistent internal state**. An agent is structured as a pure mathematical transformation over SysDB state:
-  $$\text{Agent Action} = f(\text{Subscribed SysDB State}) \to \text{Published SysDB State}$$
+
+$$
+\text{Agent Action} = f(\text{Subscribed SysDB State}) \to \text{Published SysDB State}
+$$
 
 ### 2.3 Publish / Subscribe / Notify Event Loop
 
@@ -197,7 +200,9 @@ In our agentic harness:
     - The exact target file path and verification command.
 3. **Context Destruction**: Once the worker completes gate $i$ (verified green and committed locally), the worker's conversation context is discarded. The ledger records `status = "DONE"` and `commit = "<sha>"`. Gate $i+1$ receives a pristine context window.
 
-$$\text{Context Length}(N) = O(1) \quad \text{instead of} \quad O(N)$$
+$$
+\text{Context Length}(N) = O(1) \quad \text{instead of} \quad O(N)
+$$
 
 ### 4.3 Blueprint 3: Reactive Event Notification & Polling Elimination
 

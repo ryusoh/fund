@@ -397,145 +397,151 @@ prices/weights (from `fetchRealTimeData()` when available, else
 `holdings_details.json` × `market.price`), and the **7-point Gauss–Hermite
 Volatility-Blended Discrete Kelly** solver.
 
-- **Return and CAGR definitions (normative):** For scenario $i$, distinguish
-  terminal price from terminal total value:
+**Return and CAGR definitions (normative):** For scenario $i$, distinguish
+terminal price from terminal total value:
 
-    $$
-    P_{i,T}=\text{eps}(1+g_i)^T\text{exitPe}_i,\qquad
-    TV_{i,T}=P_{i,T}(1+d)^T,\qquad M_i=TV_{i,T}/P_0,\qquad r_i=M_i^{1/T}-1.
-    $$
+$$
+P_{i,T}=\text{eps}(1+g_i)^T\text{exitPe}_i,\qquad
+TV_{i,T}=P_{i,T}(1+d)^T,\qquad M_i=TV_{i,T}/P_0,\qquad r_i=M_i^{1/T}-1.
+$$
 
-    Then $E[TV_T]=\sum_i p_iTV_{i,T}$ and
+Then $E[TV_T]=\sum_i p_iTV_{i,T}$ and
 
-    $$
-    \text{Mean-wealth CAGR}=(\sum_i p_iM_i)^{1/T}-1,\qquad
-    \text{Geo}=\exp\bigl((1/T)\sum_i p_i\ln M_i\bigr)-1.
-    $$
+$$
+\text{Mean-wealth CAGR}=(\sum_i p_iM_i)^{1/T}-1,\qquad
+\text{Geo}=\exp\bigl((1/T)\sum_i p_i\ln M_i\bigr)-1.
+$$
 
-    Mean-wealth CAGR is the CAGR of probability-weighted terminal wealth, not the
-    probability-weighted mean of scenario CAGRs. `Geo` is the annualized
-    probability-weighted geometric mean of scenario multiples, **not necessarily a
-    median**. The compact UI label is `Mean`; the schema field remains
-    `expectedCagr` for compatibility.
+Mean-wealth CAGR is the CAGR of probability-weighted terminal wealth, not the
+probability-weighted mean of scenario CAGRs. `Geo` is the annualized
+probability-weighted geometric mean of scenario multiples, **not necessarily a
+median**. The compact UI label is `Mean`; the schema field remains
+`expectedCagr` for compatibility.
 
-- **Live Kelly math (single source of truth in Python & JS):** Expand each
-  annualized total-return CAGR $r_i$ using annual volatility $\sigma$
-  (`risk.volatility`) and 7 probabilists' Gauss–Hermite nodes/weights
-  $(z_k,w_k)$:
+**Live Kelly math (single source of truth in Python & JS):** Expand each
+annualized total-return CAGR $r_i$ using annual volatility $\sigma$
+(`risk.volatility`) and 7 probabilists' Gauss–Hermite nodes/weights
+$(z_k,w_k)$:
 
-    $$
-    1+R_{i,k}=(1+r_i)\exp\bigl(\sigma z_k-\tfrac{1}{2}\sigma^2\bigr),
-    \quad p_{i,k}=p_iw_k.
-    $$
+$$
+1+R_{i,k}=(1+r_i)\exp\bigl(\sigma z_k-\tfrac{1}{2}\sigma^2\bigr),
+\quad p_{i,k}=p_iw_k.
+$$
 
-    Solve the represented discrete log-utility problem
-    $f^{\ast}=\arg\max_{f\in[0,1]}\sum_{i,k}p_{i,k}\ln(1+r_f+f(R_{i,k}-r_f))$
-    by monotone bisection (`KELLY_FRACTION_CAP = 1.0`), reducing to the discrete
-    scenario solver when $\sigma=0$. Start the feasible upper bound at `cap` and
-    tighten it only for states with $R_{i,k}<r_f$; an all-winning state set has no
-    extra bound. Missing, non-finite, or negative volatility returns `null` Kelly
-    metrics rather than silently becoming zero volatility. Finite GH-7 quadrature
-    approximates the continuous unit-mean construction; it does not exactly
-    preserve terminal wealth. Set $f_{\text{scaled}}=\text{kellyScale}\cdot f^{\ast}$
-    (`½K`) and never read stale `derived.kelly` or `position.maxKellyWeight` as
-    overrides.
+Solve the represented discrete log-utility problem
+$f^{\ast}=\arg\max_{f\in[0,1]}\sum_{i,k}p_{i,k}\ln(1+r_f+f(R_{i,k}-r_f))$
+by monotone bisection (`KELLY_FRACTION_CAP = 1.0`), reducing to the discrete
+scenario solver when $\sigma=0$. Start the feasible upper bound at `cap` and
+tighten it only for states with $R_{i,k}<r_f$; an all-winning state set has no
+extra bound. Missing, non-finite, or negative volatility returns `null` Kelly
+metrics rather than silently becoming zero volatility. Finite GH-7 quadrature
+approximates the continuous unit-mean construction; it does not exactly
+preserve terminal wealth. Set $f_{\text{scaled}}=\text{kellyScale}\cdot f^{\ast}$
+(`½K`) and never read stale `derived.kelly` or `position.maxKellyWeight` as
+overrides.
 
-1. **Gate 1 — Thesis & Data Validity Gate (Value-Trap Override):**
-    - Set `gate1Broken = true` and trigger `AVOID · THESIS BROKEN` (if
-      `w_curr == 0`) or `EXIT · THESIS BROKEN` (if `w_curr > 0`) when **any**
-      of:
-        - Latest `decision_journal` entry (sorted ascending by ISO `date`) has
-          `action ∈ {'CLOSE_LONG', 'EXIT'}`.
-        - All scenarios have `name` starting with `'RETIRED'`
-          (case-insensitive).
-        - Effective `eps <= 0` after `model.preferences.overrides.eps` (so
-          `AEHR` passes and `CBRS` trips; `fairValueRange` is not an escape
-          hatch).
-        - The optional, explicitly reviewed
-          `belief_state.thesis_intact_probability` is present and `< 0.15`.
-          Never apply this threshold to legacy `belief_state.probability` or
-          infer the new field from scenario probabilities. Before WO8's
-          migration, show one board-level `THESIS PROB UNMIGRATED` metadata
-          warning and disable this particular test.
-    - When Gate 1 trips, suppress green valuation zones and show muted/red
-      price with a `THESIS BROKEN` watermark.
-    - **Review and staleness modifiers:** Keep these separate:
-        - `market.marketDataUpdatedAt` older than 7 days marks that ticker
-          `⚑ MARKET STALE`; a missing timestamp marks `⚑ MARKET AGE UNKNOWN`.
-        - `event_flags.generatedAt` older than 7 days marks the **entire board
-          and every ticker** `⚑ FLAGS STALE`; it is not an AEHR-only signal.
-        - A `review-date` flag is active when its `date` is on/before the
-          snapshot date and remains active until a later journal review or a
-          refreshed flags file removes it. A `filing` flag is active for 30
-          calendar days after its filing `date`. There is no persisted `active`
-          boolean, so the UI must derive these rules deterministically.
-        - An unresolved prediction is overdue only when it has an explicit due
-          field (`review_date` or `dueDate`) before the snapshot date; do not
-          infer a deadline from `resolved_date`. `belief_state.confidence <
-0.50` also adds a review warning.
-2. **Gate 2 — Fermat–Pascal Iso-CAGR Valuation Zones (with Uncertainty Guard):**
-   Using $E[TV_T]$, horizon $T$, `targetCagr` ($r_{\text{tgt}}$), `benchmark`
-   ($r_{\text{bench}}$), `riskFreeRate` ($r_f=0.04$), and `strongCagr`
-   ($r_{\text{strong}}=r_{\text{tgt}}+0.05$), define entry-value boundaries at
-   time offset $t$ years from today:
+#### Gate 1 — Thesis & Data Validity Gate (Value-Trap Override)
 
-    $$
-    V(r,t)=\frac{E[TV_T]}{(1+r)^{T-t}},\qquad 0\le t\le T.
-    $$
+- Set `gate1Broken = true` and trigger `AVOID · THESIS BROKEN` (if
+  `w_curr == 0`) or `EXIT · THESIS BROKEN` (if `w_curr > 0`) when **any**
+  of:
+    - Latest `decision_journal` entry (sorted ascending by ISO `date`) has
+      `action ∈ {'CLOSE_LONG', 'EXIT'}`.
+    - All scenarios have `name` starting with `'RETIRED'`
+      (case-insensitive).
+    - Effective `eps <= 0` after `model.preferences.overrides.eps` (so
+      `AEHR` passes and `CBRS` trips; `fairValueRange` is not an escape
+      hatch).
+    - The optional, explicitly reviewed
+      `belief_state.thesis_intact_probability` is present and `< 0.15`.
+      Never apply this threshold to legacy `belief_state.probability` or
+      infer the new field from scenario probabilities. Before WO8's
+      migration, show one board-level `THESIS PROB UNMIGRATED` metadata
+      warning and disable this particular test.
+- When Gate 1 trips, suppress green valuation zones and show muted/red
+  price with a `THESIS BROKEN` watermark.
+- **Review and staleness modifiers:** Keep these separate:
+    - `market.marketDataUpdatedAt` older than 7 days marks that ticker
+      `⚑ MARKET STALE`; a missing timestamp marks `⚑ MARKET AGE UNKNOWN`.
+    - `event_flags.generatedAt` older than 7 days marks the **entire board
+      and every ticker** `⚑ FLAGS STALE`; it is not an AEHR-only signal.
+    - A `review-date` flag is active when its `date` is on/before the
+      snapshot date and remains active until a later journal review or a
+      refreshed flags file removes it. A `filing` flag is active for 30
+      calendar days after its filing `date`. There is no persisted `active`
+      boolean, so the UI must derive these rules deterministically.
+    - An unresolved prediction is overdue only when it has an explicit due
+      field (`review_date` or `dueDate`) before the snapshot date; do not
+      infer a deadline from `resolved_date`. `belief_state.confidence < 0.50`
+      also adds a review warning.
 
-    At $t=0$, $V(r_{\text{tgt}},0)$ is `entryPriceForTarget` and
-    $V(r_f,0)$ is the risk-free floor. At $t=T$, every curve validly equals
-    $E[TV_T]$; do not reject the terminal point.
-    - **Deep Value (`DEEP_VALUE`):** $P_0\le V(r_{\text{strong}},0)$ **and**
-      $\text{Geo}\ge r_{\text{tgt}}$. If the price clears the strong threshold
-      but Geo does not clear the target, classify as `BUY`, not `STRONG BUY`.
-    - **Buy Zone (`BUY`):** $P_0\le V(r_{\text{tgt}},0)$, equivalently
-      Mean-wealth CAGR $\ge r_{\text{tgt}}$.
-    - **Fair / Hold Zone (`FAIR`):**
-      $V(r_{\text{tgt}},0)<P_0\le V(r_{\text{bench}},0)$.
-    - **Rich Zone (`RICH`):**
-      $V(r_{\text{bench}},0)<P_0\le V(r_f,0)$.
-    - **Overvalued Zone (`OVERVALUED`):** $P_0>V(r_f,0)$, equivalently
-      Mean-wealth CAGR $<r_f$. Kelly is computed independently from the GH
-      states rather than assumed from this label.
-    - **Directional boundary readout:** When $P_0\le\texttt{buy}$, show
-      `Fair > <buy>` with `triggerDistancePct = buy / P0 - 1`; otherwise show
-      `Buy < <buy>` with the same signed formula. This deliberately tracks the
-      Buy/Fair boundary, **not the geometrically nearest band edge**. Compute
-      `nearBoundary = abs(triggerDistancePct) < 0.02` from that selected
-      trigger. Gate 1 broken has `nextTrigger = null`.
+#### Gate 2 — Fermat–Pascal Iso-CAGR Valuation Zones (with Uncertainty Guard)
 
-3. **Gate 3 — Sizing Synthesis (Proportional Constantinides Deadband):**
-   Let $w_{\text{rec}}=\min(f_{\text{scaled}},w_{\max})$, proportional deadband
-   $\delta=\max(0.005,0.10w_{\max})$ (so `0.5%` on `AEHR`'s `5%` cap, `2.5%`
-   on `25%` caps, `3.0%` on `30%` caps), and
-   $\Delta w=w_{\text{rec}}-w_{\text{curr}}$:
-    - **Deep Value / Buy Zone:**
-        - $w_{\text{curr}}=0$ and $w_{\text{rec}}>0$ → `STRONG BUY (≤w_rec)` /
-          `BUY · INITIATE (≤w_rec)`.
-        - $w_{\text{curr}}>w_{\max}+\delta$ and $w_{\text{rec}}\ge w_{\max}$ →
-          `TRIM TO CAP`.
-        - $w_{\text{curr}}>w_{\text{rec}}+\delta$ →
-          `TRIM · OVER KELLY (-|Δw|)`.
-        - $\Delta w>\delta$ → `STRONG BUY (+Δw)` / `ADD (+Δw)`.
-        - $w_{\max}<w_{\text{curr}}\le w_{\max}+\delta$ → `HOLD · AT CAP`.
-        - $w_{\text{curr}}=0$ and $w_{\text{rec}}=0$ → `WATCH`.
-        - Otherwise → `HOLD · AT TARGET`.
-    - **Fair / Hold Zone:**
-        - $w_{\text{curr}}>w_{\max}+\delta$ and $w_{\text{rec}}\ge w_{\max}$ →
-          `TRIM TO CAP`.
-        - $w_{\text{curr}}>w_{\text{rec}}+\delta$ → `TRIM · OVER KELLY (-|Δw|)`.
-        - $w_{\text{curr}}>0$ → `HOLD`; $w_{\text{curr}}=0$ → `WATCH (< $buy)`.
-    - **Rich Zone:** Let $w_{\text{rich}}=\min(w_{\text{rec}},0.5w_{\max})$.
-      If $w_{\text{curr}}>w_{\text{rich}}+\delta$ →
-      `TRIM (-(w_curr - w_rich))`; else if $w_{\text{curr}}>0$ → `HOLD · RICH`;
-      else `PASS`.
-    - **Overvalued Zone:** `SELL / TRIM` if $w_{\text{curr}}>0`; `AVOID` if
-      $w_{\text{curr}}=0$.
-    - **Sizing data unavailable:** If Kelly cannot be computed, do not treat it
-      as zero. Preserve the Gate 2 zone, set `targetWeight = null`, suppress ADD
-      and TRIM sizing deltas, and return `HOLD · DATA` for a held ticker or
-      `WATCH · DATA` for a watchlist ticker with a `⚑ KELLY UNAVAILABLE` flag.
+Using $E[TV_T]$, horizon $T$, `targetCagr` ($r_{\text{tgt}}$), `benchmark`
+($r_{\text{bench}}$), `riskFreeRate` ($r_f=0.04$), and `strongCagr`
+($r_{\text{strong}}=r_{\text{tgt}}+0.05$), define entry-value boundaries at
+time offset $t$ years from today:
+
+$$
+V(r,t)=\frac{E[TV_T]}{(1+r)^{T-t}},\qquad 0\le t\le T.
+$$
+
+At $t=0$, $V(r_{\text{tgt}},0)$ is `entryPriceForTarget` and
+$V(r_f,0)$ is the risk-free floor. At $t=T$, every curve validly equals
+$E[TV_T]$; do not reject the terminal point.
+
+- **Deep Value (`DEEP_VALUE`):** $P_0\le V(r_{\text{strong}},0)$ **and**
+  $\text{Geo}\ge r_{\text{tgt}}$. If the price clears the strong threshold
+  but Geo does not clear the target, classify as `BUY`, not `STRONG BUY`.
+- **Buy Zone (`BUY`):** $P_0\le V(r_{\text{tgt}},0)$, equivalently
+  Mean-wealth CAGR $\ge r_{\text{tgt}}$.
+- **Fair / Hold Zone (`FAIR`):**
+  $V(r_{\text{tgt}},0)<P_0\le V(r_{\text{bench}},0)$.
+- **Rich Zone (`RICH`):**
+  $V(r_{\text{bench}},0)<P_0\le V(r_f,0)$.
+- **Overvalued Zone (`OVERVALUED`):** $P_0>V(r_f,0)$, equivalently
+  Mean-wealth CAGR $<r_f$. Kelly is computed independently from the GH
+  states rather than assumed from this label.
+- **Directional boundary readout:** When $P_0\le\texttt{buy}$, show
+  `Fair > <buy>` with `triggerDistancePct = buy / P0 - 1`; otherwise show
+  `Buy < <buy>` with the same signed formula. This deliberately tracks the
+  Buy/Fair boundary, **not the geometrically nearest band edge**. Compute
+  `nearBoundary = abs(triggerDistancePct) < 0.02` from that selected
+  trigger. Gate 1 broken has `nextTrigger = null`.
+
+#### Gate 3 — Sizing Synthesis (Proportional Constantinides Deadband)
+
+Let $w_{\text{rec}}=\min(f_{\text{scaled}},w_{\max})$, proportional deadband
+$\delta=\max(0.005,0.10w_{\max})$ (so `0.5%` on `AEHR`'s `5%` cap, `2.5%`
+on `25%` caps, `3.0%` on `30%` caps), and
+$\Delta w=w_{\text{rec}}-w_{\text{curr}}$:
+
+- **Deep Value / Buy Zone:**
+    - $w_{\text{curr}}=0$ and $w_{\text{rec}}>0$ → `STRONG BUY (≤w_rec)` /
+      `BUY · INITIATE (≤w_rec)`.
+    - $w_{\text{curr}}>w_{\max}+\delta$ and $w_{\text{rec}}\ge w_{\max}$ →
+      `TRIM TO CAP`.
+    - $w_{\text{curr}}>w_{\text{rec}}+\delta$ →
+      `TRIM · OVER KELLY (-|Δw|)`.
+    - $\Delta w>\delta$ → `STRONG BUY (+Δw)` / `ADD (+Δw)`.
+    - $w_{\max}<w_{\text{curr}}\le w_{\max}+\delta$ → `HOLD · AT CAP`.
+    - $w_{\text{curr}}=0$ and $w_{\text{rec}}=0$ → `WATCH`.
+    - Otherwise → `HOLD · AT TARGET`.
+- **Fair / Hold Zone:**
+    - $w_{\text{curr}}>w_{\max}+\delta$ and $w_{\text{rec}}\ge w_{\max}$ →
+      `TRIM TO CAP`.
+    - $w_{\text{curr}}>w_{\text{rec}}+\delta$ → `TRIM · OVER KELLY (-|Δw|)`.
+    - $w_{\text{curr}}>0$ → `HOLD`; $w_{\text{curr}}=0$ → `WATCH (< $buy)`.
+- **Rich Zone:** Let $w_{\text{rich}}=\min(w_{\text{rec}},0.5w_{\max})$.
+  If $w_{\text{curr}}>w_{\text{rich}}+\delta$ →
+  `TRIM (-(w_curr - w_rich))`; else if $w_{\text{curr}}>0$ → `HOLD · RICH`;
+  else `PASS`.
+- **Overvalued Zone:** `SELL / TRIM` if $w_{\text{curr}}>0`; `AVOID` if
+  $w_{\text{curr}}=0$.
+- **Sizing data unavailable:** If Kelly cannot be computed, do not treat it
+  as zero. Preserve the Gate 2 zone, set `targetWeight = null`, suppress ADD
+  and TRIM sizing deltas, and return `HOLD · DATA` for a held ticker or
+  `WATCH · DATA` for a watchlist ticker with a `⚑ KELLY UNAVAILABLE` flag.
 
 #### Independently recomputed post-WO1 snapshot (`2026-11-20`, GH-7 Kelly + dividends + `VT` EPS fix)
 

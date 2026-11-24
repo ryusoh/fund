@@ -38,6 +38,12 @@ repos:
             language: system
             files: '\.md$'
             pass_filenames: true
+          - id: md-latex-fix
+            name: md-latex-fix (GitHub Markdown LaTeX formatting)
+            entry: bash -lc 'PY=venv/bin/python; [ -x "$PY" ] || PY=python3; "$PY" -m scripts.agents.check_md_latex --fix "$@"' --
+            language: system
+            files: '\.md$'
+            pass_filenames: true
 
     - repo: https://github.com/DavidAnson/markdownlint-cli2
       rev: v0.22.0

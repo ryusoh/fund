@@ -53,11 +53,15 @@ The `fund` repository resolves these failure modes by treating AI agents not as 
 
 In classical multi-turn agent interactions, the agent uses conversational context as an in-memory execution ledger. For a task composed of $N$ sequential sub-tasks, each with independent step-level execution success probability $p_i \in (0, 1)$:
 
-$$P(\text{Workflow Success}) = \prod_{i=1}^N p_i = p^N \xrightarrow[N \to \infty]{} 0$$
+$$
+P(\text{Workflow Success}) = \prod_{i=1}^N p_i = p^N \xrightarrow[N \to \infty]{} 0
+$$
 
 For example, with a high per-step accuracy of $p = 0.96$ on an $N = 15$ step implementation:
 
-$$P(\text{Workflow Success}) = (0.96)^{15} \approx 0.542 \quad (45.8\% \text{ overall failure rate})$$
+$$
+P(\text{Workflow Success}) = (0.96)^{15} \approx 0.542 \quad (45.8\% \text{ overall failure rate})
+$$
 
 ```mermaid
 graph LR
@@ -78,21 +82,29 @@ graph LR
 
 As conversational token length $L$ expands, the model's effective attention density $D_{\text{attn}}(L)$ degrades inversely:
 
-$$D_{\text{attn}}(L) \propto \frac{1}{1 + \alpha L}, \quad \alpha > 0$$
+$$
+D_{\text{attn}}(L) \propto \frac{1}{1 + \alpha L}, \quad \alpha > 0
+$$
 
 Under monolithic conversational execution, total token consumption $C_{\text{token}}(N)$ grows quadratically with turn count $N$, whereas stateless gated dispatch maintains constant token overhead per gate:
 
-$$C_{\text{monolithic}}(N) = \sum_{k=1}^N \mathcal{O}(k \cdot \bar{L}_{\text{turn}}) = \mathcal{O}(N^2), \qquad C_{\text{gated}}(N) = \sum_{k=1}^N \mathcal{O}(\bar{L}_{\text{slice}}) = \mathcal{O}(N)$$
+$$
+C_{\text{monolithic}}(N) = \sum_{k=1}^N \mathcal{O}(k \cdot \bar{L}_{\text{turn}}) = \mathcal{O}(N^2), \qquad C_{\text{gated}}(N) = \sum_{k=1}^N \mathcal{O}(\bar{L}_{\text{slice}}) = \mathcal{O}(N)
+$$
 
 ### 2.3 Declarative State Convergence Function
 
 Let $S_{\mathrm{declared}}$ be the target intent specified in an action items document, $S_{\mathrm{git}}$ be the ground truth git DAG, and $S_{\mathrm{disk}}$ be the externalized JSON state ledger. The control plane implements a continuous reconciliation operator $\mathcal{R}$:
 
-$$\mathcal{R} : S_{\mathrm{git}} \times S_{\mathrm{disk}} \times S_{\mathrm{declared}} \longrightarrow S_{\mathrm{disk}}'$$
+$$
+\mathcal{R} : S_{\mathrm{git}} \times S_{\mathrm{disk}} \times S_{\mathrm{declared}} \longrightarrow S_{\mathrm{disk}}'
+$$
 
 The Program Counter ($PC$) identifies the exact minimal unresolved gate:
 
-$$PC = \min \Big( \{i \in \{1, \dots, N\} \mid \text{Status}(g_i) \notin \{\text{DONE}, \text{SKIPPED}\}\} \cup \{\infty\} \Big)$$
+$$
+PC = \min \Big( \{i \in \{1, \dots, N\} \mid \text{Status}(g_i) \notin \{\text{DONE}, \text{SKIPPED}\}\} \cup \{\infty\} \Big)
+$$
 
 Convergence is achieved when $PC = \infty$ (all gates $\in \{\text{DONE}, \text{SKIPPED}\}$ with verified git commit SHAs).
 
@@ -448,12 +460,13 @@ graph TD
 
 ## 11. Architectural Axioms Summary
 
-$$ \begin{aligned}
+$$
+\begin{aligned}
 \text{State Ledger} &\implies \text{Externalized Disk JSON File (Arista SysDB Model)} \\
 \text{Orchestration Control} &\implies \text{Centralized Declarative SDN Engine (Google Orion Model)} \\
 \text{Subagent Execution} &\implies \mathcal{O}(1) \text{ Ephemeral Single-Gate Lifetime (Merchant Silicon Clos)} \\
 \text{Tool Provisioning} &\implies \text{Dynamic Adaptive Slicing (Google Jupiter OCS)} \\
 \text{Quality Assurance} &\implies \text{Automated Layered Gates (Measure, Don't Read)} \\
 \text{Verification Authority} &\implies \text{Strict Deterministic CI Parity (make precommit-fix)}
-\end{aligned}$$
+\end{aligned}
 $$

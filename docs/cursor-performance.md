@@ -36,11 +36,19 @@ The custom cursor subsystem introduces five major performance and responsiveness
 
     At standard 60Hz ($\Delta t = 16.667\text{ ms}$, $\text{frameScale} = 1.0$), $\text{followAlpha} = \text{followEase} = 0.4$.
 
-- **Continuous exponential smoothing equivalent:**
-  The discrete exponential filter is governed by:
-  $$x_k = x_{k-1} + \alpha (x_{\text{target}} - x_{k-1}) \implies (x_{\text{target}} - x_k) = (1 - \alpha)(x_{\text{target}} - x_{k-1})$$
-  In continuous time with step $\Delta t_0 = 16.667\text{ ms}$, the decay factor is $(1 - \text{followEase}) = e^{-\Delta t_0 / \tau}$, yielding the continuous time constant $\tau$:
-  $$\tau = \frac{\Delta t_0}{-\ln(1 - \text{followEase})} = \frac{16.667\text{ ms}}{-\ln(0.6)} = \frac{16.667}{0.51083} \approx 32.63\text{ ms}$$
+**Continuous exponential smoothing equivalent:**
+The discrete exponential filter is governed by:
+
+$$
+x_k = x_{k-1} + \alpha (x_{\text{target}} - x_{k-1}) \implies (x_{\text{target}} - x_k) = (1 - \alpha)(x_{\text{target}} - x_{k-1})
+$$
+
+In continuous time with step $\Delta t_0 = 16.667\text{ ms}$, the decay factor is $(1 - \text{followEase}) = e^{-\Delta t_0 / \tau}$, yielding the continuous time constant $\tau$:
+
+$$
+\tau = \frac{\Delta t_0}{-\ln(1 - \text{followEase})} = \frac{16.667\text{ ms}}{-\ln(0.6)} = \frac{16.667}{0.51083} \approx 32.63\text{ ms}
+$$
+
 - **Convergence metrics for `followEase: 0.4`:**
     - **Half-life ($t_{50\%}$):** $\tau \ln(2) \approx 22.62\text{ ms}$ (1.36 frames at 60Hz).
     - **90% convergence ($t_{90\%}$):** $\tau \ln(10) \approx 75.13\text{ ms}$ (4.51 frames at 60Hz).
@@ -49,11 +57,11 @@ The custom cursor subsystem introduces five major performance and responsiveness
 - **Physical tracking error under motion:**
   When moving at constant velocity $v$, the steady-state tracking error is exactly $D = v \cdot \tau$:
     - At $1000\text{ px/s}$ (moderate cursor travel across viewport):
-      $$D = 1000\text{ px/s} \times 0.03263\text{ s} \approx 32.6\text{ px}$$
+      $D = 1000\text{ px/s} \times 0.03263\text{ s} \approx 32.6\text{ px}$.
     - At $2000\text{ px/s}$ (brisk navigation towards a button):
-      $$D = 2000\text{ px/s} \times 0.03263\text{ s} \approx 65.3\text{ px}$$
+      $D = 2000\text{ px/s} \times 0.03263\text{ s} \approx 65.3\text{ px}$.
     - At $3000\text{ px/s}$ (quick flick):
-      $$D = 3000\text{ px/s} \times 0.03263\text{ s} \approx 97.9\text{ px}$$
+      $D = 3000\text{ px/s} \times 0.03263\text{ s} \approx 97.9\text{ px}$.
       Because the native cursor is hidden, a 33–98px trailing gap creates a pronounced feeling of input delay and "rubber-banding."
 
 - **Parametric comparison of easing alpha values:**

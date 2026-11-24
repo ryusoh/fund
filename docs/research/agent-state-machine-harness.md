@@ -17,8 +17,7 @@ When executing complex, multi-step skills (e.g. implementing 10+ action items, d
 
 - **Attention Dilution ("Lost in the Middle")**: As context accumulates conversation history, tool outputs, and diff traces, tokens at the center of the context window receive lower self-attention weight compared to initial system prompts and trailing tokens. Being present "in context" is structurally distinct from being in active "working memory".
 - **Absence of a Hardware Program Counter (PC)**: Unlike a CPU executing discrete instruction pointers, an autoregressive LLM perceives skill workflows as natural language descriptions that must be re-parsed and re-interpreted on every forward pass.
-- **Multiplicative Failure Dynamics**: In an autoregressive agentic loop of $N$ interdependent steps, even if single-step execution accuracy is high ($p = 0.99$), overall task success decays exponentially:
-  $$P_{\text{success}}(N) = \prod_{i=1}^N p_i = p^N$$
+- **Multiplicative Failure Dynamics**: In an autoregressive agentic loop of $N$ interdependent steps, even if single-step execution accuracy is high ($p = 0.99$), overall task success decays exponentially ($P_{\text{success}}(N) = \prod_{i=1}^N p_i = p^N$):
     - For $N = 5$: $0.99^5 \approx 95.1\%$
     - For $N = 15$: $0.99^{15} \approx 86.0\%$
     - For $N = 30$: $0.99^{30} \approx 73.9\%$ (and if $p = 0.95$, $0.95^{30} \approx 21.4\%$)

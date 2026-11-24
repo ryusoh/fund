@@ -232,7 +232,7 @@ doc before touching the area.
 - **Portfolio math** → `docs/fermat-pascal-kelly-system.md`.
 - **Analysis Decision Chart pane** → `docs/analysis-decision-chart-design.md`.
   The terminal `analysis` command has a 2-view grammar (`analysis` → Decision
-  Board; `analysis <ticker> [full]` → Decision Chart; `analysis close` → hide).
+  Board; `analysis <ticker> [all]` → Decision Chart; `analysis close` → hide).
   JS (`js/pages/analysis/decision.js`) and Python (`scripts/analysis/sync_configs.py`)
   must maintain GH-7 quadrature parity for Kelly sizing and Total Return
   compounding; scenario `terminalPrice` stays price-only while

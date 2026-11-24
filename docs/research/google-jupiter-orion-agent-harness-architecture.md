@@ -175,7 +175,9 @@ In an agent harness, rather than invoking a monolithic `pro` model agent for an 
 2. **Aggregation Layer (Tier 2 - Worker Subagents)**: Run isolated single-gate implementation subagents (`inherit` / `flash`) focused strictly on editing one target file.
 3. **Spine Layer (Tier 3 - Orchestrator / Pro)**: Central orchestrator coordinating ledger updates, resolving difficult merge anomalies, and verifying overarching quality gates.
 
-$$\text{Total Cost \& Blast Radius} = \sum_{i=1}^N \text{Cost}(\text{Worker}_i) \ll \text{Cost}(\text{Monolithic Agent})$$
+$$
+\text{Total Cost \& Blast Radius} = \sum_{i=1}^N \text{Cost}(\text{Worker}_i) \ll \text{Cost}(\text{Monolithic Agent})
+$$
 
 ---
 
