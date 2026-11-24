@@ -159,14 +159,14 @@ async function main() {
             }
         };
 
-        await visit('board', 'analysis', 'board');
-        await visit('goog-2y', 'analysis goog', 'ticker');
-        await visit('goog-all', 'analysis goog all', 'ticker');
-        await visit('anet-2y', 'analysis anet', 'ticker');
-        await visit('pdd-2y', 'analysis pdd', 'ticker');
-        await visit('vt-2y', 'analysis vt', 'ticker');
-        await visit('aehr-2y', 'analysis aehr', 'ticker');
-        await visit('cbrs-2y', 'analysis cbrs', 'ticker');
+        await visit('board', 'plot valuation', 'board');
+        await visit('goog-2y', 'plot valuation goog', 'ticker');
+        await visit('goog-all', 'plot valuation goog all', 'ticker');
+        await visit('anet-2y', 'p val anet', 'ticker');
+        await visit('pdd-2y', 'p val pdd', 'ticker');
+        await visit('vt-2y', 'p val vt', 'ticker');
+        await visit('aehr-2y', 'p val aehr', 'ticker');
+        await visit('cbrs-2y', 'p val cbrs', 'ticker');
 
         const clients = results.map((r) => r.client);
         const spread = Math.max(...clients) - Math.min(...clients);

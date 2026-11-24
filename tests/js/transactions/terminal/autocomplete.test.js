@@ -164,23 +164,31 @@ describe('autocomplete.js', () => {
             expect(autocompleteState.matches).toEqual(constants.HELP_SUBCOMMANDS);
         });
 
-        test('should autocomplete analysis tickers, close, and all horizon flag', () => {
+        test('should autocomplete plot valuation, tickers, and all horizon flag (and retire an/analysis)', () => {
             setAnalysisAutocompleteSymbols(['AEHR', 'ANET', 'CBRS', 'GOOG', 'PDD', 'VT']);
 
+            input.value = 'p v';
+            autocompleteCommand(input);
+            expect(autocompleteState.matches).toEqual(['volatility', 'valuation']);
+
+            input.value = 'p va';
+            autocompleteCommand(input);
+            expect(input.value).toBe('p valuation ');
+
+            input.value = 'p val go';
+            autocompleteCommand(input);
+            expect(input.value).toBe('p val GOOG ');
+
+            input.value = 'plot valuation c';
+            autocompleteCommand(input);
+            expect(autocompleteState.matches).toEqual(['CBRS']);
+            expect(input.value).toBe('plot valuation CBRS ');
+
+            input.value = 'p val ANET a';
+            autocompleteCommand(input);
+            expect(input.value).toBe('p val ANET all ');
+
             input.value = 'an go';
-            autocompleteCommand(input);
-            expect(input.value).toBe('an GOOG ');
-
-            input.value = 'an c';
-            autocompleteCommand(input);
-            expect(autocompleteState.matches).toEqual(['CBRS', 'close']);
-            expect(input.value).toBe('an CBRS');
-
-            input.value = 'an ANET a';
-            autocompleteCommand(input);
-            expect(input.value).toBe('an ANET all ');
-
-            input.value = 'an close a';
             autocompleteCommand(input);
             expect(autocompleteState.matches).toEqual([]);
         });

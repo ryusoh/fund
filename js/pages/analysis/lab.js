@@ -727,6 +727,10 @@ export function getActiveAnalysisConfig() {
     return state.configs.find((cfg) => cfg.symbol === state.activeSymbol) || null;
 }
 
+export function getActiveAnalysisHorizonMode() {
+    return state.horizonMode;
+}
+
 export async function initAnalysisPane(rootEl, { autoLoad = true } = {}) {
     if (detachChartInteractions) {
         detachChartInteractions();

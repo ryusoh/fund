@@ -30,6 +30,7 @@ import {
 import { ensureFilteredPricesLoaded } from '../../dataLoader.js';
 import { toggleZoom, getZoomState } from '../../zoom.js';
 import { PLOT_SUBCOMMANDS } from '../constants.js';
+import { handleAnalysisCommand } from './analysis.js';
 const TWRR_MESSAGE =
     'TWRR (Time-Weighted Rate of Return) describes how efficiently the portfolio has grown regardless of when money moved in or out. It focuses purely on investment performance, so the result is not distorted by the size or timing of deposits and withdrawals.\n' +
     '\n' +
@@ -69,7 +70,8 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
             '  plot marketcap abs   - Show market cap composition chart with absolute values\n' +
             '  plot concentration   - Show portfolio concentration (HHI) chart\n' +
             '  plot pe              - Show weighted average P/E ratio chart\n' +
-            '  plot fx              - Show FX rate chart for the selected base currency\n\n' +
+            '  plot fx              - Show FX rate chart for the selected base currency\n' +
+            '  plot valuation (val) - Show portfolio valuation board or ticker chart\n\n' +
             'Usage: plot <subcommand> or p <subcommand>\n' +
             '  balance       [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +
             '  performance   [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +
@@ -83,8 +85,20 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
             '  fx            [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +
             '  rolling       [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +
             '  beta          [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +
-            '  yield         [year|quarter|qN] | [from <...>] | [<...> to <...>]';
+            '  yield         [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +
+            '  valuation     [<TICKER>] [all] (alias: val)';
         appendMessage(result);
+        return;
+    }
+
+    const subcommand = args[0].toLowerCase();
+    const rawArgs = args.slice(1);
+
+    if (subcommand === 'valuation' || subcommand === 'val') {
+        if (getZoomState()) {
+            await toggleZoom();
+        }
+        await handleAnalysisCommand(rawArgs, { appendMessage });
         return;
     }
 
@@ -98,9 +112,6 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
     if (getZoomState()) {
         await toggleZoom();
     }
-
-    const subcommand = args[0].toLowerCase();
-    const rawArgs = args.slice(1);
 
     const isAbsoluteSubcommand = (subcmd) => {
         return subcmd.endsWith('-abs') || subcmd.endsWith('abs') || subcmd.endsWith('absolute');

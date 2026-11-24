@@ -10,7 +10,7 @@ function loadLabModule() {
     return labModulePromise;
 }
 
-const USAGE_LINE = 'Usage: analysis | analysis <TICKER> [all] | analysis close';
+const USAGE_LINE = 'Usage: plot valuation | plot valuation <TICKER> [all] (alias: p val)';
 
 async function openAnalysisPane(lab) {
     const section = document.getElementById('analysisSection');
@@ -34,14 +34,6 @@ async function openAnalysisPane(lab) {
     return section;
 }
 
-function handleCloseCommand(appendMessage) {
-    const section = document.getElementById('analysisSection');
-    if (section) {
-        section.classList.add('is-hidden');
-    }
-    appendMessage('Analysis pane closed.');
-}
-
 function formatBoardMessage(board) {
     if (!board || !Array.isArray(board.rows) || board.rows.length === 0) {
         return `Portfolio Decision Board — no tickers loaded.\n${USAGE_LINE}`;
@@ -61,34 +53,49 @@ function formatBoardMessage(board) {
     );
 }
 
-export async function handleAnalysisCommand(args, { appendMessage }) {
-    const first = args[0] ? String(args[0]).trim() : '';
-    if (first.toLowerCase() === 'close') {
-        handleCloseCommand(appendMessage);
+function getVisibleAnalysisSection() {
+    if (!paneInitialized) {
+        return null;
+    }
+    const section = document.getElementById('analysisSection');
+    return section && !section.classList.contains('is-hidden') ? section : null;
+}
+
+async function handleBoardSubcommand(lab, appendMessage) {
+    const visibleSection = getVisibleAnalysisSection();
+    if (visibleSection && lab.getActiveAnalysisConfig() === null) {
+        visibleSection.classList.add('is-hidden');
+        appendMessage('Hidden valuation board.');
         return;
     }
-
-    const lab = await loadLabModule();
     const section = await openAnalysisPane(lab);
     if (!section) {
-        appendMessage('Analysis pane is not available on this page.');
+        appendMessage('Valuation pane is not available on this page.');
+        return;
+    }
+    appendMessage(formatBoardMessage(lab.showDecisionBoard()));
+}
+
+async function handleTickerSubcommand(lab, rawSymbol, horizonMode, appendMessage) {
+    const symbol = rawSymbol.toUpperCase();
+    const visibleSection = getVisibleAnalysisSection();
+    const activeCfg = visibleSection ? lab.getActiveAnalysisConfig() : null;
+    const activeHorizon =
+        typeof lab.getActiveAnalysisHorizonMode === 'function'
+            ? lab.getActiveAnalysisHorizonMode()
+            : '2y';
+    if (visibleSection && activeCfg?.symbol === symbol && activeHorizon === horizonMode) {
+        visibleSection.classList.add('is-hidden');
+        appendMessage(`Hidden ${symbol} valuation chart.`);
         return;
     }
 
-    if (!first) {
-        const board = lab.showDecisionBoard();
-        appendMessage(formatBoardMessage(board));
+    const section = await openAnalysisPane(lab);
+    if (!section) {
+        appendMessage('Valuation pane is not available on this page.');
         return;
     }
 
-    const flag = args[1] ? String(args[1]).trim().toLowerCase() : '';
-    if (flag && flag !== 'all') {
-        appendMessage(`Unknown analysis option: ${args[1]}\n${USAGE_LINE}`);
-        return;
-    }
-
-    const horizonMode = flag === 'all' ? 'full' : '2y';
-    const symbol = first.toUpperCase();
     const snapshot = lab.showTickerDecision(symbol, { horizonMode });
     if (snapshot) {
         appendMessage(snapshot.text);
@@ -97,6 +104,24 @@ export async function handleAnalysisCommand(args, { appendMessage }) {
 
     const available = lab.getAnalysisSymbols().join(', ');
     appendMessage(
-        `Unknown analysis symbol or subcommand: ${first}\nAvailable symbols: ${available}\n${USAGE_LINE}`
+        `Unknown valuation symbol: ${rawSymbol}\nAvailable symbols: ${available}\n${USAGE_LINE}`
     );
+}
+
+export async function handleAnalysisCommand(args, { appendMessage }) {
+    const first = args[0] ? String(args[0]).trim() : '';
+    const flag = args[1] ? String(args[1]).trim().toLowerCase() : '';
+    if (first && flag && flag !== 'all') {
+        appendMessage(`Unknown valuation option: ${args[1]}\n${USAGE_LINE}`);
+        return;
+    }
+
+    const lab = await loadLabModule();
+    if (!first) {
+        await handleBoardSubcommand(lab, appendMessage);
+        return;
+    }
+
+    const horizonMode = flag === 'all' ? 'full' : '2y';
+    await handleTickerSubcommand(lab, first, horizonMode, appendMessage);
 }

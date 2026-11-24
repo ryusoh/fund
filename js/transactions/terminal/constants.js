@@ -27,8 +27,6 @@ export const COMMAND_ALIASES = [
     'zoom',
     'z',
     'summary',
-    'analysis',
-    'an',
     'beta',
     'yield',
     'rolling',
@@ -73,10 +71,9 @@ export const PLOT_SUBCOMMANDS = [
     'geography-abs',
     'marketcap',
     'marketcap-abs',
+    'valuation',
 ];
 
 export const HELP_SUBCOMMANDS = ['filter'];
 
-export const ANALYSIS_SUBCOMMANDS = ['close'];
-
-export const ANALYSIS_HORIZON_FLAGS = ['all'];
+export const VALUATION_HORIZON_FLAGS = ['all'];

@@ -3,8 +3,7 @@ import {
     STATS_SUBCOMMANDS,
     PLOT_SUBCOMMANDS,
     HELP_SUBCOMMANDS,
-    ANALYSIS_SUBCOMMANDS,
-    ANALYSIS_HORIZON_FLAGS,
+    VALUATION_HORIZON_FLAGS,
 } from './constants.js';
 
 export const autocompleteState = {
@@ -70,7 +69,28 @@ function getStatsMatches(parts) {
         : STATS_SUBCOMMANDS;
 }
 
+function isPlotValuationSubcommand(parts) {
+    return (
+        (parts[0] === 'plot' || parts[0] === 'p') &&
+        (parts[1] === 'valuation' || parts[1] === 'val') &&
+        parts.length >= 3
+    );
+}
+
 function getPlotMatches(parts) {
+    if (isPlotValuationSubcommand(parts)) {
+        ensureAnalysisAutocompleteSymbols();
+        if (parts.length >= 4) {
+            const flagPrefix = parts[3] ? parts[3].toLowerCase() : '';
+            return flagPrefix
+                ? VALUATION_HORIZON_FLAGS.filter((flag) => flag.startsWith(flagPrefix))
+                : VALUATION_HORIZON_FLAGS;
+        }
+        const tickerPrefix = parts[2] ? parts[2].toLowerCase() : '';
+        return tickerPrefix
+            ? analysisTickerSymbols.filter((item) => item.toLowerCase().startsWith(tickerPrefix))
+            : analysisTickerSymbols;
+    }
     const subPrefixRaw = parts.slice(1).join(' ').toLowerCase();
     const normalizedSubPrefix = subPrefixRaw.replace(/\s+/g, '-');
     return normalizedSubPrefix
@@ -85,24 +105,6 @@ function getHelpMatches(parts) {
         : HELP_SUBCOMMANDS;
 }
 
-function getAnalysisMatches(parts) {
-    ensureAnalysisAutocompleteSymbols();
-    const subPrefix = parts[1] ? parts[1].toLowerCase() : '';
-    if (parts.length >= 3) {
-        if (subPrefix === 'close') {
-            return [];
-        }
-        const flagPrefix = parts[2] ? parts[2].toLowerCase() : '';
-        return flagPrefix
-            ? ANALYSIS_HORIZON_FLAGS.filter((flag) => flag.startsWith(flagPrefix))
-            : ANALYSIS_HORIZON_FLAGS;
-    }
-    const candidates = [...analysisTickerSymbols, ...ANALYSIS_SUBCOMMANDS];
-    return subPrefix
-        ? candidates.filter((item) => item.toLowerCase().startsWith(subPrefix))
-        : candidates;
-}
-
 function getSubcommandMatches(parts) {
     if (parts.length < 2) {
         return null;
@@ -115,9 +117,6 @@ function getSubcommandMatches(parts) {
     }
     if (parts[0] === 'help' || parts[0] === 'h') {
         return getHelpMatches(parts);
-    }
-    if (parts[0] === 'analysis' || parts[0] === 'an') {
-        return getAnalysisMatches(parts);
     }
     return null;
 }
@@ -156,14 +155,12 @@ function resolveCanonicalTicker(token) {
 function applyAutocomplete(input, matches, hasSpace, parts) {
     const completed = autocompleteState.matches[autocompleteState.index];
     const suffix = matches.length === 1 ? ' ' : '';
-    const isAnalysisCmd = parts[0] === 'analysis' || parts[0] === 'an';
 
-    if (hasSpace && isAnalysisCmd && parts.length >= 3) {
-        input.value = `${parts[0]} ${resolveCanonicalTicker(parts[1])} ${completed}${suffix}`;
-    } else if (
-        hasSpace &&
-        ['stats', 's', 'plot', 'p', 'help', 'h', 'analysis', 'an'].includes(parts[0])
-    ) {
+    if (hasSpace && isPlotValuationSubcommand(parts) && parts.length >= 4) {
+        input.value = `${parts[0]} ${parts[1]} ${resolveCanonicalTicker(parts[2])} ${completed}${suffix}`;
+    } else if (hasSpace && isPlotValuationSubcommand(parts)) {
+        input.value = `${parts[0]} ${parts[1]} ${completed}${suffix}`;
+    } else if (hasSpace && ['stats', 's', 'plot', 'p', 'help', 'h'].includes(parts[0])) {
         input.value = `${parts[0]} ${completed}${suffix}`;
     } else {
         input.value = `${completed}${suffix}`;
