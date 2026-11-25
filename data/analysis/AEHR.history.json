@@ -1,6 +1,6 @@
 {
     "symbol": "AEHR",
-    "asOf": "2026-11-24T19:06:00.650188+00:00",
+    "asOf": "2026-11-25T18:11:22.309952+00:00",
     "priceBasis": "rawClose",
     "priceBasisVerified": true,
     "epsPointInTimeCertified": false,
@@ -423,7 +423,7 @@
         },
         {
             "d": "2026-11-23",
-            "c": 42.5599
+            "c": 40.15
         }
     ],
     "eps": []

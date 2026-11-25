@@ -3,7 +3,7 @@
     "name": "Arista Networks",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-11-24T19:06:00.884256+00:00",
+        "asOf": "2026-11-25T18:11:22.693076+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -29,28 +29,28 @@
     },
     "market": {
         "forwardEps": 6.037,
-        "pe": 44.8365,
-        "forwardPe": 27.7025,
+        "pe": 42.825,
+        "forwardPe": 26.4597,
         "beta": 1.637,
-        "marketCap": 211291422720.0,
-        "enterpriseValue": 210918277120.0,
+        "marketCap": 201812492288.0,
+        "enterpriseValue": 198600097792.0,
         "ebitda": 5304200192.0,
         "currency": "USD",
         "fiftyTwoWeekHigh": 217.41,
         "fiftyTwoWeekLow": 115.42,
-        "marketDataUpdatedAt": "2026-11-24T19:06:00.788566+00:00",
-        "evToEbitda": 39.7644,
+        "marketDataUpdatedAt": "2026-11-25T18:11:22.559070+00:00",
+        "evToEbitda": 37.442,
         "eps": 3.73,
-        "price": 167.24,
-        "fiftyDayAverage": 191.823,
-        "twoHundredDayAverage": 168.7813,
-        "averageVolume": 6517150.0,
-        "averageDailyVolume10Day": 8690350.0,
-        "pegRatio": 1.18,
+        "price": 159.7373,
+        "fiftyDayAverage": 191.3374,
+        "twoHundredDayAverage": 168.9154,
+        "averageVolume": 6566851.0,
+        "averageDailyVolume10Day": 8616140.0,
+        "pegRatio": 1.04,
         "dividendYield": 0.0
     },
     "risk": {
-        "volatility": 0.5893,
+        "volatility": 0.5907,
         "estimateSource": "historical",
         "correlations": null
     },
@@ -183,15 +183,15 @@
         }
     ],
     "derived": {
-        "expectedCagr": 0.1287,
-        "expectedMultiple": 1.8319,
+        "expectedCagr": 0.1391,
+        "expectedMultiple": 1.9179,
         "fairValueRange": [
             100.0,
             130.0
         ],
         "kelly": {
-            "fullKelly": 0.1629,
-            "scaledKelly": 0.0814
+            "fullKelly": 0.1873,
+            "scaledKelly": 0.0937
         }
     },
     "industry_thesis": "docs/thesis/industry/ai-networking.md",

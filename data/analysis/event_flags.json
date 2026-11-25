@@ -1,6 +1,13 @@
 {
-  "generatedAt": "2026-11-24T19:06:25.044019+00:00",
+  "generatedAt": "2026-11-25T18:12:05.697324+00:00",
   "flags": [
+    {
+      "ticker": "GOOG",
+      "kind": "filing",
+      "form": "8-K",
+      "date": "2026-11-24",
+      "url": "https://www.sec.gov/Archives/edgar/data/1652044/000119312526475973/d91615d8k.htm"
+    },
     {
       "ticker": "GOOG",
       "kind": "review-date",
