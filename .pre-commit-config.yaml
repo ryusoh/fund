@@ -64,7 +64,7 @@ repos:
       hooks:
           - id: prettier
             name: prettier (staged files)
-            entry: bash -lc 'if ! command -v npx >/dev/null 2>&1; then echo "npx missing; skipping Prettier"; exit 0; fi; npx --yes prettier --write --ignore-path .prettierignore -- "$@"' --
+            entry: bash -lc 'BIN=./node_modules/.bin/prettier; if [ -x "$BIN" ]; then "$BIN" --write --cache --cache-location node_modules/.cache/prettiercache --ignore-path .prettierignore -- "$@"; elif command -v npx >/dev/null 2>&1; then npx --yes prettier --write --ignore-path .prettierignore -- "$@"; else echo "prettier/npx missing; skipping Prettier"; fi' --
             language: system
             files: '\.(js|css|json|yml|yaml|md|html)$'
             exclude: ^data/.*\.(html|json)$
@@ -74,7 +74,7 @@ repos:
       hooks:
           - id: eslint
             name: eslint (staged JS)
-            entry: bash -lc 'if ! command -v npx >/dev/null 2>&1; then echo "npx missing; skipping ESLint"; exit 0; fi; npx --yes eslint --max-warnings=0 --no-warn-ignored -- "$@"' --
+            entry: bash -lc 'BIN=./node_modules/.bin/eslint; if [ -x "$BIN" ]; then "$BIN" --max-warnings=0 --no-warn-ignored -- "$@"; elif command -v npx >/dev/null 2>&1; then npx --yes eslint --max-warnings=0 --no-warn-ignored -- "$@"; else echo "eslint/npx missing; skipping ESLint"; fi' --
             language: system
             types_or: [javascript]
             pass_filenames: true
@@ -83,7 +83,7 @@ repos:
       hooks:
           - id: stylelint
             name: stylelint (staged CSS)
-            entry: bash -lc 'if ! command -v npx >/dev/null 2>&1; then echo "npx missing; skipping Stylelint"; exit 0; fi; npx --yes -p @stylistic/stylelint-plugin stylelint --formatter=unix --config-basedir "$(pwd)" -- "$@"' --
+            entry: bash -lc 'BIN=./node_modules/.bin/stylelint; if [ -x "$BIN" ]; then "$BIN" --cache --cache-location node_modules/.cache/stylelintcache --formatter=unix --config-basedir "$(pwd)" -- "$@"; elif command -v npx >/dev/null 2>&1; then npx --yes -p @stylistic/stylelint-plugin stylelint --formatter=unix --config-basedir "$(pwd)" -- "$@"; else echo "stylelint/npx missing; skipping Stylelint"; fi' --
             language: system
             types_or: [css]
             pass_filenames: true
@@ -101,7 +101,7 @@ repos:
       hooks:
           - id: dependency-cruiser
             name: dependency-cruiser (JS dependency structure)
-            entry: bash -lc 'if ! command -v npx >/dev/null 2>&1; then echo "npx missing; skipping dependency-cruiser"; exit 0; fi; npx --yes dependency-cruiser js sw.js worker/src --config .dependency-cruiser.cjs'
+            entry: bash -lc 'BIN=./node_modules/.bin/dependency-cruiser; if [ -x "$BIN" ]; then "$BIN" js sw.js worker/src --config .dependency-cruiser.cjs; elif command -v npx >/dev/null 2>&1; then npx --yes dependency-cruiser js sw.js worker/src --config .dependency-cruiser.cjs; else echo "dependency-cruiser/npx missing; skipping"; fi'
             language: system
             pass_filenames: false
             always_run: true
@@ -111,7 +111,7 @@ repos:
       hooks:
           - id: jest-related
             name: jest (related tests)
-            entry: bash -lc 'if ! ls jest.config.* package.json >/dev/null 2>&1; then echo "No Jest config found, skipping"; exit 0; fi; if [ $# -gt 0 ]; then npx --yes jest --findRelatedTests --passWithNoTests "$@"; else npx --yes jest --passWithNoTests; fi' --
+            entry: bash -lc 'if ! ls jest.config.* package.json >/dev/null 2>&1; then echo "No Jest config found, skipping"; exit 0; fi; BIN=./node_modules/.bin/jest; if [ -x "$BIN" ]; then if [ $# -gt 0 ]; then "$BIN" --findRelatedTests --passWithNoTests "$@"; else "$BIN" --passWithNoTests; fi; else if [ $# -gt 0 ]; then npx --yes jest --findRelatedTests --passWithNoTests "$@"; else npx --yes jest --passWithNoTests; fi; fi' --
             language: system
             types_or: [javascript]
             pass_filenames: true
@@ -121,7 +121,7 @@ repos:
       hooks:
           - id: jest-full
             name: jest (full, pre-push)
-            entry: bash -lc 'npx --yes jest --ci --runInBand'
+            entry: bash -lc 'BIN=./node_modules/.bin/jest; if [ -x "$BIN" ]; then "$BIN" --ci --runInBand; else npx --yes jest --ci --runInBand; fi'
             language: system
             pass_filenames: false
             stages: [pre-push]

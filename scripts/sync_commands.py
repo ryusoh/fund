@@ -101,9 +101,15 @@ def format_generated_commands() -> None:
     committed files. Mirror the hook's exact invocation to keep sync idempotent.
     Degrade gracefully if prettier/npx is unavailable (script stays stdlib-only).
     """
+    local_prettier = os.path.join(WORKSPACE_ROOT, "node_modules", ".bin", "prettier")
+    cmd = (
+        [local_prettier, "--write", "--ignore-path", ".prettierignore", CLAUDE_DIR]
+        if os.path.isfile(local_prettier)
+        else ["npx", "prettier", "--write", "--ignore-path", ".prettierignore", CLAUDE_DIR]
+    )
     try:
         subprocess.run(
-            ["npx", "prettier", "--write", "--ignore-path", ".prettierignore", CLAUDE_DIR],
+            cmd,
             cwd=WORKSPACE_ROOT,
             check=True,
             capture_output=True,

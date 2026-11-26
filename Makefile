@@ -20,6 +20,9 @@ PIP := $(PY) -m pip
 .PHONY: help install-dev hooks precommit precommit-fix perms check-perms lint depcheck fmt fmt-check lint-fix markdownlint-fix type sec test test-js test-tz verify sync-check thinking-check bot-pr-check js-lint js-test vendor-fetch vendor-verify vendor-clean verify-calendar-build serve screenshot smoke analysis-layout-check ensure-playwright fund fix check completion update-hooks twrr-refresh twrr-validate deploy-worker ci-parity mutate-js mutate-py mutate-ratchet-update images _fmt-black _fmt-prettier _lintfix-eslint _lintfix-stylelint _lintfix-markdown _lintfix-ruff _pytest
 
 PYTHON_BIN := $(PY)
+NODE_BIN = $(if $(wildcard ./node_modules/.bin/$(1)),./node_modules/.bin/$(1),npx --yes $(1))
+PRETTIER_CACHE := --cache --cache-location node_modules/.cache/prettiercache
+STYLELINT_CACHE := --cache --cache-location node_modules/.cache/stylelintcache
 TWRR_STEPS := scripts/twrr/step01_load_transactions.py \
 		 scripts/twrr/step02_apply_splits.py \
 		 scripts/twrr/step03_fetch_prices.py \
@@ -36,7 +39,7 @@ TWRR_STEPS := scripts/twrr/step01_load_transactions.py \
 	 scripts/ratios/calculate_ratios.py \
 	 scripts/twrr/step07_plot_twrr.py
 
-PRETTIER_FILE_LIST := $(shell git ls-files --cached --others --exclude-standard '*.js' '*.jsx' '*.ts' '*.tsx' '*.mjs' '*.cjs' '*.css' '*.json' '*.md' '*.html' '*.yml' '*.yaml' \
+PRETTIER_FILE_LIST = $(shell git ls-files --cached --others --exclude-standard '*.js' '*.jsx' '*.ts' '*.tsx' '*.mjs' '*.cjs' '*.css' '*.json' '*.md' '*.html' '*.yml' '*.yaml' \
 	':!assets/**' ':!js/vendor/**' ':!data/**' ':!.claude/**' \
 	':!package-lock.json' ':!pnpm-lock.yaml' ':!eslint-suppressions.json' \
 	':!docs/cursor-performance.md' ':!docs/reference/**' ':!**/*.min.js' ':!ai/status/**' 2>/dev/null | while read -r file; do if [ -f "$$file" ]; then printf '%s ' "$$file"; fi; done)
@@ -77,12 +80,18 @@ install-dev:
 	npm ci
 
 hooks:
-	@# Install git hooks unless core.hooksPath is managed externally
+	@# Install git hooks unless core.hooksPath is managed externally or hooks are already installed
 	@if git config --get core.hooksPath >/dev/null 2>&1; then \
 		echo "Note: core.hooksPath is set; skipping pre-commit hook installation."; \
 	else \
-		$(PY) -m pre_commit install; \
-		$(PY) -m pre_commit install --hook-type post-commit; \
+		PC_HOOK=$$(git rev-parse --git-path hooks/pre-commit 2>/dev/null); \
+		POST_HOOK=$$(git rev-parse --git-path hooks/post-commit 2>/dev/null); \
+		if [ -f "$$PC_HOOK" ] && grep -q 'pre-commit' "$$PC_HOOK" && [ -f "$$POST_HOOK" ] && grep -q 'pre-commit' "$$POST_HOOK"; then \
+			true; \
+		else \
+			$(PY) -m pre_commit install; \
+			$(PY) -m pre_commit install --hook-type post-commit; \
+		fi; \
 	fi
 
 precommit: hooks fmt-check
@@ -108,10 +117,10 @@ precommit-fix:
 	@$(MAKE) -j2 js-test _pytest
 	@# Timezone pass: UTC-only jest can't fire the TZ regression tests
 	@$(MAKE) test-tz
-	@# Phase 4: Final verification
+	@# Phase 4: Final verification (jest-related skipped — full UTC + TZ suites ran above)
 	@$(MAKE) bot-pr-check
 	@$(MAKE) thinking-check
-	@$(MAKE) precommit; \
+	@SKIP="$${SKIP:+$${SKIP},}jest-related" $(MAKE) precommit; \
 	STATUS=$$?; \
 	git checkout data/transactions.csv 2>/dev/null || true; \
 	exit $$STATUS
@@ -120,28 +129,29 @@ _fmt-black:
 	$(PY) -m black .
 
 _fmt-prettier:
-	@if [ -n "$(strip $(PRETTIER_FILE_LIST))" ]; then \
-		npx --yes -q prettier --write --log-level warn --ignore-path .prettierignore $(PRETTIER_FILE_LIST); \
+	@files="$(strip $(PRETTIER_FILE_LIST))"; \
+	if [ -n "$$files" ]; then \
+		$(call NODE_BIN,prettier) --write $(PRETTIER_CACHE) --log-level warn --ignore-path .prettierignore $$files; \
 	else \
 		echo "No Prettier targets"; \
 	fi
 
 _lintfix-eslint:
-	npx --yes eslint . --ext .js --fix || true
+	$(call NODE_BIN,eslint) . --ext .js --fix || true
 
 _lintfix-stylelint:
-	npx --yes stylelint "**/*.css" --fix || true
+	$(call NODE_BIN,stylelint) "**/*.css" $(STYLELINT_CACHE) --fix || true
 
 _lintfix-markdown:
 	$(PY) -m scripts.agents.check_md_boxes --fix
 	$(PY) -m scripts.agents.check_md_latex --fix
-	npm exec -- markdownlint-cli2 --fix "**/*.md" "#**/node_modules/**" "#venv/**" "#.qwen/**" "#.claude/**"
+	$(call NODE_BIN,markdownlint-cli2) --fix "**/*.md" "#**/node_modules/**" "#venv/**" "#.qwen/**" "#.claude/**"
 
 _lintfix-ruff:
 	$(PY) -m ruff check --fix scripts tests
 
 _pytest:
-	$(PY) -m pytest --cov=scripts --cov-report=term-missing
+	OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 $(PY) -m pytest --cov=scripts --cov-report=term-missing
 
 perms:
 	chmod +x bin/fund bin/portfolio bin/holdings bin/update-all
@@ -151,28 +161,30 @@ lint: js-lint depcheck
 	@# Complexity ratchet (docs/agentic-quality-gates.md): xenon fails if the
 	@# average/worst cyclomatic-complexity rank regresses past these ceilings.
 	$(PY) -m xenon --max-average C --max-modules F --max-absolute F scripts tests
-	npx --yes stylelint "**/*.css"
-	npm exec -- markdownlint-cli2 "**/*.md" "#**/node_modules/**" "#venv/**" "#.qwen/**" "#.claude/**"
+	$(call NODE_BIN,stylelint) "**/*.css" $(STYLELINT_CACHE)
+	$(call NODE_BIN,markdownlint-cli2) "**/*.md" "#**/node_modules/**" "#venv/**" "#.qwen/**" "#.claude/**"
 	$(PY) -m scripts.agents.check_md_boxes
 	$(PY) -m scripts.agents.check_md_latex
 
 depcheck:
 	@# Dependency-structure gate (docs/agentic-quality-gates.md §3): no cycles,
 	@# no cross-page imports, no direct vendor imports. Rules: .dependency-cruiser.cjs
-	npx --yes dependency-cruiser js sw.js worker/src --config .dependency-cruiser.cjs
+	$(call NODE_BIN,dependency-cruiser) js sw.js worker/src --config .dependency-cruiser.cjs
 
 fmt:
 	$(PY) -m black .
-	@if [ -n "$(strip $(PRETTIER_FILE_LIST))" ]; then \
-		npx --yes -q prettier --write --log-level warn --ignore-path .prettierignore $(PRETTIER_FILE_LIST); \
+	@files="$(strip $(PRETTIER_FILE_LIST))"; \
+	if [ -n "$$files" ]; then \
+		$(call NODE_BIN,prettier) --write $(PRETTIER_CACHE) --log-level warn --ignore-path .prettierignore $$files; \
 	else \
 		echo "No Prettier targets"; \
 	fi
 
 fmt-check:
 	@echo "Checking formatting..."
-	@if [ -n "$(strip $(PRETTIER_FILE_LIST))" ]; then \
-		npx --yes -q prettier --check --log-level warn --ignore-path .prettierignore $(PRETTIER_FILE_LIST); \
+	@files="$(strip $(PRETTIER_FILE_LIST))"; \
+	if [ -n "$$files" ]; then \
+		$(call NODE_BIN,prettier) --check $(PRETTIER_CACHE) --log-level warn --ignore-path .prettierignore $$files; \
 	else \
 		echo "No Prettier targets"; \
 	fi
@@ -180,7 +192,7 @@ fmt-check:
 type:
 	$(PY) -m mypy --python-version 3.12
 	@echo "JS type check (tsc --checkJs on whitelist; blocking — see docs/js-typing-strategy.md):"
-	@npx tsc -p jsconfig.json
+	@$(call NODE_BIN,tsc) -p jsconfig.json
 
 sec:
 	$(PY) -m bandit -r scripts -lll
@@ -189,17 +201,17 @@ sec:
 js-lint:
 	@# eslint-suppressions.json baselines the legacy complexity violations
 	@# (see eslint.config.cjs); any new one is an error and fails here.
-	npx --yes eslint . --ext .js
+	$(call NODE_BIN,eslint) . --ext .js
 
 lint-fix:
-	npx --yes eslint . --ext .js --fix || true
+	$(call NODE_BIN,eslint) . --ext .js --fix || true
 	@# Ensure stylistic plugin availability if needed
-	npx --yes stylelint "**/*.css" --fix || true
+	$(call NODE_BIN,stylelint) "**/*.css" $(STYLELINT_CACHE) --fix || true
 
 markdownlint-fix:
 	$(PY) -m scripts.agents.check_md_boxes --fix
 	$(PY) -m scripts.agents.check_md_latex --fix
-	npm exec -- markdownlint-cli2 --fix "**/*.md" "#**/node_modules/**" "#venv/**" "#.qwen/**" "#.claude/**"
+	$(call NODE_BIN,markdownlint-cli2) --fix "**/*.md" "#**/node_modules/**" "#venv/**" "#.qwen/**" "#.claude/**"
 
 js-test:
 	npm test
@@ -207,17 +219,17 @@ js-test:
 # Scoped, fast JS test for the tight edit→verify loop (skips coverage):
 #   make test-js FILE=tests/js/ui/liquidGlassRefraction.test.js
 test-js:
-	npx --yes jest $(FILE)
+	$(call NODE_BIN,jest) $(FILE)
 
 # JS suite under a UTC− and a UTC+ zone (no coverage). The default suite runs
 # TZ=UTC, where timezone regression tests pass trivially; these two runs are
 # what actually fire them (docs/testing-notes.md § Timezone).
 test-tz:
-	TZ=America/New_York npx --yes jest
-	TZ=Asia/Shanghai npx --yes jest
+	TZ=America/New_York $(call NODE_BIN,jest)
+	TZ=Asia/Shanghai $(call NODE_BIN,jest)
 
 test: js-test
-	$(PY) -m pytest --cov=scripts --cov-report=term-missing
+	OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 $(PY) -m pytest --cov=scripts --cov-report=term-missing
 
 verify: lint type sec test sync-check thinking-check bot-pr-check
 

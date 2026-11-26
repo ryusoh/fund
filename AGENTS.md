@@ -60,7 +60,10 @@ The user, other agents, and background sessions edit this tree concurrently.
    running the hooks, so it is no substitute. Open a PR only on a green gate, with
    `git status --porcelain` clean afterwards (commit any reformat). A red gate
    on an unchanged tree stays red — change something before rerunning
-   (`python3 -m scripts.agents.gate_guard snapshot`, then `check <hash>`).
+   (`python3 -m scripts.agents.gate_guard snapshot`, then `check <hash>`). Run
+   full verification gates solo — never batch them in the same turn with heavy
+   pipeline scans or concurrent sibling-repo gates on the same host (CPU
+   oversubscription multiplies wall time).
 2. **One concern, smallest diff,** inside the task's files. For self-chosen
    work (not a user-specified task), run `python3 -m scripts.agents.prior_prs`
    first so you pick something no open or closed PR already covers.
