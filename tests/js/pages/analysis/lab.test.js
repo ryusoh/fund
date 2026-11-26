@@ -1,10 +1,352 @@
-import fs from 'fs';
-import path from 'path';
+const FIXTURE_INDEX = {
+    tickers: [
+        {
+            symbol: 'AEHR',
+            name: 'Aehr Test Systems',
+            path: '../data/analysis/AEHR.json',
+            historyPath: '../data/analysis/AEHR.history.json',
+        },
+        {
+            symbol: 'ANET',
+            name: 'Arista Networks',
+            path: '../data/analysis/ANET.json',
+            historyPath: '../data/analysis/ANET.history.json',
+        },
+        {
+            symbol: 'CBRS',
+            name: 'Cerebras Systems',
+            path: '../data/analysis/CBRS.json',
+            historyPath: '../data/analysis/CBRS.history.json',
+        },
+        {
+            symbol: 'GOOG',
+            name: 'Alphabet',
+            path: '../data/analysis/GOOG.json',
+            historyPath: '../data/analysis/GOOG.history.json',
+        },
+        {
+            symbol: 'PDD',
+            name: 'Pinduoduo',
+            path: '../data/analysis/PDD.json',
+            historyPath: '../data/analysis/PDD.history.json',
+        },
+        {
+            symbol: 'VT',
+            name: 'Vanguard Total World Index Fund',
+            path: '../data/analysis/VT.json',
+            historyPath: '../data/analysis/VT.history.json',
+        },
+    ],
+};
 
-const ROOT = path.resolve(process.cwd());
+const FIXTURE_HOLDINGS = {
+    VT: { shares: '2601.000', average_price: '95.650000' },
+    ANET: { shares: '2418.3604', average_price: '62.500000' },
+    GOOG: { shares: '943.303', average_price: '197.850000' },
+    PDD: { shares: '3138.4802', average_price: '106.477936' },
+};
 
-function loadAnalysisJson(fileName) {
-    return JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'analysis', fileName), 'utf-8'));
+const FIXTURE_FLAGS = {
+    generatedAt: '2026-11-24T19:00:00.000Z',
+    flags: [],
+};
+
+function makeFixtureConfig({
+    symbol,
+    name,
+    price,
+    eps,
+    dividendYield = 0,
+    volatility,
+    horizon = 5,
+    benchmark = 0.065,
+    targetCagr = 0.12,
+    kellyScale = 0.5,
+    overrides = {},
+    shares = 0,
+    maxWeight = 0.3,
+    scenarios,
+    thesisIntactProbability = 0.7,
+}) {
+    return {
+        symbol,
+        name,
+        meta: {
+            schemaVersion: '1.1.0',
+            asOf: '2026-11-24T19:00:00.000Z',
+            timezone: 'UTC',
+            source: 'test-fixture',
+        },
+        model: {
+            version: '1.0.0',
+            engine: {
+                type: 'fermat-pascal-kelly',
+                useMonteCarlo: false,
+                paths: 10000,
+                useBayesianUpdate: false,
+            },
+            preferences: {
+                horizon,
+                benchmark: { type: 'annualReturn', value: benchmark, name: 'SP500' },
+                kellyScale,
+                targetCagr,
+                overrides,
+            },
+        },
+        market: {
+            price,
+            eps,
+            dividendYield,
+            currency: 'USD',
+            marketDataUpdatedAt: '2026-11-24T19:00:00.000Z',
+        },
+        risk: {
+            volatility,
+            estimateSource: 'historical',
+            correlations: null,
+        },
+        position: {
+            shares,
+            constraints: { minWeight: 0, maxWeight },
+        },
+        scenarios,
+        belief_state: {
+            probability: 0.5,
+            confidence: 0.75,
+            thesis_intact_probability: thesisIntactProbability,
+        },
+    };
+}
+
+const FIXTURE_CONFIGS = {
+    AEHR: makeFixtureConfig({
+        symbol: 'AEHR',
+        name: 'Aehr Test Systems',
+        price: 49.0,
+        eps: -0.23,
+        volatility: 1.33,
+        overrides: { eps: 0.895 },
+        shares: 0,
+        maxWeight: 0.05,
+        thesisIntactProbability: 0.6,
+        scenarios: [
+            {
+                id: 'bull',
+                name: 'Bull',
+                prob: 0.25,
+                growth: { epsCagr: 0.35 },
+                valuation: { exitPe: 45 },
+            },
+            {
+                id: 'base',
+                name: 'Base',
+                prob: 0.5,
+                growth: { epsCagr: 0.2 },
+                valuation: { exitPe: 30 },
+            },
+            {
+                id: 'bear',
+                name: 'Bear',
+                prob: 0.25,
+                growth: { epsCagr: 0.05 },
+                valuation: { exitPe: 20 },
+            },
+        ],
+    }),
+    ANET: makeFixtureConfig({
+        symbol: 'ANET',
+        name: 'Arista Networks',
+        price: 159.7373,
+        eps: 3.73,
+        volatility: 0.5907,
+        shares: 2418.3604,
+        maxWeight: 0.3,
+        scenarios: [
+            {
+                id: 'bull',
+                name: 'Bull',
+                prob: 0.35,
+                growth: { epsCagr: 0.28 },
+                valuation: { exitPe: 38 },
+            },
+            {
+                id: 'base',
+                name: 'Base',
+                prob: 0.5,
+                growth: { epsCagr: 0.18 },
+                valuation: { exitPe: 28 },
+            },
+            {
+                id: 'bear',
+                name: 'Bear',
+                prob: 0.15,
+                growth: { epsCagr: 0.08 },
+                valuation: { exitPe: 20 },
+            },
+        ],
+    }),
+    CBRS: makeFixtureConfig({
+        symbol: 'CBRS',
+        name: 'Cerebras Systems',
+        price: 87.43,
+        eps: -5.17,
+        volatility: 1.1602,
+        shares: 0,
+        maxWeight: 0.05,
+        thesisIntactProbability: 0.05,
+        scenarios: [
+            {
+                id: 'bull',
+                name: 'RETIRED – Bull',
+                prob: 0.25,
+                growth: { epsCagr: 0.52 },
+                valuation: { exitPe: 40 },
+            },
+            {
+                id: 'base',
+                name: 'RETIRED – Base',
+                prob: 0.4,
+                growth: { epsCagr: 0.27 },
+                valuation: { exitPe: 30 },
+            },
+            {
+                id: 'bear',
+                name: 'RETIRED – Bear',
+                prob: 0.35,
+                growth: { epsCagr: 0.05 },
+                valuation: { exitPe: 15 },
+            },
+        ],
+    }),
+    GOOG: makeFixtureConfig({
+        symbol: 'GOOG',
+        name: 'Alphabet',
+        price: 268.15,
+        eps: 19.15,
+        dividendYield: 0.32,
+        volatility: 0.3297,
+        horizon: 10,
+        shares: 943.303,
+        maxWeight: 0.25,
+        scenarios: [
+            {
+                id: 'bull',
+                name: 'Bull',
+                prob: 0.2,
+                growth: { epsCagr: 0.14 },
+                valuation: { exitPe: 25 },
+            },
+            {
+                id: 'base',
+                name: 'Base',
+                prob: 0.6,
+                growth: { epsCagr: 0.08 },
+                valuation: { exitPe: 20 },
+            },
+            {
+                id: 'bear',
+                name: 'Bear',
+                prob: 0.2,
+                growth: { epsCagr: 0.02 },
+                valuation: { exitPe: 15 },
+            },
+        ],
+    }),
+    PDD: makeFixtureConfig({
+        symbol: 'PDD',
+        name: 'Pinduoduo',
+        price: 87.75,
+        eps: 9.07,
+        volatility: 0.3492,
+        shares: 3138.4802,
+        maxWeight: 0.25,
+        scenarios: [
+            {
+                id: 'bull',
+                name: 'Bull',
+                prob: 0.15,
+                growth: { epsCagr: 0.14 },
+                valuation: { exitPe: 14 },
+            },
+            {
+                id: 'base',
+                name: 'Base',
+                prob: 0.5,
+                growth: { epsCagr: 0.07 },
+                valuation: { exitPe: 10.5 },
+            },
+            {
+                id: 'bear',
+                name: 'Bear',
+                prob: 0.35,
+                growth: { epsCagr: -0.02 },
+                valuation: { exitPe: 7 },
+            },
+        ],
+    }),
+    VT: makeFixtureConfig({
+        symbol: 'VT',
+        name: 'Vanguard Total World Index Fund',
+        price: 146.635,
+        eps: 8.0197,
+        dividendYield: 1.56,
+        volatility: 0.1587,
+        horizon: 5,
+        benchmark: 0.05,
+        targetCagr: 0.08,
+        shares: 2601.0,
+        maxWeight: 0.3,
+        scenarios: [
+            {
+                id: 'bull',
+                name: 'Bull',
+                prob: 0.2,
+                growth: { epsCagr: 0.08 },
+                valuation: { exitPe: 25 },
+            },
+            {
+                id: 'base',
+                name: 'Base',
+                prob: 0.6,
+                growth: { epsCagr: 0.05 },
+                valuation: { exitPe: 20 },
+            },
+            {
+                id: 'bear',
+                name: 'Bear',
+                prob: 0.2,
+                growth: { epsCagr: 0.02 },
+                valuation: { exitPe: 15 },
+            },
+        ],
+    }),
+};
+
+function makeFixtureHistory(symbol, endPrice) {
+    const dates = [
+        '2025-12-01',
+        '2026-02-02',
+        '2026-04-06',
+        '2026-06-01',
+        '2026-08-03',
+        '2026-10-05',
+        '2026-11-23',
+    ];
+    return {
+        symbol,
+        asOf: '2026-11-24T19:00:00.000Z',
+        priceBasis: 'rawClose',
+        priceBasisVerified: true,
+        epsPointInTimeCertified: false,
+        prices: dates.map((d, i) => ({
+            d,
+            c: Number((endPrice * (0.85 + (0.15 * i) / (dates.length - 1))).toFixed(2)),
+        })),
+    };
+}
+
+function cloneJson(value) {
+    return JSON.parse(JSON.stringify(value));
 }
 
 const mockCtx = {
@@ -63,30 +405,32 @@ describe('analysis lab 2-view controller (WO5)', () => {
             isLocalhost: () => hostname === 'localhost' || hostname === '127.0.0.1',
         }));
 
-        const indexPayload = loadAnalysisJson('index.json');
-        const holdingsPayload = JSON.parse(
-            fs.readFileSync(path.join(ROOT, 'data', 'holdings_details.json'), 'utf-8')
-        );
-        const flagsPayload = loadAnalysisJson('event_flags.json');
+        const indexPayload = cloneJson(FIXTURE_INDEX);
+        const holdingsPayload = cloneJson(FIXTURE_HOLDINGS);
+        const flagsPayload = cloneJson(FIXTURE_FLAGS);
 
         global.fetch = jest.fn(async (urlStr) => {
             const url = String(urlStr);
             if (url.includes('index.json')) {
-                return { ok: true, json: async () => indexPayload };
+                return { ok: true, json: async () => cloneJson(indexPayload) };
             }
             if (url.includes('holdings_details.json')) {
-                return { ok: true, json: async () => holdingsPayload };
+                return { ok: true, json: async () => cloneJson(holdingsPayload) };
             }
             if (url.includes('event_flags.json')) {
-                return { ok: true, json: async () => flagsPayload };
+                return { ok: true, json: async () => cloneJson(flagsPayload) };
             }
             for (const entry of indexPayload.tickers) {
                 const sym = entry.symbol;
+                const cfg = FIXTURE_CONFIGS[sym];
                 if (url.includes(`${sym}.history.json`)) {
-                    return { ok: true, json: async () => loadAnalysisJson(`${sym}.history.json`) };
+                    return {
+                        ok: true,
+                        json: async () => makeFixtureHistory(sym, cfg.market.price),
+                    };
                 }
                 if (url.includes(`${sym}.json`)) {
-                    return { ok: true, json: async () => loadAnalysisJson(`${sym}.json`) };
+                    return { ok: true, json: async () => cloneJson(cfg) };
                 }
             }
             return { ok: false, status: 404 };
