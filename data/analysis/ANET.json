@@ -3,7 +3,7 @@
     "name": "Arista Networks",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-11-26T17:54:04.899044+00:00",
+        "asOf": "2026-11-27T17:39:36.271047+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -29,28 +29,28 @@
     },
     "market": {
         "forwardEps": 6.037,
-        "pe": 43.9652,
-        "forwardPe": 27.1642,
+        "pe": 46.7413,
+        "forwardPe": 28.8794,
         "beta": 1.637,
-        "marketCap": 207185362944.0,
+        "marketCap": 220267888640.0,
         "enterpriseValue": 192826343424.0,
         "ebitda": 5304200192.0,
         "currency": "USD",
         "fiftyTwoWeekHigh": 217.41,
         "fiftyTwoWeekLow": 115.42,
-        "marketDataUpdatedAt": "2026-11-26T17:54:04.776853+00:00",
+        "marketDataUpdatedAt": "2026-11-27T17:39:36.183840+00:00",
         "evToEbitda": 36.3535,
         "eps": 3.73,
-        "price": 163.99,
+        "price": 174.345,
         "fiftyDayAverage": 190.6664,
         "twoHundredDayAverage": 169.0181,
-        "averageVolume": 6576221.0,
+        "averageVolume": 6606119.0,
         "averageDailyVolume10Day": 8600840.0,
         "pegRatio": 1.1,
         "dividendYield": 0.0
     },
     "risk": {
-        "volatility": 0.5897,
+        "volatility": 0.5925,
         "estimateSource": "historical",
         "correlations": null
     },
@@ -183,15 +183,15 @@
         }
     ],
     "derived": {
-        "expectedCagr": 0.1331,
-        "expectedMultiple": 1.8682,
+        "expectedCagr": 0.1193,
+        "expectedMultiple": 1.7572,
         "fairValueRange": [
             100.0,
             130.0
         ],
         "kelly": {
-            "fullKelly": 0.1734,
-            "scaledKelly": 0.0867
+            "fullKelly": 0.1384,
+            "scaledKelly": 0.0692
         }
     },
     "industry_thesis": "docs/thesis/industry/ai-networking.md",

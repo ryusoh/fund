@@ -1,6 +1,6 @@
 {
     "symbol": "GOOG",
-    "asOf": "2026-11-26T17:54:05.718005+00:00",
+    "asOf": "2026-11-27T17:39:36.835999+00:00",
     "priceBasis": "rawClose",
     "priceBasisVerified": true,
     "epsPointInTimeCertified": false,
@@ -423,7 +423,7 @@
         },
         {
             "d": "2026-11-23",
-            "c": 270.98
+            "c": 271.085
         }
     ],
     "eps": [

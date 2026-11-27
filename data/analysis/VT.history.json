@@ -1,6 +1,6 @@
 {
     "symbol": "VT",
-    "asOf": "2026-11-26T17:54:06.531713+00:00",
+    "asOf": "2026-11-27T17:39:37.378442+00:00",
     "priceBasis": "rawClose",
     "priceBasisVerified": true,
     "epsPointInTimeCertified": false,
@@ -423,7 +423,7 @@
         },
         {
             "d": "2026-11-23",
-            "c": 147.54
+            "c": 149.72
         }
     ],
     "eps": []
